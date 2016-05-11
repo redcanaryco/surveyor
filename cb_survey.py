@@ -4,7 +4,8 @@
 generate simple, CSV-formatted lists of endpoints where given programs are
 executing.
 
-Requires a valid cbapi-ng credential file containing customer ID and Carbon Black API token.
+Requires a valid cbapi-ng credential file containing a Cb Enterprise Response
+server URL and corresponding API token.
 
 Requires one or more JSON-formatted definition files. Examples provided.
 """
@@ -16,7 +17,7 @@ import os
 import sys
 
 from cbapi.response import CbEnterpriseResponseAPI
-from cbapi.response.models import Process, Binary
+from cbapi.response.models import Process
 
 
 def process_search(cb_conn, query, query_base=None):
@@ -28,8 +29,7 @@ def process_search(cb_conn, query, query_base=None):
     query += query_base
 
     try:
-        procs = cb_conn.select(Process).where(query)
-        for proc in procs:
+        for proc in cb_conn.select(Process).where(query):
             results.add((proc.hostname.lower(),
                         proc.username.lower(), 
                         proc.path,
@@ -51,8 +51,7 @@ def nested_process_search(cb_conn, criteria, query_base=None):
                 query = '%s:%s' % (search_field, term)
                 query += query_base
 
-                procs = cb_conn.select(Process).where(query)
-                for proc in procs:
+                for proc in cb_conn.select(Process).where(query):
                     results.add((proc.hostname.lower(),
                                 proc.username.lower(), 
                                 proc.path,
