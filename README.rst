@@ -15,6 +15,7 @@ Installation
 Clone the repository from Github and install:
 
     git clone https://github.com/redcanaryco/cb-response-surveyor.git
+    
     python setup.py develop
 
 Using
