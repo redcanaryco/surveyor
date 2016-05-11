@@ -1,0 +1,69 @@
+{
+    "Outlier Security": { 
+        "process_name": ["outliercollectorservice.exe"]
+    },
+    "WatchGuard Technologies": { 
+        "process_name": ["wagsrvc.exe"]
+    },
+    "RSA ECAT": { 
+        "process_name": ["ecatservice.exe"]
+    },
+    "Lumension": { 
+        "process_name": ["notificationmanager.exe"]
+    },
+    "Druva Technologies": { 
+        "process_name": ["insyncagent.exe"]
+    },
+    "BeyondTrust Software Inc": { 
+        "process_name": ["beyondtrust.sessionmonitoring.service.exe"]
+    },
+    "Cylance, Inc.": { 
+        "process_name": ["cylancesvc.exe"]
+    },
+    "Fortinet": { 
+        "process_name": ["fortiscand.exe",
+                            "fcwscd7.exe"]
+    },
+    "Mandiant Corporation": { 
+        "process_name": ["ctfprocacv.exe"]
+    },
+    "RaonSecure Co., Ltd.": { 
+        "process_name": ["cksetup32.exe"]
+    },
+    "SafeNet, Inc.": { 
+        "process_name": ["sacmonitor.exe"]
+    },
+    "X-Ways Forensics": { 
+        "process_name": ["xwforensics64.exe"]
+    },
+    "SophosWebIntelligence": { 
+        "process_name": ["SophosWebIntelligence"]
+    },
+    "SoftForum CO., LTD.": { 
+        "process_name": ["anysign4pc.exe"]
+    },
+    "nProtect Online Security V1.0": { 
+        "process_name": ["nos_setup_woori.exe"]
+    },
+    "Avira Operations GmbH & Co. KG": { 
+        "process_name": ["avguard.exe"]
+    },
+    "AVAST Software a.s.": { 
+        "process_name": ["avastsvc.exe"]
+    },
+    "SpectorSoft": { 
+        "digsig_publisher": ["SpectorSoft"]
+    },
+    "Trend Micro, Inc.": { 
+        "process_name": ["ntrtscan.exe"]
+    },
+    "DigitalPersona, Inc.": { 
+        "process_name": ["dphostw.exe"]
+    },
+    "Link Data Security A/S": { 
+        "process_name": ["start.qz_"]
+    },
+    "Identity Finder": { 
+        "process_name": ["idfendpoint.exe"]
+    }
+}
