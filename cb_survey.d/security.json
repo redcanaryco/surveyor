@@ -22,7 +22,7 @@
     },
     "Fortinet": { 
         "process_name": ["fortiscand.exe",
-                            "fcwscd7.exe"]
+                         "fcwscd7.exe"]
     },
     "Mandiant Corporation": { 
         "process_name": ["ctfprocacv.exe"]

@@ -4,7 +4,7 @@
     },
     "PSExec": { 
         "process_name": ["psexec*.exe",
-                            "psexesvc.exe"]
+                         "psexesvc.exe"]
     },
     "Windows Shell": { 
         "process_name": ["cmd.exe"]
@@ -17,18 +17,18 @@
     },
     "Python": { 
         "process_name": ["python*.exe",
-                            "python*"]
+                         "python*"]
     },
     "Perl": { 
         "process_name": ["perl*.exe",
-                            "perl*"]
+                         "perl*"]
     },
     "Linux Shell": { 
         "process_name": ["sh.exe",
-                            "bash.exe",
-                            "zsh.exe",
-                            "sh",
-                            "bash",
-                            "zsh"]
+                         "bash.exe",
+                         "zsh.exe",
+                         "sh",
+                         "bash",
+                         "zsh"]
     }
 }

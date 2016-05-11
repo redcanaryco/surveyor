@@ -1,7 +1,0 @@
-{
-    "Explorer": { 
-        "process": {
-            "process_name": ["explorer.exe"]
-        }
-    }
-}

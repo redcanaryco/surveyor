@@ -4,17 +4,17 @@
     },
     "Box": {
         "process_name": ["boxsync.exe",
-                        "boxsyncmonitor.exe",
-                        "syncupdaterservice.exe"]
+                         "boxsyncmonitor.exe",
+                         "syncupdaterservice.exe"]
     },
     "Carbonite": {
         "process_name": ["CarboniteService.exe",
-                        "carbonitepreinstaller.exe"]
+                         "carbonitepreinstaller.exe"]
     },
     "CrashPlan": {
         "process_name": ["CrashPlanService.exe",
-                        "CrashPlanDesktop.exe",
-                        "CrashPlanTray.exe"]
+                         "CrashPlanDesktop.exe",
+                         "CrashPlanTray.exe"]
     },
     "Dropbox": {
         "domain": ["client.dropbox.com"],

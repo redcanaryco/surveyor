@@ -1,20 +1,20 @@
 {
     "FTP": { 
         "process_name": ["ftp*.exe",
-                            "ftp"]
+                         "ftp"]
     },
     "robocopy": { 
         "process_name": ["robocopy.exe"]
     },
     "SCP": { 
         "process_name": ["pscp.exe",
-                            "scp.exe",
-                            "scp",
-                            "winscp.exe"]
+                         "scp.exe",
+                         "scp",
+                         "winscp.exe"]
     },
     "SFTP": { 
         "process_name": ["sftp*.exe",
-                            "sftp"]
+                         "sftp"]
     },
     "xcopy": { 
         "process_name": ["xcopy.exe"]

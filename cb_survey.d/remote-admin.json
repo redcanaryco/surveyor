@@ -11,7 +11,7 @@
     },
     "RAdmin": { 
         "process_name": ["radmin3.exe",
-                            "famitrfc.exe"]
+                         "famitrfc.exe"]
     },
     "PCAnywhere Client": { 
         "process_name": ["awrem32.exe"]
@@ -21,21 +21,21 @@
     },
     "ShowMyPC": { 
         "process_name": ["smpcsetup.exe",
-                            "showmypc*.exe"]
+                         "showmypc*.exe"]
     },
     "TeamViewer Desktop": { 
         "process_name": ["teamviewer_desktop.exe"]
     },
     "TeamViewer Service": { 
         "process_name": ["teamviewer.exe",
-                            "teamviewer_service.exe"]
+                         "teamviewer_service.exe"]
     },
     "DameWare": { 
         "process_name": ["dwrcs.exe"]
     },
     "VNC": {
         "process_name": ["winvnc.exe", 
-                            "vncviewer.exe",
-                            "winvncsc.exe"]
+                         "vncviewer.exe",
+                         "winvncsc.exe"]
     }
 }
