@@ -1,0 +1,26 @@
+{
+    "CSVDE": { 
+        "process_name": ["csvde.exe"]
+    },
+    "dsadd": { 
+        "process_name": ["dsadd.exe"]
+    },
+    "dsget": { 
+        "process_name": ["dsget.exe"]
+    },
+    "dsmod": { 
+        "process_name": ["dsmod.exe"]
+    },
+    "dsquery": { 
+        "process_name": ["dsquery.exe"]
+    },
+    "LDIFDE": { 
+        "process_name": ["ldifde.exe"]
+    },
+    "ntdsutil": { 
+        "process_name": ["ntdsutil.exe"]
+    }
+}
+
+
+
