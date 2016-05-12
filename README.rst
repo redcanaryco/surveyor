@@ -21,6 +21,9 @@ Clone the repository from Github and install:
 Using
 -----
 
+Create and populate your cbapi credential file per the instructions found
+here: https://github.com/carbonblack/cbapi-python.
+
 Run using one of the test definitions:
 
     ./surveyor.py --deffile definitions/file-transfer.json
