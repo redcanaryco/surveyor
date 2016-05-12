@@ -9,13 +9,23 @@ summarizes results. This has many uses, but is used primarily to understand
 where certain applications or activities exist within an enterprise, who is
 using them and how.
 
+Contributing
+------------
+
+Join the community and share updates to survey definition files by forking this
+repository and sending a Pull Request with any definition updates or new
+definitions you've found useful. We'll do our best to adjudicate any differences 
+in opinions (sorry, you can't classify your coupon printer as wanted software :smile:)
+
 Installation
 ------------
 
 Clone the repository from Github and install:
 
     git clone https://github.com/redcanaryco/cb-response-surveyor.git
-    
+
+    cd cb-response-surveyor
+
     python setup.py develop
 
 Using
