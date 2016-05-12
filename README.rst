@@ -40,7 +40,12 @@ Run using one of the test definitions:
 
 Then open and review the default output file (survey.csv.
 
-You can also run using an entire directory of  definition files in one shot:
+You can also run using an entire directory of definition files in one shot:
 
     ./surveyor.py --defdir definitions
+
+If you're looking for instances of something specific and a Cb query suits you
+best, you can do that too:
+
+    ./surveyor.py --query 'process_name:explorer.exe username:joebob'
 
