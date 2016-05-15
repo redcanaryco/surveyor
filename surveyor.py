@@ -1,13 +1,20 @@
 #!/usr/bin/env python
 
-"""Identify processes named for items in a definition file. This can be used to
-generate simple, CSV-formatted lists of endpoints where given programs are
-executing.
+"""Given Cb Enterprise Response process search criteria, return a unique set
+of matches based on:
+
+- hostname
+- username
+- process path
+- process command-line
+
+Results are written to a CSV file. 
 
 Requires a valid cbapi-ng credential file containing a Cb Enterprise Response
 server URL and corresponding API token.
 
-Requires one or more JSON-formatted definition files. Examples provided.
+Requires one or more JSON-formatted definition files (examples provided) or a
+Cb Response query as input.
 """
 
 import argparse
@@ -40,8 +47,8 @@ def process_search(cb_conn, query, query_base=None):
     return results
 
 def nested_process_search(cb_conn, criteria, query_base=None):
-    """Perform a search for multiple criteria, returning only a unique set of
-    results.
+    """Perform Cb Response queries for one or more programs and return a 
+    unique set of results per program.
     """
     results = set()
 
