@@ -31,7 +31,8 @@
                          "teamviewer_service.exe"]
     },
     "DameWare": { 
-        "process_name": ["dwrcs.exe"]
+        "process_name": ["dwrcs.exe"],
+        "internal_name": ["DWRCST"]
     },
     "VNC": {
         "process_name": ["winvnc.exe", 

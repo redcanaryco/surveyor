@@ -63,6 +63,9 @@
     "Link Data Security A/S": { 
         "process_name": ["start.qz_"]
     },
+    "Qualys Agent": { 
+        "process_name": ["qualysagent.exe"]
+    },
     "Identity Finder": { 
         "process_name": ["idfendpoint.exe"]
     }
