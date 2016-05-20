@@ -77,6 +77,8 @@ def main():
                         help="Number of days to search.")
     parser.add_argument("--minutes", type=int, action="store",
                         help="Number of days to search.")
+    parser.add_argument("--profile", type=str, action="store",
+                        help="The credentials.response profile to use.")
 
     i = parser.add_mutually_exclusive_group(required=True)
     i.add_argument('--deffile', type=str, action="store", 
@@ -110,8 +112,11 @@ def main():
     output_file = file(output_filename, 'w')
     writer = csv.writer(output_file)
     writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
-
-    cb = CbEnterpriseResponseAPI()
+    
+    if args.profile:
+        cb = CbEnterpriseResponseAPI(profile=args.profile)
+    else:
+        cb = CbEnterpriseResponseAPI()
 
     if args.query:
         result_set = process_search(cb, args.query, query_base)
