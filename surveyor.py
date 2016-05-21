@@ -122,7 +122,9 @@ def main():
         result_set = process_search(cb, args.query, query_base)
 
         for r in result_set:
-            writer.writerow([r[0], r[1], r[2], r[3], args.query, 'query'])
+            row = [r[0], r[1], r[2], r[3], args.query, 'query']
+            row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+            writer.writerow(row)
     else:
         for definition_file in definition_files:
             print "Processing definition file: %s" % definition_file
@@ -139,7 +141,9 @@ def main():
                 result_set = nested_process_search(cb, criteria, query_base)
 
                 for r in result_set:
-                    writer.writerow([r[0], r[1], r[2], r[3], program, source])
+                    row = [r[0], r[1], r[2], r[3], program, source]
+                    row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+                    writer.writerow(row)
 
     output_file.close()
 
