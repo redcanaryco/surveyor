@@ -1,4 +1,9 @@
 {
+    "Filezilla": { 
+        "process_name": ["fzsftp.exe",
+                         "filezilla.exe",
+                         "fzputtygen.exe"]
+    },
     "FTP": { 
         "process_name": ["ftp*.exe",
                          "ftp"]
