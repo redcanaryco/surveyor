@@ -109,7 +109,7 @@ def main():
             if f.endswith(".json"):
                 definition_files.append(os.path.join(args.defdir, f))
         
-    output_file = file(output_filename, 'w')
+    output_file = file(output_filename, 'wb')
     writer = csv.writer(output_file)
     writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
     
