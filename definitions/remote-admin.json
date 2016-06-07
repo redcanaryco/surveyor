@@ -3,6 +3,21 @@
         "process_name": ["aa_v*.exe"],
         "domain": ["ammyy.com"]
     },
+    "GoToMyPC": { 
+        "process_name": ["g2comm.exe",
+                         "g2fileh.exe",
+                         "g2host.exe",
+                         "g2mainh.exe",
+                         "g2printh.exe",
+                         "g2svc.exe",
+                         "g2tray.exe",
+                         "gopcsrv.exe"]
+    },
+    "LogMeIn": { 
+        "process_name": ["lmiignition.exe",
+                         "lmiguardiansvc.exe",
+                         "logmein*.exe"]
+    },
     "Microsoft RDP": { 
         "process_name": ["termsrv.exe"]
     },
