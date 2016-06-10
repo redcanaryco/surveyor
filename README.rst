@@ -38,7 +38,7 @@ Run using one of the test definitions:
 
     ./surveyor.py --deffile definitions/file-transfer.json
 
-Then open and review the default output file (survey.csv.
+Then open and review the default output file (survey.csv).
 
 You can also run using an entire directory of definition files in one shot:
 
