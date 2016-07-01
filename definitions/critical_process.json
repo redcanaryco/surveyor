@@ -23,7 +23,7 @@
     },
     "wmic": {
         "process_name": ["wmic.exe"]
-    }
+    },
     "mshta": {
         "process_name": ["mshta.exe"]
     },
