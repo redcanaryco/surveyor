@@ -24,4 +24,13 @@
     "wmic": {
         "process_name": ["wmic.exe"]
     }
+    "mshta": {
+        "process_name": ["mshta.exe"]
+    },
+    "wscript": {
+        "process_name": ["wscript.exe"]
+    },
+    "cscript": {
+        "process_name": ["cscript.exe"]
+    }
 }
