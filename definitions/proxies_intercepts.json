@@ -1,0 +1,9 @@
+{
+    "fiddler": {
+        "process_name": ["fiddler.exe"],
+        "md5": ["0ef5a0eee165b7a8fa05a9e58b3946fd"]
+    },
+    "privoxy": {
+        "process_name": ["privoxy.exe"]
+    }
+}

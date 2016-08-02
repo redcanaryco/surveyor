@@ -1,0 +1,205 @@
+{
+    "Pipelist": {
+        "process_name": ["pipelist.exe"]
+    },
+    "psexec": {
+        "process_name": ["psexec.exe"],
+        "internal_name": ["PsExec"]
+    },
+    "AccessEnum": {
+        "process_name": ["AccessEnum.exe"]
+    },
+    "AdExplorer": {
+        "process_name": ["AdExplorer.exe"]
+    },
+    "AdInsight": {
+        "process_name": ["AdInsight.exe"]
+    },
+    "AdRestore": {
+        "process_name": ["AdRestore.exe"]
+    },
+    "Autologon": {
+        "process_name": ["Autologon.exe"]
+    },
+    "Autoruns": {
+        "process_name": ["Autoruns.exe"]
+    },
+    "BgInfo": {
+        "process_name": ["BgInfo.exe"]
+    },
+    "CacheSet": {
+        "process_name": ["CacheSet.exe"]
+    },
+    "ClockRes": {
+        "process_name": ["ClockRes.exe"]
+    },
+    "Contig": {
+        "process_name": ["Contig.exe"]
+    },
+    "Coreinfo": {
+        "process_name": ["Coreinfo.exe"]
+    },
+    "Ctrl2Cap": {
+        "process_name": ["Ctrl2Cap.exe"]
+    },
+    "DebugView": {
+        "process_name": ["DebugView.exe"]
+    },
+    "Disk2vhd": {
+        "process_name": ["Disk2vhd.exe"]
+    },
+    "DiskExt": {
+        "process_name": ["DiskExt.exe"]
+    },
+    "DiskMon": {
+        "process_name": ["DiskMon.exe"]
+    },
+    "DiskView": {
+        "process_name": ["DiskView.exe"]
+    },
+    "EFSDump": {
+        "process_name": ["EFSDump.exe"]
+    },
+    "FindLinks": {
+        "process_name": ["FindLinks.exe"]
+    },
+    "Handle": {
+        "process_name": ["Handle.exe"]
+    },
+    "Hex2dec": {
+        "process_name": ["Hex2dec.exe"]
+    },
+    "Junction": {
+        "process_name": ["Junction.exe"]
+    },
+    "LDMDump": {
+        "process_name": ["LDMDump.exe"]
+    },
+    "ListDLLs": {
+        "process_name": ["ListDLLs.exe"]
+    },
+    "LiveKd": {
+        "process_name": ["LiveKd.exe"]
+    },
+    "LoadOrder": {
+        "process_name": ["LoadOrder.exe"]
+    },
+    "LogonSessions": {
+        "process_name": ["LogonSessions.exe"]
+    },
+    "PortMon": {
+        "process_name": ["PortMon.exe"],
+        "internal_name": ["PortMon"]
+    },
+    "ProcDump": {
+        "process_name": ["ProcDump.exe"],
+        "internal_name": ["ProcDump"]
+    },
+    "Process Explorer": {
+        "process_name": ["procexp.exe"],
+        "internal_name": ["procexp"]
+    },
+    "PipeList": {
+        "process_name": ["PipeList.exe"]
+    },
+    "Process Monitor": {
+        "process_name": ["ProcMon.exe"]
+    },
+    "PsFile": {
+        "process_name": ["PsFile.exe"]
+    },
+    "PsGetSid": {
+        "process_name": ["PsGetSid.exe"]
+    },
+    "PsInfo": {
+        "process_name": ["PsInfo.exe"]
+    },
+    "PsPing": {
+        "process_name": ["PsPing.exe"]
+    },
+    "PsKill": {
+        "process_name": ["PsKill.exe"]
+    },
+    "PsList": {
+        "process_name": ["PsList.exe"]
+    },
+    "PsLoggedOn": {
+        "process_name": ["PsLoggedOn.exe"],
+        "internal_name": ["PsLoggedOn"]
+    },
+    "PsLogList": {
+        "process_name": ["PsLogList.exe"]
+    },
+    "PsPasswd": {
+        "process_name": ["PsPasswd.exe"],
+        "internal_name": ["PsPasswd"]
+    },
+    "PsService": {
+        "process_name": ["PsService.exe"]
+    },
+    "PsShutdown": {
+        "process_name": ["PsShutdown.exe"],
+        "internal_name": ["PsShutdown"]
+    },
+    "RAMMap": {
+        "process_name": ["RAMMap.exe"],
+        "internal_name": ["RAMMap"]
+    },
+    "PsSuspend": {
+        "process_name": ["PsSuspend.exe"]
+    },
+    "RegDelNull": {
+        "process_name": ["RegDelNull.exe"],
+        "internal_name": ["RegDelNull"]
+    },
+    "RegJump": {
+        "process_name": ["RegJump.exe"]
+    },
+    "SDelete": {
+        "process_name": ["SDelete.exe"],
+        "internal_name": ["SDelete"]
+    },
+    "ShareEnum": {
+        "process_name": ["ShareEnum.exe"],
+        "internal_name": ["ShareEnum"]
+    },
+    "PsList": {
+        "process_name": ["PsList.exe"]
+    },
+    "ShellRunas": {
+        "process_name": ["ShellRunas.exe"],
+        "internal_name": ["ShellRunas"]
+    },
+    "Sigcheck": {
+        "process_name": ["Sigcheck.exe"]
+    },
+    "Streams": {
+        "process_name": ["Streams.exe"],
+        "internal_name": ["Streams"]
+    },
+    "Strings": {
+        "process_name": ["Strings.exe"]
+    },
+    "Sysmon": {
+        "process_name": ["Sysmon.exe"]
+    },
+    "TCPView": {
+        "process_name": ["TCPView.exe"],
+        "internal_name": ["TCPView"]
+    },
+    "WhoIs": {
+        "process_name": ["WhoIs.exe"]
+    },
+    "WinObj": {
+        "process_name": ["WinObj.exe"]
+    },
+    "ZoomIt": {
+        "process_name": ["ZoomIt.exe"]
+    },
+    "Registry Usage": {
+        "process_name": ["ru.exe"]
+    },
+    "Desktops": {
+        "process_name": ["Desktops.exe"]
+    }
+}

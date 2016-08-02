@@ -1,0 +1,30 @@
+{
+    "keygen": {
+        "process_name": ["keygen.exe"],
+        "md5": ["89626bc7f42740911cd6259f46bb7962"]
+    },
+    "Autokms": {
+        "process_name": ["autokms.exe"],
+        "md5": ["83ac88e59aed154d19915169adf0faad"]
+    },
+    "PST Password": {
+        "process_name": ["Pstpassword1.exe"],
+        "md5": ["209393e48c170c05b1f57be82398f8b6"]
+    },
+    "John": {
+        "process_name": ["john.exe"],
+        "md5": ["7693e333480c0f7c596bc7f342809d3a"]
+    },
+    "L0phtcrack": {
+        "process_name": ["lc.exe"],
+        "md5": ["bd342dd6c8556475eb1f2a8fe6b2ff70"]
+    },
+    "premium crack": {
+        "process_name": ["premium crack.exe"],
+        "md5": ["39da9e95cbf2b7d00577fa63faabf1ff"]
+    },
+    "Xf-mccs6": {
+        "process_name": ["Xf-mccs6.exe"],
+        "md5": ["1af76ef8857935eb1d8e46dc9cfe3729"]
+    }
+}
