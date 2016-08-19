@@ -6,7 +6,6 @@
         "process_name": ["mousejiggle.exe"]
     },
     "Mouse Mover": {
-        "process_name": ["move mouse.exe"],
-        "md5": ["59ac36b66efce4fdaa59a60bd9dfad96"]
+        "process_name": ["move mouse.exe"]
     }
 }
