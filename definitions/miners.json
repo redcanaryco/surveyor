@@ -18,21 +18,17 @@
         "process_name": ["btc.exe"]
     },
     "M6": {
-        "process_name": ["m6.exe"],
-        "md5": ["b2459ad507a7357f3581b2cc15079b9d"]
+        "process_name": ["m6.exe"]
     },
     "Auroracoin": {
-        "process_name": ["Auroracoin-qt-2016.04.1.0.exe"],
-        "md5": ["9cbaeb538b36b9f548a50f571ad2b074"]
+        "process_name": ["Auroracoin-qt-2016.04.1.0.exe"]
     },
     "miner": {
         "process_name": ["miner.exe"],
-        "process_name": ["miner.py"],
-        "md5": ["C99AB9F37FF2367D816990CFDB094C64"]
+        "process_name": ["miner.py"]
     },
     "Win64mrocli3": {
-        "process_name": ["Win64mrocli3.exe"],
-        "md5": ["37F7B1E80689B92D18FCB9FAF81547A1"]
+        "process_name": ["Win64mrocli3.exe"]
     },
     "easyminer": {
         "process_name": ["easyminer.exe"]
