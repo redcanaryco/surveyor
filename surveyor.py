@@ -54,15 +54,14 @@ def nested_process_search(cb_conn, criteria, query_base=None):
 
     try:
         for search_field,terms in criteria.iteritems():
-            for term in terms:
-                query = '%s:%s' % (search_field, term)
-                query += query_base
+            query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+            query += query_base
 
-                for proc in cb_conn.select(Process).where(query):
-                    results.add((proc.hostname.lower(),
-                                proc.username.lower(), 
-                                proc.path,
-                                proc.cmdline))
+            for proc in cb_conn.select(Process).where(query):
+                results.add((proc.hostname.lower(),
+                            proc.username.lower(), 
+                            proc.path,
+                            proc.cmdline))
     except KeyboardInterrupt:
         print "Caught CTRL-C. Returning what we have . . ."
 
