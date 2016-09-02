@@ -1,0 +1,27 @@
+{
+    "Wireshark": {
+        "process_name": ["wireshark.exe"]
+    },
+    "Winpcap": {
+        "process_name": ["winpcap.exe"]
+    },
+    "tcpdump": {
+        "process_name": ["tcpdump"]
+    },
+    "windump": {
+        "process_name": ["windump.exe"]
+    },
+    "tshark": {
+        "process_name": ["tshark.exe"],
+        "process_name": ["tshark"]
+    },
+    "Microsoft Network Monitor": {
+        "process_name": ["netmon.exe"]
+    },
+    "Microsoft Network Capture": {
+        "process_name": ["netcap.exe"]
+    },
+    "Dumpcap": {
+        "process_name": ["dumpcap.exe"]
+    }
+}

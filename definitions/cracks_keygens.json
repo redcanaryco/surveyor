@@ -1,0 +1,23 @@
+{
+    "keygen": {
+        "process_name": ["keygen.exe"]
+    },
+    "Autokms": {
+        "process_name": ["autokms.exe"]
+    },
+    "PST Password": {
+        "process_name": ["Pstpassword1.exe"]
+    },
+    "John": {
+        "process_name": ["john.exe"]
+    },
+    "L0phtcrack": {
+        "process_name": ["lc.exe"]
+    },
+    "premium crack": {
+        "process_name": ["premium crack.exe"]
+    },
+    "Xf-mccs6": {
+        "process_name": ["Xf-mccs6.exe"]
+    }
+}

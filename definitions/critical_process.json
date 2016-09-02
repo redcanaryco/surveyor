@@ -1,0 +1,36 @@
+{
+    "Powershell": {
+        "process_name": ["powershell.exe"]
+    },
+    "PSExec": {
+        "process_name": ["psexec*.exe",
+                         "psexesvc.exe"]
+    },
+    "at": {
+        "process_name": ["at.exe"]
+    },
+    "Scheduled Tasks": {
+        "process_name": ["schtasks.exe"]
+    },
+    "net": {
+        "process_name": ["net.exe"]
+    },
+    "Vssadmin": {
+        "process_name": ["vssadmin.exe"]
+    },
+    "Utilman": {
+        "process_name": ["utilman.exe"]
+    },
+    "wmic": {
+        "process_name": ["wmic.exe"]
+    },
+    "mshta": {
+        "process_name": ["mshta.exe"]
+    },
+    "wscript": {
+        "process_name": ["wscript.exe"]
+    },
+    "cscript": {
+        "process_name": ["cscript.exe"]
+    }
+}

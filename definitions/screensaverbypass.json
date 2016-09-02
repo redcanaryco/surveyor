@@ -1,0 +1,11 @@
+{
+    "Caffeine": {
+        "process_name": ["caffeine.exe"]
+    },
+    "Mouse Jiggle": {
+        "process_name": ["mousejiggle.exe"]
+    },
+    "Mouse Mover": {
+        "process_name": ["move mouse.exe"]
+    }
+}

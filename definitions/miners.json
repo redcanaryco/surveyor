@@ -1,0 +1,48 @@
+{
+    "BFG Miners": {
+        "process_name": ["bfgminer.exe"]
+    },
+    "minerd": {
+        "process_name": ["minerd.exe"]
+    },
+    "cgminer": {
+        "process_name": ["cgminer.exe"]
+    },
+    "rpcminer-cpu": {
+        "process_name": ["rpcminer-cpu.exe"]
+    },
+    "bitcoin-miner": {
+        "process_name": ["bitcoin-miner.exe"]
+    },
+    "btc": {
+        "process_name": ["btc.exe"]
+    },
+    "M6": {
+        "process_name": ["m6.exe"]
+    },
+    "Auroracoin": {
+        "process_name": ["Auroracoin-qt-2016.04.1.0.exe"]
+    },
+    "miner": {
+        "process_name": ["miner.exe"],
+        "process_name": ["miner.py"]
+    },
+    "Win64mrocli3": {
+        "process_name": ["Win64mrocli3.exe"]
+    },
+    "easyminer": {
+        "process_name": ["easyminer.exe"]
+    },
+    "50miner": {
+        "process_name": ["50miner.exe"]
+    },
+    "Cuda Miner": {
+        "process_name": ["cudaminer.exe"]
+    },
+    "UFASoft": {
+        "process_name": ["coin-miner.exe"]
+    },
+    "Bit Moose": {
+        "process_name": ["bitmoose-gui.exe"]
+    }
+}

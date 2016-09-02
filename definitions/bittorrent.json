@@ -1,0 +1,8 @@
+{
+    "utorrent": {
+        "process_name": ["utorrent.exe"]
+    },
+    "Torrent": {
+        "process_name": ["torrent*.exe"]
+    }
+}

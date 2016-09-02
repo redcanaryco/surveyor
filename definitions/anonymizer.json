@@ -1,0 +1,8 @@
+{
+    "Tor": {
+        "process_name": ["tor.exe"]
+    },
+    "I2P": {
+        "process_name": ["i2p.exe"]
+    }
+}
