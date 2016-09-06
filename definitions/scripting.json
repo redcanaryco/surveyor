@@ -1,4 +1,7 @@
 {
+    "AutoIt": { 
+        "process_name": ["autoit.exe"]
+    },
     "Powershell": { 
         "process_name": ["powershell.exe"]
     },
