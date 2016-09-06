@@ -10,7 +10,7 @@ def read(fname):
 setup(
     name='cb-response-surveyor',
     author='Keith McCammon',
-    author_email='keith@redcanary.co',
+    author_email='keith@redcanary.com',
     url='https://github.com/redcanaryco/cb-response-surveyor',
     license='MIT',
     packages=find_packages(),
