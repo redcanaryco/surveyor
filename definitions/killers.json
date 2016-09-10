@@ -1,0 +1,13 @@
+{
+    "Process manipulation": {
+        "process_name": ["kill*",
+                         "pkill",
+                         "pskill.exe",
+                         "tskill.exe"],
+        "cmdline": ["stop-process",
+                    "terminate"]
+    },
+    "Service manipulation": {
+        "cmdline": ["net stop"]
+    }
+}
