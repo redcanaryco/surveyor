@@ -8,6 +8,9 @@
         "process_name": ["ftp*.exe",
                          "ftp"]
     },
+    "pushd": { 
+        "process_name": ["pushd.exe"]
+    },
     "robocopy": { 
         "process_name": ["robocopy.exe"]
     },
