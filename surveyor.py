@@ -27,6 +27,14 @@ from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
 
+def err(msg):
+    """Format msg as an ERROR and print to stderr.
+    """
+    msg = 'ERROR: %s\n' % msg
+    sys.stderr.write(msg)
+    return
+    
+
 def process_search(cb_conn, query, query_base=None):
     """Perform a single Cb Response query and return a unique set of
     results.
@@ -104,11 +112,13 @@ def main():
     definition_files = []
     if args.deffile:
         if not os.path.exists(args.deffile):
-            sys.exit('deffile does not exist')
+            err('deffile does not exist')
+            sys.exit(1)
         definition_files.append(args.deffile)
     elif args.defdir:
         if not os.path.exists(args.defdir):
-            sys.exit('defdir does not exist')
+            err('defdir does not exist')
+            sys.exit(1)
         for root, dirs, files in os.walk(args.defdir):
             for filename in files:
                 if filename.endswith('.json'):
