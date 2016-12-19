@@ -37,6 +37,7 @@ def process_search(cb_conn, query, query_base=None):
 
     try:
         for proc in cb_conn.select(Process).where(query):
+            #TODO print '%s,%s,%s' % (proc.hostname.lower(), proc.path, proc.process_md5) 
             results.add((proc.hostname.lower(),
                         proc.username.lower(), 
                         proc.path,
@@ -102,11 +103,16 @@ def main():
 
     definition_files = []
     if args.deffile:
+        if not os.path.exists(args.deffile):
+            sys.exit('deffile does not exist')
         definition_files.append(args.deffile)
     elif args.defdir:
-        for f in os.listdir(args.defdir):
-            if f.endswith(".json"):
-                definition_files.append(os.path.join(args.defdir, f))
+        if not os.path.exists(args.defdir):
+            sys.exit('defdir does not exist')
+        for root, dirs, files in os.walk(args.defdir):
+            for filename in files:
+                if filename.endswith('.json'):
+                    definition_files.append(os.path.join(root, filename))
         
     output_file = file(output_filename, 'wb')
     writer = csv.writer(output_file)
