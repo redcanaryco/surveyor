@@ -1,0 +1,23 @@
+{
+    "AT": {
+        "process_name": ["at.exe"]
+    },
+    "Task Scheduler": {
+        "process_name": ["schtasks.exe"]
+    },
+    "net": {
+        "process_name": ["net.exe"]
+    },
+    "utilman": {
+        "process_name": ["utilman.exe"]
+    },
+    "mshta": {
+        "process_name": ["mshta.exe"]
+    },
+    "vssadmin": {
+        "process_name": ["vssadmin.exe"]
+    },
+    "wmic": {
+        "process_name": ["wmic.exe"]
+    }
+}
