@@ -180,9 +180,8 @@ def main():
             basename = os.path.basename(definition_file)
             source = os.path.splitext(basename)[0]
 
-            fh = open(definition_file, 'rb')
-            programs = json.load(fh)
-            fh.close()
+            with open(definition_file, 'r') as fh:
+                programs = json.load(fh)
 
             for program,criteria in programs.iteritems():
                 log("--> %s" % program)
