@@ -38,6 +38,11 @@
     },
     "Viivo": {
         "process_name": ["viivo.exe"]
+    },
+    "OneDrive": {
+        "process_name": ["onedrive.exe"]
+    },
+    "Mega": {
+        "process_name": ["megasync.exe"]
     }
 }
-        

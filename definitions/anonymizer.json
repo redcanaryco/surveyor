@@ -1,8 +1,13 @@
 {
     "Tor": {
-        "process_name": ["tor.exe"]
+        "process_name": ["tor.exe"],
+        "product_name":  ["Tor Browser"]
     },
     "I2P": {
         "process_name": ["i2p.exe"]
+    },
+    "TunnelBear": {
+        "process_name": ["tbear.exe",
+                         "tbear.maintenance.exe"]
     }
 }

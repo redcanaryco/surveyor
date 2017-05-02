@@ -1,0 +1,41 @@
+{
+    "AT": {
+        "process_name": ["at.exe"]
+    },
+    "Task Scheduler": {
+        "process_name": ["schtasks.exe"]
+    },
+    "net": {
+        "process_name": ["net.exe"]
+    },
+    "utilman": {
+        "process_name": ["utilman.exe"]
+    },
+    "mshta": {
+        "process_name": ["mshta.exe"]
+    },
+    "vssadmin": {
+        "process_name": ["vssadmin.exe"]
+    },
+    "wmic": {
+        "process_name": ["wmic.exe"]
+    },
+    "whoami": {
+        "process_name": ["whoami.exe"]
+    },
+    "mmc": {
+        "process_name": ["mmc.exe"]
+    },
+    "systeminfo": {
+        "process_name": ["systeminfo.exe"]
+    },
+    "installutil": {
+        "process_name": ["installutil.exe"]
+    },
+    "rundll32": {
+        "process_name": ["rundll32.exe"]
+    },
+    "Regsvcs": {
+        "process_name": ["regsvcs.exe"]
+    }
+}

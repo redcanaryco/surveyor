@@ -1,72 +1,122 @@
 {
-    "Outlier Security": { 
+    "Outlier Security": {
         "process_name": ["outliercollectorservice.exe"]
     },
-    "WatchGuard Technologies": { 
+    "WatchGuard Technologies": {
         "process_name": ["wagsrvc.exe"]
     },
-    "RSA ECAT": { 
+    "RSA ECAT": {
         "process_name": ["ecatservice.exe"]
     },
-    "Lumension": { 
+    "Lumension": {
         "process_name": ["notificationmanager.exe"]
     },
-    "Druva Technologies": { 
+    "Druva Technologies": {
         "process_name": ["insyncagent.exe"]
     },
-    "BeyondTrust Software Inc": { 
+    "BeyondTrust Software Inc": {
         "process_name": ["beyondtrust.sessionmonitoring.service.exe"]
     },
-    "Cylance, Inc.": { 
-        "process_name": ["cylancesvc.exe"]
+    "Cylance, Inc.": {
+        "process_name": ["cylancesvc.exe",
+                         "cyupdate.exe"]
     },
-    "Fortinet": { 
+    "Fortinet": {
         "process_name": ["fortiscand.exe",
                          "fcwscd7.exe"]
     },
-    "Mandiant Corporation": { 
+    "Mandiant Corporation": {
         "process_name": ["ctfprocacv.exe"]
     },
-    "RaonSecure Co., Ltd.": { 
+    "RaonSecure Co., Ltd.": {
         "process_name": ["cksetup32.exe"]
     },
-    "SafeNet, Inc.": { 
+    "SafeNet, Inc.": {
         "process_name": ["sacmonitor.exe"]
     },
-    "X-Ways Forensics": { 
+    "X-Ways Forensics": {
         "process_name": ["xwforensics64.exe"]
     },
-    "SophosWebIntelligence": { 
+    "SophosWebIntelligence": {
         "process_name": ["SophosWebIntelligence"]
     },
-    "SoftForum CO., LTD.": { 
+    "Sophos AV": {
+        "process_name": ["savprogress.exe",
+                         "savmain.exe",
+                         "wscclient.exe"],
+        "company_name": ["Sophos Limited"]
+    },
+    "SoftForum CO., LTD.": {
         "process_name": ["anysign4pc.exe"]
     },
-    "nProtect Online Security V1.0": { 
+    "nProtect Online Security V1.0": {
         "process_name": ["nos_setup_woori.exe"]
     },
-    "Avira Operations GmbH & Co. KG": { 
+    "Avira Operations GmbH & Co. KG": {
         "process_name": ["avguard.exe"]
     },
-    "AVAST Software a.s.": { 
+    "AVAST Software a.s.": {
         "process_name": ["avastsvc.exe"]
     },
-    "SpectorSoft": { 
+    "SpectorSoft": {
         "digsig_publisher": ["SpectorSoft"]
     },
-    "Trend Micro, Inc.": { 
+    "Trend Micro, Inc.": {
         "process_name": ["ntrtscan.exe"]
     },
-    "DigitalPersona, Inc.": { 
+    "DigitalPersona, Inc.": {
         "process_name": ["dphostw.exe"]
     },
-    "Link Data Security A/S": { 
+    "Link Data Security A/S": {
         "process_name": ["start.qz_"]
     },
-    "Qualys Agent": { 
+    "Qualys Agent": {
         "process_name": ["qualysagent.exe"]
     },
-    "Identity Finder": { 
+    "McAfee": {
+        "process_name": ["scan64.exe",
+                        "mfeservicemgr.exe",
+                        "entvutil.exe"]
+    },
+    "Symantec Endpoint Protection": {
+        "process_name": ["SMC.exe",
+                        "nis.exe",
+                        "SMCgui.exe"]
+    },
+    "Identity Finder": {
         "process_name": ["idfendpoint.exe"]
+    },
+    "Kaspersky": {
+        "process_name": ["avp.exe"]
+    },
+    "Webroot": {
+        "process_name": ["wrsa.exe"]
+    },
+    "Microsoft": {
+        "process_name": ["MsMpEngine.exe"]
+    },
+    "Comodo": {
+        "process_name": ["cmdagent.exe"]
+    },
+    "AVG": {
+        "process_name": ["avgui.exe"]
+    },
+    "ESET": {
+        "process_name": ["egui.exe"]
+    },
+    "MalwareBytes": {
+        "process_name": ["mbamservice.exe"]
+    },
+    "Carbon Black Protect": {
+        "process_name": ["parity.exe"]
+    },
+    "Avecto": {
+        "digsig_publisher": ["avecto"],
+        "process_name": ["privilegeguardservice.exe",
+                        "defendpointservice.exe"]
+    },
+    "FSecure": {
+        "process_name": ["FSSM32.exe",
+                         "fspex.exe"]
     }
 }
