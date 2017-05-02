@@ -143,7 +143,10 @@ def main():
                 if filename.endswith('.json'):
                     definition_files.append(os.path.join(root, filename))
         
-    output_file = open(output_filename, 'wb')
+    if sys.version_info.major >= 3:
+        output_file = open(output_filename, 'w', newline='')
+    else:
+        output_file = open(output_filename, 'wb')
     writer = csv.writer(output_file)
     writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
     
