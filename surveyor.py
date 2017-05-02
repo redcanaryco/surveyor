@@ -33,6 +33,14 @@ def err(msg):
     msg = 'ERROR: %s\n' % msg
     sys.stderr.write(msg)
     return
+
+
+def log(msg):
+    """Format msg and print to stdout.
+    """
+    msg = '%s\n' % msg
+    sys.stdout.write(msg)
+    return
     
 
 def process_search(cb_conn, query, query_base=None):
@@ -50,7 +58,7 @@ def process_search(cb_conn, query, query_base=None):
                         proc.path,
                         proc.cmdline))
     except KeyboardInterrupt:
-        print "Caught CTRL-C. Returning what we have . . ."
+        log("Caught CTRL-C. Returning what we have . . .\n")
 
     return results
 
@@ -71,7 +79,7 @@ def nested_process_search(cb_conn, criteria, query_base=None):
                             proc.path,
                             proc.cmdline))
     except KeyboardInterrupt:
-        print "Caught CTRL-C. Returning what we have . . ."
+        log("Caught CTRL-C. Returning what we have . . .")
 
     return results
 
@@ -165,7 +173,7 @@ def main():
                     writer.writerow(row)
     else:
         for definition_file in definition_files:
-            print "Processing definition file: %s" % definition_file
+            log("Processing definition file: %s" % definition_file)
             basename = os.path.basename(definition_file)
             source = os.path.splitext(basename)[0]
 
@@ -174,7 +182,7 @@ def main():
             fh.close()
 
             for program,criteria in programs.iteritems():
-                print "--> %s" % program
+                log("--> %s" % program)
 
                 result_set = nested_process_search(cb, criteria, query_base)
 
