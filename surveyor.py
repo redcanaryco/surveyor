@@ -26,6 +26,11 @@ import sys
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
+if sys.version_info.major >= 3:
+    _python3 = True
+else:
+    _python3 = False
+
 
 def err(msg):
     """Format msg as an ERROR and print to stderr.
@@ -41,7 +46,7 @@ def log(msg):
     msg = '%s\n' % msg
     sys.stdout.write(msg)
     return
-    
+
 
 def process_search(cb_conn, query, query_base=None):
     """Perform a single Cb Response query and return a unique set of
@@ -62,6 +67,7 @@ def process_search(cb_conn, query, query_base=None):
 
     return results
 
+
 def nested_process_search(cb_conn, criteria, query_base=None):
     """Perform Cb Response queries for one or more programs and return a 
     unique set of results per program.
@@ -69,7 +75,7 @@ def nested_process_search(cb_conn, criteria, query_base=None):
     results = set()
 
     try:
-        for search_field,terms in criteria.iteritems():
+        for search_field,terms in criteria.items():
             query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
             query += query_base
 
@@ -143,7 +149,7 @@ def main():
                 if filename.endswith('.json'):
                     definition_files.append(os.path.join(root, filename))
         
-    if sys.version_info.major >= 3:
+    if _python3:
         output_file = open(output_filename, 'w', newline='')
     else:
         output_file = open(output_filename, 'wb')
@@ -183,7 +189,7 @@ def main():
             with open(definition_file, 'r') as fh:
                 programs = json.load(fh)
 
-            for program,criteria in programs.iteritems():
+            for program,criteria in programs.items():
                 log("--> %s" % program)
 
                 result_set = nested_process_search(cb, criteria, query_base)
