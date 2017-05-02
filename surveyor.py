@@ -45,7 +45,6 @@ def process_search(cb_conn, query, query_base=None):
 
     try:
         for proc in cb_conn.select(Process).where(query):
-            #TODO print '%s,%s,%s' % (proc.hostname.lower(), proc.path, proc.process_md5) 
             results.add((proc.hostname.lower(),
                         proc.username.lower(), 
                         proc.path,
@@ -81,13 +80,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", type=str, action="store", 
                         help="Output filename prefix.")
+    parser.add_argument("--profile", type=str, action="store",
+                        help="The credentials.response profile to use.")
+
+    # Time boundaries for the survey
     parser.add_argument("--days", type=int, action="store",
                         help="Number of days to search.")
     parser.add_argument("--minutes", type=int, action="store",
                         help="Number of days to search.")
-    parser.add_argument("--profile", type=str, action="store",
-                        help="The credentials.response profile to use.")
 
+    # Survey criteria
     i = parser.add_mutually_exclusive_group(required=True)
     i.add_argument('--deffile', type=str, action="store", 
                         help="Definition file to process (must end in .json).")
@@ -95,8 +97,17 @@ def main():
                         help="Directory containing multiple definition files.")
     i.add_argument('--query', type=str, action="store", 
                         help="A single Cb query to execute.")
+    i.add_argument('--iocfile', type=str, action="store", 
+                        help="IOC file to process. One IOC per line. REQUIRES --ioctype")
+
+    # IOC survey criteria
+    parser.add_argument('--ioctype', type=str, action="store", 
+                        help="One of: ipaddr, domain, md5")
 
     args = parser.parse_args()
+
+    if (args.iocfile is not None and args.ioctype is None):
+        parser.error('--iocfile requires --ioctype')
 
     if args.prefix:
         output_filename = '%s-survey.csv' % args.prefix
@@ -140,6 +151,18 @@ def main():
             row = [r[0], r[1], r[2], r[3], args.query, 'query']
             row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
             writer.writerow(row)
+    elif args.iocfile:
+        with open(args.iocfile) as iocfile:
+            data = iocfile.readlines()
+            for ioc in data:
+                ioc = ioc.strip()
+                query = '%s:%s' % (args.ioctype, ioc)
+                result_set = process_search(cb, query, query_base)
+
+                for r in result_set:
+                    row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
+                    row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+                    writer.writerow(row)
     else:
         for definition_file in definition_files:
             print "Processing definition file: %s" % definition_file
