@@ -143,7 +143,7 @@ def main():
                 if filename.endswith('.json'):
                     definition_files.append(os.path.join(root, filename))
         
-    output_file = file(output_filename, 'wb')
+    output_file = open(output_filename, 'wb')
     writer = csv.writer(output_file)
     writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
     
@@ -177,7 +177,7 @@ def main():
             basename = os.path.basename(definition_file)
             source = os.path.splitext(basename)[0]
 
-            fh = file(definition_file, 'rb')
+            fh = open(definition_file, 'rb')
             programs = json.load(fh)
             fh.close()
 
