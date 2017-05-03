@@ -166,7 +166,8 @@ def main():
 
         for r in result_set:
             row = [r[0], r[1], r[2], r[3], args.query, 'query']
-            row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+            if _python3 == False:
+                row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
             writer.writerow(row)
     elif args.iocfile:
         with open(args.iocfile) as iocfile:
@@ -178,7 +179,8 @@ def main():
 
                 for r in result_set:
                     row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
-                    row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+                    if _python3 == False:
+                        row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
     else:
         for definition_file in definition_files:
@@ -196,7 +198,8 @@ def main():
 
                 for r in result_set:
                     row = [r[0], r[1], r[2], r[3], program, source]
-                    row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
+                    if _python3 == False:
+                        row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
 
     output_file.close()
