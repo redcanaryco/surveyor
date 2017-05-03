@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Given Cb Enterprise Response process search criteria, return a unique set
+"""Given Carbon Black (Cb) Response process search criteria, return a unique set
 of matches based on:
 
 - hostname
@@ -10,7 +10,7 @@ of matches based on:
 
 Results are written to a CSV file. 
 
-Requires a valid cbapi-ng credential file containing a Cb Enterprise Response
+Requires a valid cbapi credential file containing a Cb Response
 server URL and corresponding API token.
 
 Requires one or more JSON-formatted definition files (examples provided) or a
