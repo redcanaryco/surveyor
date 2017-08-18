@@ -8,7 +8,7 @@ of matches based on:
 - process path
 - process command-line
 
-Results are written to a CSV file. 
+Results are written to a CSV file.
 
 Requires a valid cbapi credential file containing a Cb Response
 server URL and corresponding API token.
@@ -58,9 +58,13 @@ def process_search(cb_conn, query, query_base=None):
 
     try:
         for proc in cb_conn.select(Process).where(query):
-            results.add((proc.hostname.lower(),
-                        proc.username.lower(), 
+            results.add((proc.process_md5,
+                        proc.hostname.lower(),
+                        proc.username.lower(),
                         proc.path,
+                        proc.process_pid,
+                        proc.parent_name,
+                        proc.parent_pid,
                         proc.cmdline))
     except KeyboardInterrupt:
         log("Caught CTRL-C. Returning what we have . . .\n")
@@ -69,7 +73,7 @@ def process_search(cb_conn, query, query_base=None):
 
 
 def nested_process_search(cb_conn, criteria, query_base=None):
-    """Perform Cb Response queries for one or more programs and return a 
+    """Perform Cb Response queries for one or more programs and return a
     unique set of results per program.
     """
     results = set()
@@ -80,9 +84,13 @@ def nested_process_search(cb_conn, criteria, query_base=None):
             query += query_base
 
             for proc in cb_conn.select(Process).where(query):
-                results.add((proc.hostname.lower(),
-                            proc.username.lower(), 
+                results.add((proc.process_md5,
+                            proc.hostname.lower(),
+                            proc.username.lower(),
                             proc.path,
+                            proc.process_pid,
+                            proc.parent_name,
+                            proc.parent_pid,
                             proc.cmdline))
     except KeyboardInterrupt:
         log("Caught CTRL-C. Returning what we have . . .")
@@ -92,7 +100,7 @@ def nested_process_search(cb_conn, criteria, query_base=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix", type=str, action="store", 
+    parser.add_argument("--prefix", type=str, action="store",
                         help="Output filename prefix.")
     parser.add_argument("--profile", type=str, action="store",
                         help="The credentials.response profile to use.")
@@ -105,17 +113,17 @@ def main():
 
     # Survey criteria
     i = parser.add_mutually_exclusive_group(required=True)
-    i.add_argument('--deffile', type=str, action="store", 
+    i.add_argument('--deffile', type=str, action="store",
                         help="Definition file to process (must end in .json).")
-    i.add_argument('--defdir', type=str, action="store", 
+    i.add_argument('--defdir', type=str, action="store",
                         help="Directory containing multiple definition files.")
-    i.add_argument('--query', type=str, action="store", 
+    i.add_argument('--query', type=str, action="store",
                         help="A single Cb query to execute.")
-    i.add_argument('--iocfile', type=str, action="store", 
+    i.add_argument('--iocfile', type=str, action="store",
                         help="IOC file to process. One IOC per line. REQUIRES --ioctype")
 
     # IOC survey criteria
-    parser.add_argument('--ioctype', type=str, action="store", 
+    parser.add_argument('--ioctype', type=str, action="store",
                         help="One of: ipaddr, domain, md5")
 
     args = parser.parse_args()
@@ -126,7 +134,7 @@ def main():
     if args.prefix:
         output_filename = '%s-survey.csv' % args.prefix
     else:
-        output_filename = 'survey.csv' 
+        output_filename = 'survey.csv'
 
     query_base = ''
     if args.days:
@@ -148,14 +156,15 @@ def main():
             for filename in files:
                 if filename.endswith('.json'):
                     definition_files.append(os.path.join(root, filename))
-        
+
     if _python3:
         output_file = open(output_filename, 'w', newline='')
     else:
         output_file = open(output_filename, 'wb')
     writer = csv.writer(output_file)
-    writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
-    
+    writer.writerow(["md5","endpoint","username","process_path","process_pid", \
+    "parent_name","parent_pid","cmdline","program","source"])
+
     if args.profile:
         cb = CbEnterpriseResponseAPI(profile=args.profile)
     else:
@@ -165,7 +174,8 @@ def main():
         result_set = process_search(cb, args.query, query_base)
 
         for r in result_set:
-            row = [r[0], r[1], r[2], r[3], args.query, 'query']
+            row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
+                args.query, 'query']
             if _python3 == False:
                 row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
             writer.writerow(row)
