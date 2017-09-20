@@ -58,7 +58,8 @@ def process_search(cb_conn, query, query_base=None):
 
     try:
         for proc in cb_conn.select(Process).where(query):
-            results.add((proc.process_md5,
+            results.add((proc.start,
+                        proc.process_md5,
                         proc.hostname.lower(),
                         proc.username.lower(),
                         proc.path,
@@ -84,7 +85,8 @@ def nested_process_search(cb_conn, criteria, query_base=None):
             query += query_base
 
             for proc in cb_conn.select(Process).where(query):
-                results.add((proc.process_md5,
+                results.add((proc.start,
+                            proc.process_md5,
                             proc.hostname.lower(),
                             proc.username.lower(),
                             proc.path,
@@ -162,8 +164,8 @@ def main():
     else:
         output_file = open(output_filename, 'wb')
     writer = csv.writer(output_file)
-    writer.writerow(["md5","endpoint","username","process_path","process_pid", \
-    "parent_name","parent_pid","cmdline","program","source"])
+    writer.writerow(["start_time","md5","endpoint","username","process_path", \
+        "process_pid", "parent_name","parent_pid","cmdline","program","source"])
 
     if args.profile:
         cb = CbEnterpriseResponseAPI(profile=args.profile)
@@ -174,7 +176,7 @@ def main():
         result_set = process_search(cb, args.query, query_base)
 
         for r in result_set:
-            row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
+            row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
                 args.query, 'query']
             if _python3 == False:
                 row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
@@ -188,7 +190,8 @@ def main():
                 result_set = process_search(cb, query, query_base)
 
                 for r in result_set:
-                    row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
+                    row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
+                    ioc, 'ioc']
                     if _python3 == False:
                         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
@@ -207,7 +210,8 @@ def main():
                 result_set = nested_process_search(cb, criteria, query_base)
 
                 for r in result_set:
-                    row = [r[0], r[1], r[2], r[3], program, source]
+                    row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
+                    program, source]
                     if _python3 == False:
                         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
