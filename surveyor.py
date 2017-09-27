@@ -48,7 +48,7 @@ def log(msg):
     return
 
 
-def process_search(cb_conn, query, query_base=None, verbose=0):
+def process_search(cb_conn, query, query_base=None, verbose=0, quiet=0):
     """Perform a single Cb Response query and return a unique set of
     results.
     """
@@ -68,6 +68,11 @@ def process_search(cb_conn, query, query_base=None, verbose=0):
                             proc.parent_name,
                             proc.parent_pid,
                             proc.cmdline))
+        elif quiet:
+            for proc in cb_conn.select(Process).where(query):
+                results.add((proc.hostname.lower(),
+                            proc.username.lower(),
+                            proc.path))
         else:
             for proc in cb_conn.select(Process).where(query):
                 results.add((proc.hostname.lower(),
@@ -80,7 +85,8 @@ def process_search(cb_conn, query, query_base=None, verbose=0):
     return results
 
 
-def nested_process_search(cb_conn, criteria, query_base=None, verbose=0):
+def nested_process_search(cb_conn, criteria, query_base=None,
+                          verbose=0, quiet=0):
     """Perform Cb Response queries for one or more programs and return a
     unique set of results per program.
     """
@@ -101,6 +107,11 @@ def nested_process_search(cb_conn, criteria, query_base=None, verbose=0):
                                 proc.parent_name,
                                 proc.parent_pid,
                                 proc.cmdline))
+            elif quiet:
+                for proc in cb_conn.select(Process).where(query):
+                    results.add((proc.hostname.lower(),
+                                proc.username.lower(),
+                                proc.path))
             else:
                 for proc in cb_conn.select(Process).where(query):
                     results.add((proc.hostname.lower(),
@@ -126,9 +137,12 @@ def main():
     parser.add_argument("--minutes", type=int, action="store",
                         help="Number of days to search.")
 
-    # Verbose output
-    parser.add_argument("--verbose", "-v", action="store_true",
+    # Output level
+    o = parser.add_mutually_exclusive_group(required=False)
+    o.add_argument("--verbose", "-v", action="store_true",
                         help="Enable verbose output")
+    o.add_argument("--quiet", "-q", action="store_true",
+                        help="Enable quieter output")
 
     # Survey criteria
     i = parser.add_mutually_exclusive_group(required=True)
@@ -185,6 +199,9 @@ def main():
         writer.writerow(["start_time","md5","endpoint","username", \
         "process_path","process_pid","parent_name","parent_pid","cmdline", \
         "program","source"])
+    elif args.quiet:
+        writer.writerow(["endpoint","username","process_path","program", \
+        "source"])
     else:
         writer.writerow(["endpoint","username","process_path","cmdline", \
         "program","source"])
@@ -195,12 +212,15 @@ def main():
         cb = CbEnterpriseResponseAPI()
 
     if args.query:
-        result_set = process_search(cb, args.query, query_base, args.verbose)
+        result_set = process_search(cb, args.query, query_base, args.verbose,
+                                    args.quiet)
 
         for r in result_set:
             if args.verbose:
                 row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
                     args.query, 'query']
+            elif args.quiet:
+                row = [r[0], r[1], r[2], args.query, 'query']
             else:
                 row = [r[0], r[1], r[2], r[3], args.query, 'query']
             if _python3 == False:
@@ -212,12 +232,15 @@ def main():
             for ioc in data:
                 ioc = ioc.strip()
                 query = '%s:%s' % (args.ioctype, ioc)
-                result_set = process_search(cb, query, query_base)
+                result_set = process_search(cb, query, query_base, args.verbose,
+                                            args.quiet)
 
                 for r in result_set:
                     if args.verbose:
                         row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
                         r[8], ioc, 'ioc']
+                    elif args.quiet:
+                        row = [r[0], r[1], r[2], args.query, 'ioc']
                     else:
                         row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
                     if _python3 == False:
@@ -235,12 +258,15 @@ def main():
             for program,criteria in programs.items():
                 log("--> %s" % program)
 
-                result_set = nested_process_search(cb, criteria, query_base)
+                result_set = nested_process_search(cb, criteria, query_base,
+                                                   args.verbose, args.quiet)
 
                 for r in result_set:
                     if args.verbose:
                         row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
                         r[8], program, source]
+                    elif args.quiet:
+                        row = [r[0], r[1], r[2], program, source]
                     else:
                         row = [r[0], r[1], r[2], r[3], program, source]
                     if _python3 == False:
