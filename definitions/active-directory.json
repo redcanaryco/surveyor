@@ -23,6 +23,9 @@
     "Dcdiag": {
         "process_name": ["dcdiag.exe"]
     },
+    "klist": {
+        "process_name": ["klist.exe"]
+    },
     "Dcpromo": {
         "process_name": ["dcpromo.exe"]
     },
