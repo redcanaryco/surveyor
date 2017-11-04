@@ -5,7 +5,8 @@
     "Box": {
         "process_name": ["boxsync.exe",
                          "boxsyncmonitor.exe",
-                         "syncupdaterservice.exe"]
+                         "syncupdaterservice.exe",
+			 ["Box Sync"]]
     },
     "Carbonite": {
         "process_name": ["CarboniteService.exe",
@@ -18,7 +19,8 @@
     },
     "Dropbox": {
         "domain": ["client.dropbox.com"],
-        "process_name": ["dropbox.exe"]
+        "process_name": ["dropbox.exe",
+			"Dropbox"]
     },
     "Foxit Cloud": {
         "domain": ["foxitcloud.com"],
@@ -30,8 +32,12 @@
     "Hightail": {
         "domain": ["hightail.com"]
     },
+    "ShareIt": {
+	"process_name": ["shareit.exe"]
+    },
     "Apple iCloud": {
-        "process_name": ["icloudservices.exe"]
+        "process_name": ["icloudservices.exe",
+			 "cloudd"]
     },
     "JungleDisk": {
         "process_name": ["junglediskmonitor.exe"]
