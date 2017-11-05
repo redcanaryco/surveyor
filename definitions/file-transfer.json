@@ -1,12 +1,12 @@
 {
     "CyberDuck": {
-	"process_name": ["cyberduck"]
+        "process_name": ["cyberduck"]
     },
     "Filezilla": { 
         "process_name": ["fzsftp.exe",
                          "filezilla.exe",
                          "fzputtygen.exe",
-			 "filezilla"]
+                         "filezilla"]
     },
     "FTP": { 
         "process_name": ["ftp*.exe",

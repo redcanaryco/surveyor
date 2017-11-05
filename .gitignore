@@ -91,6 +91,3 @@ ENV/
 # Project things
 *.csv
 .carbonblack
-
-# Results
-survey.csv

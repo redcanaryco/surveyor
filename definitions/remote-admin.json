@@ -20,7 +20,7 @@
     },
     "Microsoft RDP": { 
         "process_name": ["termsrv.exe",
-			"Microsoft Remote Desktop"]
+                         "Microsoft Remote Desktop"]
     },
     "Microsoft TSC": { 
         "process_name": ["mstsc.exe"]
@@ -41,12 +41,12 @@
     },
     "TeamViewer Desktop": { 
         "process_name": ["teamviewer_desktop.exe",
-			"teamviewer"]
+                         "teamviewer"]
     },
     "TeamViewer Service": { 
         "process_name": ["teamviewer.exe",
                          "teamviewer_service.exe",
-			"teamviewerhost"]
+                         "teamviewerhost"]
     },
     "DameWare": { 
         "process_name": ["dwrcs.exe"],
