@@ -1,8 +1,12 @@
 {
+    "CyberDuck": {
+        "process_name": ["cyberduck"]
+    },
     "Filezilla": { 
         "process_name": ["fzsftp.exe",
                          "filezilla.exe",
-                         "fzputtygen.exe"]
+                         "fzputtygen.exe",
+                         "filezilla"]
     },
     "FTP": { 
         "process_name": ["ftp*.exe",
@@ -17,7 +21,6 @@
     "SCP": { 
         "process_name": ["pscp.exe",
                          "scp.exe",
-                         "scp",
                          "winscp.exe"]
     },
     "SFTP": { 
