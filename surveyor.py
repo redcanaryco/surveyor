@@ -154,6 +154,8 @@ def main():
                         help="A single Cb query to execute.")
     i.add_argument('--iocfile', type=str, action="store",
                         help="IOC file to process. One IOC per line. REQUIRES --ioctype")
+    parser.add_argument('--hostname', type=str, action="store",
+                        help="Target specific host by name.")
 
     # IOC survey criteria
     parser.add_argument('--ioctype', type=str, action="store",
@@ -174,6 +176,11 @@ def main():
         query_base += ' start:-%dm' % (args.days*1440)
     elif args.minutes:
         query_base += ' start:-%dm' % args.minutes
+
+    if args.hostname:
+        if args.query and 'hostname' in args.query:
+            parser.error('Cannot use --hostname with "hostname:" (in query)')
+        query_base += ' hostname:%s' % args.hostname
 
     definition_files = []
     if args.deffile:
