@@ -8,7 +8,7 @@ of matches based on:
 - process path
 - process command-line
 
-Results are written to a CSV file. 
+Results are written to a CSV file.
 
 Requires a valid cbapi credential file containing a Cb Response
 server URL and corresponding API token.
@@ -48,7 +48,7 @@ def log(msg):
     return
 
 
-def process_search(cb_conn, query, query_base=None):
+def process_search(cb_conn, query, query_base=None, verbose=0, quiet=0):
     """Perform a single Cb Response query and return a unique set of
     results.
     """
@@ -57,19 +57,37 @@ def process_search(cb_conn, query, query_base=None):
     query += query_base
 
     try:
-        for proc in cb_conn.select(Process).where(query):
-            results.add((proc.hostname.lower(),
-                        proc.username.lower(), 
-                        proc.path,
-                        proc.cmdline))
+        if verbose:
+            for proc in cb_conn.select(Process).where(query):
+                results.add((proc.start,
+                            proc.process_md5,
+                            proc.hostname.lower(),
+                            proc.username.lower(),
+                            proc.path,
+                            proc.process_pid,
+                            proc.parent_name,
+                            proc.parent_pid,
+                            proc.cmdline))
+        elif quiet:
+            for proc in cb_conn.select(Process).where(query):
+                results.add((proc.hostname.lower(),
+                            proc.username.lower(),
+                            proc.path))
+        else:
+            for proc in cb_conn.select(Process).where(query):
+                results.add((proc.hostname.lower(),
+                            proc.username.lower(),
+                            proc.path,
+                            proc.cmdline))
     except KeyboardInterrupt:
         log("Caught CTRL-C. Returning what we have . . .\n")
 
     return results
 
 
-def nested_process_search(cb_conn, criteria, query_base=None):
-    """Perform Cb Response queries for one or more programs and return a 
+def nested_process_search(cb_conn, criteria, query_base=None,
+                          verbose=0, quiet=0):
+    """Perform Cb Response queries for one or more programs and return a
     unique set of results per program.
     """
     results = set()
@@ -78,12 +96,28 @@ def nested_process_search(cb_conn, criteria, query_base=None):
         for search_field,terms in criteria.items():
             query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
             query += query_base
-
-            for proc in cb_conn.select(Process).where(query):
-                results.add((proc.hostname.lower(),
-                            proc.username.lower(), 
-                            proc.path,
-                            proc.cmdline))
+            if verbose:
+                for proc in cb_conn.select(Process).where(query):
+                    results.add((proc.start,
+                                proc.process_md5,
+                                proc.hostname.lower(),
+                                proc.username.lower(),
+                                proc.path,
+                                proc.process_pid,
+                                proc.parent_name,
+                                proc.parent_pid,
+                                proc.cmdline))
+            elif quiet:
+                for proc in cb_conn.select(Process).where(query):
+                    results.add((proc.hostname.lower(),
+                                proc.username.lower(),
+                                proc.path))
+            else:
+                for proc in cb_conn.select(Process).where(query):
+                    results.add((proc.hostname.lower(),
+                                proc.username.lower(),
+                                proc.path,
+                                proc.cmdline))
     except KeyboardInterrupt:
         log("Caught CTRL-C. Returning what we have . . .")
 
@@ -92,7 +126,7 @@ def nested_process_search(cb_conn, criteria, query_base=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix", type=str, action="store", 
+    parser.add_argument("--prefix", type=str, action="store",
                         help="Output filename prefix.")
     parser.add_argument("--profile", type=str, action="store",
                         help="The credentials.response profile to use.")
@@ -103,21 +137,28 @@ def main():
     parser.add_argument("--minutes", type=int, action="store",
                         help="Number of days to search.")
 
+    # Output level
+    o = parser.add_mutually_exclusive_group(required=False)
+    o.add_argument("--verbose", "-v", action="store_true",
+                        help="Enable verbose output")
+    o.add_argument("--quiet", "-q", action="store_true",
+                        help="Enable quieter output")
+
     # Survey criteria
     i = parser.add_mutually_exclusive_group(required=True)
-    i.add_argument('--deffile', type=str, action="store", 
+    i.add_argument('--deffile', type=str, action="store",
                         help="Definition file to process (must end in .json).")
-    i.add_argument('--defdir', type=str, action="store", 
+    i.add_argument('--defdir', type=str, action="store",
                         help="Directory containing multiple definition files.")
-    i.add_argument('--query', type=str, action="store", 
+    i.add_argument('--query', type=str, action="store",
                         help="A single Cb query to execute.")
-    i.add_argument('--iocfile', type=str, action="store", 
+    i.add_argument('--iocfile', type=str, action="store",
                         help="IOC file to process. One IOC per line. REQUIRES --ioctype")
     parser.add_argument('--hostname', type=str, action="store",
                         help="Target specific host by name.")
 
     # IOC survey criteria
-    parser.add_argument('--ioctype', type=str, action="store", 
+    parser.add_argument('--ioctype', type=str, action="store",
                         help="One of: ipaddr, domain, md5")
 
     args = parser.parse_args()
@@ -128,7 +169,7 @@ def main():
     if args.prefix:
         output_filename = '%s-survey.csv' % args.prefix
     else:
-        output_filename = 'survey.csv' 
+        output_filename = 'survey.csv'
 
     query_base = ''
     if args.days:
@@ -155,24 +196,40 @@ def main():
             for filename in files:
                 if filename.endswith('.json'):
                     definition_files.append(os.path.join(root, filename))
-        
+
     if _python3:
         output_file = open(output_filename, 'w', newline='')
     else:
         output_file = open(output_filename, 'wb')
     writer = csv.writer(output_file)
-    writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
-    
+    if args.verbose:
+        writer.writerow(["start_time","md5","endpoint","username", \
+        "process_path","process_pid","parent_name","parent_pid","cmdline", \
+        "program","source"])
+    elif args.quiet:
+        writer.writerow(["endpoint","username","process_path","program", \
+        "source"])
+    else:
+        writer.writerow(["endpoint","username","process_path","cmdline", \
+        "program","source"])
+
     if args.profile:
         cb = CbEnterpriseResponseAPI(profile=args.profile)
     else:
         cb = CbEnterpriseResponseAPI()
 
     if args.query:
-        result_set = process_search(cb, args.query, query_base)
+        result_set = process_search(cb, args.query, query_base, args.verbose,
+                                    args.quiet)
 
         for r in result_set:
-            row = [r[0], r[1], r[2], r[3], args.query, 'query']
+            if args.verbose:
+                row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
+                    args.query, 'query']
+            elif args.quiet:
+                row = [r[0], r[1], r[2], args.query, 'query']
+            else:
+                row = [r[0], r[1], r[2], r[3], args.query, 'query']
             if _python3 == False:
                 row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
             writer.writerow(row)
@@ -182,10 +239,17 @@ def main():
             for ioc in data:
                 ioc = ioc.strip()
                 query = '%s:%s' % (args.ioctype, ioc)
-                result_set = process_search(cb, query, query_base)
+                result_set = process_search(cb, query, query_base, args.verbose,
+                                            args.quiet)
 
                 for r in result_set:
-                    row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
+                    if args.verbose:
+                        row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
+                        r[8], ioc, 'ioc']
+                    elif args.quiet:
+                        row = [r[0], r[1], r[2], args.query, 'ioc']
+                    else:
+                        row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
                     if _python3 == False:
                         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
@@ -201,10 +265,17 @@ def main():
             for program,criteria in programs.items():
                 log("--> %s" % program)
 
-                result_set = nested_process_search(cb, criteria, query_base)
+                result_set = nested_process_search(cb, criteria, query_base,
+                                                   args.verbose, args.quiet)
 
                 for r in result_set:
-                    row = [r[0], r[1], r[2], r[3], program, source]
+                    if args.verbose:
+                        row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
+                        r[8], program, source]
+                    elif args.quiet:
+                        row = [r[0], r[1], r[2], program, source]
+                    else:
+                        row = [r[0], r[1], r[2], r[3], program, source]
                     if _python3 == False:
                         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
                     writer.writerow(row)
