@@ -115,6 +115,8 @@ def main():
                         help="IOC file to process. One IOC per line. REQUIRES --ioctype")
     parser.add_argument('--hostname', type=str, action="store",
                         help="Target specific host by name.")
+    parser.add_argument('--username', type=str, action="store",
+                        help="Target specific username.")
 
     # IOC survey criteria
     parser.add_argument('--ioctype', type=str, action="store", 
@@ -140,6 +142,11 @@ def main():
         if args.query and 'hostname' in args.query:
             parser.error('Cannot use --hostname with "hostname:" (in query)')
         query_base += ' hostname:%s' % args.hostname
+
+    if args.username:
+        if args.query and 'username' in args.query:
+            parser.error('Cannot use --username with "username:" (in query)')
+        query_base += ' username:%s' % args.username
 
     definition_files = []
     if args.deffile:
