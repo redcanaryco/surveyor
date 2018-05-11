@@ -44,5 +44,48 @@
     },
     "Bit Moose": {
         "process_name": ["bitmoose-gui.exe"]
+    },
+    "XMRig": {
+        "process_name": ["xmrig.exe"],
+        "process_name": ["xmrig"]
+    },
+    "XMRig-AMD": {
+        "process_name": ["xmrig-amd.exe"],
+        "process_name": ["xmrig-amd"]
+    },
+    "XMRig-NVIDIA": {
+        "process_name": ["xmrig-nvidia.exe"],
+        "process_name": ["xmrig-nvidia"]
+    },
+    "xmr-stak": {
+        "process_name": ["xmr-stak.exe"],
+        "process_name": ["xmr-stak"]
+    },
+    "xmr-stak-AMD": {
+        "process_name": ["xmr-stak-amd.exe"],
+        "process_name": ["xmr-stak-amd"]
+    },
+    "xmr-stak-NVIDIA": {
+        "process_name": ["xmr-stak-nvidia.exe"],
+        "process_name": ["xmr-stak-nvidia"]
+    },
+    "xmr-stak-CPU": {
+        "process_name": ["xmr-stak-cpu.exe"],
+        "process_name": ["xmr-stak-cpu"]
+    },
+    "NsCpuCNMiner64": {
+        "process_name": ["NsCpuCNMiner64.exe"],
+        "process_name": ["NsCpuCNMiner64"]
+    },
+    "NsGpuCNMiner": {
+        "process_name": ["NsGpuCNMiner.exe"],
+        "process_name": ["NsGpuCNMiner"]
+    },
+    "CPUMiner": {
+        "process_name": ["cpuminer.exe"],
+        "process_name": ["cpuminer"]
+    },
+    "YAM": {
+        "process_name": ["yam"]
     }
 }
