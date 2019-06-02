@@ -81,9 +81,9 @@ def nested_process_search(cb_conn, criteria, query_base=None):
 
       for proc in cb_conn.select(Process).where(query):
         results.add((proc.hostname.lower(),
-              proc.username.lower(), 
-              proc.path,
-              proc.cmdline))
+                     proc.username.lower(), 
+                     proc.path,
+                     proc.cmdline))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .")
 
@@ -93,34 +93,34 @@ def nested_process_search(cb_conn, criteria, query_base=None):
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--prefix", type=str, action="store", 
-            help="Output filename prefix.")
+                      help="Output filename prefix.")
   parser.add_argument("--profile", type=str, action="store",
-            help="The credentials.response profile to use.")
+                      help="The credentials.response profile to use.")
 
   # Time boundaries for the survey
   parser.add_argument("--days", type=int, action="store",
-            help="Number of days to search.")
+                      help="Number of days to search.")
   parser.add_argument("--minutes", type=int, action="store",
-            help="Number of days to search.")
+                      help="Number of days to search.")
 
   # Survey criteria
   i = parser.add_mutually_exclusive_group(required=True)
   i.add_argument('--deffile', type=str, action="store", 
-            help="Definition file to process (must end in .json).")
+                 help="Definition file to process (must end in .json).")
   i.add_argument('--defdir', type=str, action="store", 
-            help="Directory containing multiple definition files.")
+                 help="Directory containing multiple definition files.")
   i.add_argument('--query', type=str, action="store", 
-            help="A single Cb query to execute.")
+                 help="A single Cb query to execute.")
   i.add_argument('--iocfile', type=str, action="store", 
-            help="IOC file to process. One IOC per line. REQUIRES --ioctype")
+                 help="IOC file to process. One IOC per line. REQUIRES --ioctype")
   parser.add_argument('--hostname', type=str, action="store",
-            help="Target specific host by name.")
+                      help="Target specific host by name.")
   parser.add_argument('--username', type=str, action="store",
-            help="Target specific username.")
+                      help="Target specific username.")
 
   # IOC survey criteria
   parser.add_argument('--ioctype', type=str, action="store", 
-            help="One of: ipaddr, domain, md5")
+                      help="One of: ipaddr, domain, md5")
 
   args = parser.parse_args()
 
