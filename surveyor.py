@@ -24,7 +24,10 @@ import os
 import sys
 
 from cbapi.response import CbEnterpriseResponseAPI
-from cbapi.response.models import Process
+from cbapi.response.models import Process as r_Process
+
+from cbapi.psc.threathunter import CbThreatHunterAPI
+from cbapi.psc.threathunter.models import Process as th_Process
 
 if sys.version_info.major >= 3:
   _python3 = True
@@ -57,11 +60,19 @@ def process_search(cb_conn, query, query_base=None):
   query += query_base
 
   try:
-    for proc in cb_conn.select(Process).where(query):
-      results.add((proc.hostname.lower(),
-            proc.username.lower(), 
-            proc.path,
-            proc.cmdline))
+    if isinstance(cb_conn, CbThreatHunterAPI):
+      query = cb_conn.convert_query(query)
+      for proc in cb_conn.select(th_Process).where(query):
+        results.add((str(proc.device_name).lower(),
+                     str(proc.process_username).lower(),
+                     str(proc.process_name),
+                     str(proc.process_cmdline)))
+    else:
+      for proc in cb_conn.select(r_Process).where(query):
+        results.add((proc.hostname.lower(),
+                     proc.username.lower(), 
+                     proc.path,
+                     proc.cmdline))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .\n")
 
@@ -69,7 +80,7 @@ def process_search(cb_conn, query, query_base=None):
 
 
 def nested_process_search(cb_conn, criteria, query_base=None):
-  """Perform Cb Response queries for one or more programs and return a 
+  """Perform Cb Response queries for one or more programs and return a
   unique set of results per program.
   """
   results = set()
@@ -79,11 +90,19 @@ def nested_process_search(cb_conn, criteria, query_base=None):
       query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
       query += query_base
 
-      for proc in cb_conn.select(Process).where(query):
-        results.add((proc.hostname.lower(),
-                     proc.username.lower(), 
-                     proc.path,
-                     proc.cmdline))
+      if isinstance(cb_conn, CbThreatHunterAPI):
+        query = cb_conn.convert_query(query)
+        for proc in cb_conn.select(th_Process).where(query):
+          results.add((str(proc.device_name).lower(),
+                       str(proc.process_username).lower(),
+                       str(proc.process_name),
+                       str(proc.process_cmdline)))
+      else:
+        for proc in cb_conn.select(r_Process).where(query):
+          results.add((proc.hostname.lower(),
+                      proc.username.lower(), 
+                      proc.path,
+                      proc.cmdline))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .")
 
@@ -94,8 +113,10 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--prefix", type=str, action="store", 
                       help="Output filename prefix.")
-  parser.add_argument("--profile", type=str, action="store",
+  parser.add_argument("--profile", type=str, action="store", default="default",
                       help="The credentials.response profile to use.")
+  parser.add_argument("--psc", action="store_true",
+                      help="Use ThreatHunter to perform the requested action")
 
   # Time boundaries for the survey
   parser.add_argument("--days", type=int, action="store",
@@ -170,10 +191,10 @@ def main():
   writer = csv.writer(output_file)
   writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
   
-  if args.profile:
-    cb = CbEnterpriseResponseAPI(profile=args.profile)
+  if args.psc:
+    cb = CbThreatHunterAPI(profile=args.profile)
   else:
-    cb = CbEnterpriseResponseAPI()
+    cb = CbEnterpriseResponseAPI(profile=args.profile)
 
   if args.query:
     result_set = process_search(cb, args.query, query_base)
