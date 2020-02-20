@@ -101,7 +101,7 @@ def main():
   parser.add_argument("--days", type=int, action="store",
                       help="Number of days to search.")
   parser.add_argument("--minutes", type=int, action="store",
-                      help="Number of days to search.")
+                      help="Number of minutes to search.")
 
   # Survey criteria
   i = parser.add_mutually_exclusive_group(required=True)
@@ -117,6 +117,8 @@ def main():
                       help="Target specific host by name.")
   parser.add_argument('--username', type=str, action="store",
                       help="Target specific username.")
+  parser.add_argument('--group', type=str, action="store",
+                      help="Target specific group.")
 
   # IOC survey criteria
   parser.add_argument('--ioctype', type=str, action="store", 
@@ -147,6 +149,11 @@ def main():
     if args.query and 'username' in args.query:
       parser.error('Cannot use --username with "username:" (in query)')
     query_base += ' username:%s' % args.username
+  
+  if args.group:
+    if args.query and 'group' in args.query:
+      parser.error('Cannot use --group with "group:" (in query)')
+    query_base += ' group:%s' % args.group
 
   definition_files = []
   if args.deffile:
