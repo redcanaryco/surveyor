@@ -22,6 +22,7 @@ import csv
 import json
 import os
 import sys
+import yaml
 
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
@@ -106,7 +107,7 @@ def main():
   # Survey criteria
   i = parser.add_mutually_exclusive_group(required=True)
   i.add_argument('--deffile', type=str, action="store", 
-                 help="Definition file to process (must end in .json).")
+                 help="Definition file to process (must end in .json or .yaml).")
   i.add_argument('--defdir', type=str, action="store", 
                  help="Directory containing multiple definition files.")
   i.add_argument('--query', type=str, action="store", 
@@ -199,11 +200,18 @@ def main():
   else:
     for definition_file in definition_files:
       log("Processing definition file: %s" % definition_file)
-      basename = os.path.basename(definition_file)
-      source = os.path.splitext(basename)[0]
+      basename = os.path.basename(definition_file) # full filename --> "test_file.json"
+      source = os.path.splitext(basename)[0] #filename minus file extension --> "test_file"
+      file_type = os.path.splitext(basename)[1]
 
+      print file_type
       with open(definition_file, 'r') as fh:
-        programs = json.load(fh)
+        if file_type == '.yaml':
+          programs = yaml.load(fh)
+        elif file_type == '.json':
+          programs = json.load(fh)
+
+      print (programs)
 
       for program,criteria in programs.items():
         log("--> %s" % program)
