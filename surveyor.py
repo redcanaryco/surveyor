@@ -200,8 +200,8 @@ def main():
   else:
     for definition_file in definition_files:
       log("Processing definition file: %s" % definition_file)
-      basename = os.path.basename(definition_file) # full filename --> "test_file.json"
-      source = os.path.splitext(basename)[0] #filename minus file extension --> "test_file"
+      basename = os.path.basename(definition_file)
+      source = os.path.splitext(basename)[0]
       file_type = os.path.splitext(basename)[1]
 
       print file_type
