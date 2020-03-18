@@ -4,6 +4,8 @@ Test:
     - cscript.exe
     - wscript.exe
     - cmd.exe
+  cmdline:
+    - "test_case_uuid"
 BFG Miners:
   process_name:
   - bfgminer.exe
