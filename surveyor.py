@@ -204,14 +204,18 @@ def main():
       source = os.path.splitext(basename)[0]
       file_type = os.path.splitext(basename)[1]
 
-      print file_type
-      with open(definition_file, 'r') as fh:
-        if file_type == '.yaml':
-          programs = yaml.load(fh)
-        elif file_type == '.json':
-          programs = json.load(fh)
+      programs = {}
 
-      print (programs)
+      with open(definition_file, 'r') as fh:
+        contents = fh.read()
+        try:
+          programs = json.loads(contents)
+        except:
+          try:
+            programs = yaml.safe_load(contents)
+          except:
+            log("Unable to load config file as either JSON or YAML")
+            sys.exit(1)
 
       for program,criteria in programs.items():
         log("--> %s" % program)
