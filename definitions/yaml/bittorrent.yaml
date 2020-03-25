@@ -1,0 +1,18 @@
+utorrent:
+  process_name:
+    - utorrent.exe
+Torrent:
+  process_name:
+    - torrent*.exe
+Thunder:
+  digsig_publisher:
+    - ShenZhen Thunder Networking Technologies Ltd.
+BitTorrent Inc:
+  digsig_publisher:
+    - BitTorrent Inc
+Digital Ignition:
+  digsig_publisher:
+    - Digital Ignition LLC
+Azureus:
+  digsig_publisher:
+    - 'Azureus Software, Inc.'

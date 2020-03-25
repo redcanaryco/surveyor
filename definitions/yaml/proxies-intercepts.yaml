@@ -1,0 +1,6 @@
+fiddler:
+  process_name:
+    - fiddler.exe
+privoxy:
+  process_name:
+    - privoxy.exe

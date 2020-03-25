@@ -1,87 +1,78 @@
----
-Test:
-  process_name:
-    - cscript.exe
-    - wscript.exe
-    - cmd.exe
-  cmdline:
-    - "test_case_uuid"
 BFG Miners:
   process_name:
-  - bfgminer.exe
+    - bfgminer.exe
 minerd:
   process_name:
-  - minerd.exe
+    - minerd.exe
 cgminer:
   process_name:
-  - cgminer.exe
+    - cgminer.exe
 rpcminer-cpu:
   process_name:
-  - rpcminer-cpu.exe
+    - rpcminer-cpu.exe
 bitcoin-miner:
   process_name:
-  - bitcoin-miner.exe
+    - bitcoin-miner.exe
 btc:
   process_name:
-  - btc.exe
+    - btc.exe
 M6:
   process_name:
-  - m6.exe
+    - m6.exe
 Auroracoin:
   process_name:
-  - Auroracoin-qt-2016.04.1.0.exe
+    - Auroracoin-qt-2016.04.1.0.exe
 miner:
   process_name:
-  - miner.py
+    - miner.py
 Win64mrocli3:
   process_name:
-  - Win64mrocli3.exe
+    - Win64mrocli3.exe
 easyminer:
   process_name:
-  - easyminer.exe
+    - easyminer.exe
 50miner:
   process_name:
-  - 50miner.exe
+    - 50miner.exe
 Cuda Miner:
   process_name:
-  - cudaminer.exe
+    - cudaminer.exe
 UFASoft:
   process_name:
-  - coin-miner.exe
+    - coin-miner.exe
 Bit Moose:
   process_name:
-  - bitmoose-gui.exe
+    - bitmoose-gui.exe
 XMRig:
   process_name:
-  - xmrig
-  - xmrig.exe
+    - xmrig
 XMRig-AMD:
   process_name:
-  - xmrig-amd
+    - xmrig-amd
 XMRig-NVIDIA:
   process_name:
-  - xmrig-nvidia
+    - xmrig-nvidia
 xmr-stak:
   process_name:
-  - xmr-stak
+    - xmr-stak
 xmr-stak-AMD:
   process_name:
-  - xmr-stak-amd
+    - xmr-stak-amd
 xmr-stak-NVIDIA:
   process_name:
-  - xmr-stak-nvidia
+    - xmr-stak-nvidia
 xmr-stak-CPU:
   process_name:
-  - xmr-stak-cpu
+    - xmr-stak-cpu
 NsCpuCNMiner64:
   process_name:
-  - NsCpuCNMiner64
+    - NsCpuCNMiner64
 NsGpuCNMiner:
   process_name:
-  - NsGpuCNMiner
+    - NsGpuCNMiner
 CPUMiner:
   process_name:
-  - cpuminer
+    - cpuminer
 YAM:
   process_name:
-  - yam
+    - yam

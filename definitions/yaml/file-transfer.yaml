@@ -1,0 +1,31 @@
+CyberDuck:
+  process_name:
+    - cyberduck
+Filezilla:
+  process_name:
+    - fzsftp.exe
+    - filezilla.exe
+    - fzputtygen.exe
+    - filezilla
+FTP:
+  process_name:
+    - ftp*.exe
+    - ftp
+pushd:
+  process_name:
+    - pushd.exe
+robocopy:
+  process_name:
+    - robocopy.exe
+SCP:
+  process_name:
+    - pscp.exe
+    - scp.exe
+    - winscp.exe
+SFTP:
+  process_name:
+    - sftp*.exe
+    - sftp
+xcopy:
+  process_name:
+    - xcopy.exe

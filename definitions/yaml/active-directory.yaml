@@ -1,0 +1,54 @@
+CSVDE:
+  process_name:
+    - csvde.exe
+dsadd:
+  process_name:
+    - dsadd.exe
+dsget:
+  process_name:
+    - dsget.exe
+dsmod:
+  process_name:
+    - dsmod.exe
+dsquery:
+  process_name:
+    - dsquery.exe
+LDIFDE:
+  process_name:
+    - ldifde.exe
+ntdsutil:
+  process_name:
+    - ntdsutil.exe
+Dcdiag:
+  process_name:
+    - dcdiag.exe
+klist:
+  process_name:
+    - klist.exe
+Dcpromo:
+  process_name:
+    - dcpromo.exe
+adprep:
+  process_name:
+    - adprep.exe
+dsacl:
+  process_name:
+    - dsacl.exe
+dsamain:
+  process_name:
+    - ntdsutil.exe
+dsmove:
+  process_name:
+    - dsmove.exe
+ldp:
+  process_name:
+    - ldp.exe
+netdom:
+  process_name:
+    - netdom.exe
+dsrm:
+  process_name:
+    - dsrm.exe
+adinfo:
+  process_name:
+    - adinfo.exe
