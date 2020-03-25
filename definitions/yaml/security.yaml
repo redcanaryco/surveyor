@@ -16,7 +16,7 @@ Druva Technologies:
 BeyondTrust Software Inc:
   process_name:
     - beyondtrust.sessionmonitoring.service.exe
-'Cylance, Inc.':
+Cylance, Inc.:
   process_name:
     - cylancesvc.exe
     - cyupdate.exe
@@ -27,10 +27,10 @@ Fortinet:
 Mandiant Corporation:
   process_name:
     - ctfprocacv.exe
-'RaonSecure Co., Ltd.':
+RaonSecure Co., Ltd.:
   process_name:
     - cksetup32.exe
-'SafeNet, Inc.':
+SafeNet, Inc.:
   process_name:
     - sacmonitor.exe
 X-Ways Forensics:
@@ -46,7 +46,7 @@ Sophos AV:
     - wscclient.exe
   company_name:
     - Sophos Limited
-'SoftForum CO., LTD.':
+SoftForum CO., LTD.:
   process_name:
     - anysign4pc.exe
 nProtect Online Security V1.0:
@@ -61,10 +61,10 @@ AVAST Software a.s.:
 SpectorSoft:
   digsig_publisher:
     - SpectorSoft
-'Trend Micro, Inc.':
+Trend Micro, Inc.:
   process_name:
     - ntrtscan.exe
-'DigitalPersona, Inc.':
+DigitalPersona, Inc.:
   process_name:
     - dphostw.exe
 Link Data Security A/S:
