@@ -1,6 +1,4 @@
 Ryuk:
-  cmdline:
-    - "8 LAN"
   process_name:
     - kblbgcguxlan.exe
   process_name:
