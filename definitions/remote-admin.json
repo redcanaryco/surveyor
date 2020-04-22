@@ -56,5 +56,9 @@
         "process_name": ["winvnc.exe", 
                          "vncviewer.exe",
                          "winvncsc.exe"]
-    }
+    },
+    "Splashtop": {
+        "process_name": ["srmanager.exe",
+                         "strwinclt.exe"]
+    }	
 }
