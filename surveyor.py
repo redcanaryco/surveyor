@@ -61,7 +61,8 @@ def process_search(cb_conn, query, query_base=None):
       results.add((proc.hostname.lower(),
             proc.username.lower(), 
             proc.path,
-            proc.cmdline))
+            proc.cmdline,
+            proc.group))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .\n")
 
@@ -83,7 +84,8 @@ def nested_process_search(cb_conn, criteria, query_base=None):
         results.add((proc.hostname.lower(),
                      proc.username.lower(), 
                      proc.path,
-                     proc.cmdline))
+                     proc.cmdline,
+                     proc.group))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .")
 
@@ -117,6 +119,8 @@ def main():
                       help="Target specific host by name.")
   parser.add_argument('--username', type=str, action="store",
                       help="Target specific username.")
+  parser.add_argument('--group', type=str, action="store",
+                      help="Target specific sensor group")
 
   # IOC survey criteria
   parser.add_argument('--ioctype', type=str, action="store", 
@@ -147,6 +151,11 @@ def main():
     if args.query and 'username' in args.query:
       parser.error('Cannot use --username with "username:" (in query)')
     query_base += ' username:%s' % args.username
+    
+  if args.group:
+    if args.query and 'group' in args.query:
+      parser.error('Cannot use --group with "group:" (in query)')
+    query_base += ' group:%s' % args.group 
 
   definition_files = []
   if args.deffile:
