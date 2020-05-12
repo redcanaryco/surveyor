@@ -224,7 +224,7 @@ def main():
       row = [r[0], r[1], r[2], r[3], args.query, 'query']
       if _python3 == False:
         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
-        writer.writerow(row)
+      writer.writerow(row)
   elif args.iocfile:
     with open(args.iocfile) as iocfile:
       data = iocfile.readlines()
