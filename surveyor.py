@@ -51,7 +51,7 @@ def log(msg):
   return
 
 
-def process_search(cb_conn, query, query_base=None):
+def process_search(cb_conn, query, query_base=None, translate=False):
   """Perform a single Cb Response query and return a unique set of
   results.
   """
@@ -61,7 +61,8 @@ def process_search(cb_conn, query, query_base=None):
 
   try:
     if isinstance(cb_conn, CbThreatHunterAPI):
-      query = cb_conn.convert_query(query)
+      if translate:
+          query = cb_conn.convert_query(query)
       for proc in cb_conn.select(th_Process).where(query):
         results.add((str(proc.device_name).lower(),
                      str(proc.process_username).lower(),
@@ -79,7 +80,7 @@ def process_search(cb_conn, query, query_base=None):
   return results
 
 
-def nested_process_search(cb_conn, criteria, query_base=None):
+def nested_process_search(cb_conn, criteria, query_base=None, translate=False):
   """Perform Cb Response queries for one or more programs and return a
   unique set of results per program.
   """
@@ -91,7 +92,8 @@ def nested_process_search(cb_conn, criteria, query_base=None):
       query += query_base
 
       if isinstance(cb_conn, CbThreatHunterAPI):
-        query = cb_conn.convert_query(query)
+        if translate:
+            query = cb_conn.convert_query(query)
         for proc in cb_conn.select(th_Process).where(query):
           results.add((str(proc.device_name).lower(),
                        str(proc.process_username).lower(),
@@ -117,6 +119,8 @@ def main():
                       help="The credentials.response profile to use.")
   parser.add_argument("--psc", action="store_true",
                       help="Use ThreatHunter to perform the requested action")
+  parser.add_argument("--translate", action="store_true",
+                      help="Translate queries from Response to PSC format")
 
   # Time boundaries for the survey
   parser.add_argument("--days", type=int, action="store",
@@ -197,7 +201,7 @@ def main():
     cb = CbEnterpriseResponseAPI(profile=args.profile)
 
   if args.query:
-    result_set = process_search(cb, args.query, query_base)
+    result_set = process_search(cb, args.query, query_base, args.translate)
 
     for r in result_set:
       row = [r[0], r[1], r[2], r[3], args.query, 'query']
@@ -210,7 +214,7 @@ def main():
       for ioc in data:
         ioc = ioc.strip()
         query = '%s:%s' % (args.ioctype, ioc)
-        result_set = process_search(cb, query, query_base)
+        result_set = process_search(cb, query, query_base, args.translate)
 
         for r in result_set:
           row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
@@ -229,7 +233,7 @@ def main():
       for program,criteria in programs.items():
         log("--> %s" % program)
 
-        result_set = nested_process_search(cb, criteria, query_base)
+        result_set = nested_process_search(cb, criteria, query_base, args.translate)
 
         for r in result_set:
           row = [r[0], r[1], r[2], r[3], program, source]
