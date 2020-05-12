@@ -22,6 +22,7 @@ import csv
 import json
 import os
 import sys
+from datetime import datetime, timedelta
 
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process as r_Process
@@ -57,18 +58,18 @@ def process_search(cb_conn, query, query_base=None, translate=False):
   """
   results = set()
 
-  query += query_base
-
   try:
     if isinstance(cb_conn, CbThreatHunterAPI):
       if translate:
-          query = cb_conn.convert_query(query)
+        query = cb_conn.convert_query(query)
+      query += query_base
       for proc in cb_conn.select(th_Process).where(query):
-        results.add((str(proc.device_name).lower(),
-                     str(proc.process_username).lower(),
-                     str(proc.process_name),
-                     str(proc.process_cmdline)))
+        results.add((str(proc.get('device_name')).lower(),
+                     str(proc.get('process_username')).lower(),
+                     str(proc.get('process_name')),
+                     str(proc.get('process_cmdline'))))
     else:
+      query += query_base
       for proc in cb_conn.select(r_Process).where(query):
         results.add((proc.hostname.lower(),
                      proc.username.lower(), 
@@ -89,17 +90,18 @@ def nested_process_search(cb_conn, criteria, query_base=None, translate=False):
   try:
     for search_field,terms in criteria.items():
       query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
-      query += query_base
 
       if isinstance(cb_conn, CbThreatHunterAPI):
         if translate:
-            query = cb_conn.convert_query(query)
+          query = cb_conn.convert_query(query)
+        query += query_base
         for proc in cb_conn.select(th_Process).where(query):
           results.add((str(proc.device_name).lower(),
                        str(proc.process_username).lower(),
                        str(proc.process_name),
                        str(proc.process_cmdline)))
       else:
+        query += query_base
         for proc in cb_conn.select(r_Process).where(query):
           results.add((proc.hostname.lower(),
                       proc.username.lower(), 
@@ -117,10 +119,11 @@ def main():
                       help="Output filename prefix.")
   parser.add_argument("--profile", type=str, action="store", default="default",
                       help="The credentials.response profile to use.")
-  parser.add_argument("--psc", action="store_true",
-                      help="Use ThreatHunter to perform the requested action")
+  parser.add_argument("--cbc", action="store_true",
+                      help="Use Cloud Enterprise EDR (formerly ThreatHunter)"
+                        "to perform the requested action")
   parser.add_argument("--translate", action="store_true",
-                      help="Translate queries from Response to PSC format")
+                      help="Translate queries from Response to CBC format")
 
   # Time boundaries for the survey
   parser.add_argument("--days", type=int, action="store",
@@ -165,20 +168,39 @@ def main():
     output_filename = 'survey.csv'
 
   query_base = ''
-  if args.days:
-    query_base += ' start:-%dm' % (args.days*1440)
-  elif args.minutes:
-    query_base += ' start:-%dm' % args.minutes
+  if args.cbc:
+    cb = CbThreatHunterAPI(profile=args.profile)
+    if args.days:
+      start_time = (datetime.now()-timedelta(days=args.days)
+      ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+      query_base += f" process_start_time:[{start_time} TO *]"
+    elif args.minutes:
+      start_time = (datetime.now()-timedelta(minutes=args.minutes)
+      ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+      query_base += f" process_start_time:[{start_time} TO *]"
+    if args.hostname:
+      if args.query and 'device_name' in args.query:
+        parser.error('Cannot use --hostname with "device_name:" (in query)')
+      query_base += ' device_name:%s' % args.hostname
+    if args.username:
+      if args.query and 'process_username' in args.query:
+        parser.error('Cannot use --username with "process_username:" (in query)')
+      query_base += ' process_username:%s' % args.username
 
-  if args.hostname:
-      if args.query and 'hostname' in args.query:
-        parser.error('Cannot use --hostname with "hostname:" (in query)')
-      query_base += ' hostname:%s' % args.hostname
-
-  if args.username:
-    if args.query and 'username' in args.query:
-      parser.error('Cannot use --username with "username:" (in query)')
-    query_base += ' username:%s' % args.username
+  else:
+    cb = CbEnterpriseResponseAPI(profile=args.profile)
+    if args.days:
+      query_base += ' start:-%dm' % (args.days*1440)
+    elif args.minutes:
+      query_base += ' start:-%dm' % args.minutes
+    if args.hostname:
+        if args.query and 'hostname' in args.query:
+          parser.error('Cannot use --hostname with "hostname:" (in query)')
+        query_base += ' hostname:%s' % args.hostname
+    if args.username:
+      if args.query and 'username' in args.query:
+        parser.error('Cannot use --username with "username:" (in query)')
+      query_base += ' username:%s' % args.username
 
   definition_files = []
   if args.deffile:
@@ -201,23 +223,12 @@ def main():
     output_file = open(output_filename, 'wb')
   writer = csv.writer(output_file)
   writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
-  
-  if args.psc:
-    cb = CbThreatHunterAPI(profile=args.profile)
-  else:
-    cb = CbEnterpriseResponseAPI(profile=args.profile)
 
   if args.query:
     result_set = process_search(cb, args.query, query_base, args.translate)
 
     for r in result_set:
-      if args.verbose:
-        row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], \
-               args.query, 'query']
-      elif args.quiet:
-        row = [r[0], r[1], r[2], args.query, 'query']
-      else:
-        row = [r[0], r[1], r[2], r[3], args.query, 'query']
+      row = [r[0], r[1], r[2], r[3], args.query, 'query']
       if _python3 == False:
         row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
         writer.writerow(row)
@@ -230,13 +241,7 @@ def main():
         result_set = process_search(cb, query, query_base, args.translate)
 
         for r in result_set:
-          if args.verbose:
-            row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
-            r[8], ioc, 'ioc']
-          elif args.quiet:
-            row = [r[0], r[1], r[2], args.query, 'ioc']
-          else:
-            row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
+          row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
           if _python3 == False:
             row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
           writer.writerow(row)
@@ -255,13 +260,7 @@ def main():
         result_set = nested_process_search(cb, criteria, query_base, args.translate)
 
         for r in result_set:
-          if args.verbose:
-            row = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], \
-                   r[8], program, source]
-          elif args.quiet:
-            row = [r[0], r[1], r[2], program, source]
-          else:
-            row = [r[0], r[1], r[2], r[3], program, source]
+          row = [r[0], r[1], r[2], r[3], program, source]
           if _python3 == False:
             row = [col.encode('utf8') if isinstance(col, unicode) else col for col in row]
           writer.writerow(row)
