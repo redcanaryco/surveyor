@@ -24,7 +24,10 @@ import os
 import sys
 
 from cbapi.response import CbEnterpriseResponseAPI
-from cbapi.response.models import Process
+from cbapi.response.models import Process as r_Process
+
+from cbapi.psc.threathunter import CbThreatHunterAPI
+from cbapi.psc.threathunter.models import Process as th_Process
 
 if sys.version_info.major >= 3:
   _python3 = True
@@ -48,7 +51,7 @@ def log(msg):
   return
 
 
-def process_search(cb_conn, query, query_base=None, verbose=0, quiet=0):
+def process_search(cb_conn, query, query_base=None, translate=False):
   """Perform a single Cb Response query and return a unique set of
   results.
   """
@@ -57,36 +60,27 @@ def process_search(cb_conn, query, query_base=None, verbose=0, quiet=0):
   query += query_base
 
   try:
-    if verbose:
-      for proc in cb_conn.select(Process).where(query):
-        results.add((proc.start,
-                     proc.process_md5,
-                     proc.hostname.lower(),
-                     proc.username.lower(),
-                     proc.path,
-                     proc.process_pid,
-                     proc.parent_name,
-                     proc.parent_pid,
-                     proc.cmdline))
-    elif quiet:
-      for proc in cb_conn.select(Process).where(query):
-        results.add((proc.hostname.lower(),
-                     proc.username.lower(),
-                     proc.path))
+    if isinstance(cb_conn, CbThreatHunterAPI):
+      if translate:
+          query = cb_conn.convert_query(query)
+      for proc in cb_conn.select(th_Process).where(query):
+        results.add((str(proc.device_name).lower(),
+                     str(proc.process_username).lower(),
+                     str(proc.process_name),
+                     str(proc.process_cmdline)))
     else:
-      for proc in cb_conn.select(Process).where(query):
+      for proc in cb_conn.select(r_Process).where(query):
         results.add((proc.hostname.lower(),
-                     proc.username.lower(),
+                     proc.username.lower(), 
                      proc.path,
                      proc.cmdline))
-    except KeyboardInterrupt:
-      log("Caught CTRL-C. Returning what we have . . .\n")
+  except KeyboardInterrupt:
+    log("Caught CTRL-C. Returning what we have . . .\n")
 
   return results
 
 
-def nested_process_search(cb_conn, criteria, query_base=None,
-                          verbose=0, quiet=0):
+def nested_process_search(cb_conn, criteria, query_base=None, translate=False):
   """Perform Cb Response queries for one or more programs and return a
   unique set of results per program.
   """
@@ -96,28 +90,21 @@ def nested_process_search(cb_conn, criteria, query_base=None,
     for search_field,terms in criteria.items():
       query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
       query += query_base
-      if verbose:
-        for proc in cb_conn.select(Process).where(query):
-            results.add((proc.start,
-                         proc.process_md5,
-                         proc.hostname.lower(),
-                         proc.username.lower(),
-                         proc.path,
-                         proc.process_pid,
-                         proc.parent_name,
-                         proc.parent_pid,
-                         proc.cmdline))
-      elif quiet:
-        for proc in cb_conn.select(Process).where(query):
-          results.add((proc.hostname.lower(),
-                       proc.username.lower(),
-                       proc.path))
+
+      if isinstance(cb_conn, CbThreatHunterAPI):
+        if translate:
+            query = cb_conn.convert_query(query)
+        for proc in cb_conn.select(th_Process).where(query):
+          results.add((str(proc.device_name).lower(),
+                       str(proc.process_username).lower(),
+                       str(proc.process_name),
+                       str(proc.process_cmdline)))
       else:
-        for proc in cb_conn.select(Process).where(query):
+        for proc in cb_conn.select(r_Process).where(query):
           results.add((proc.hostname.lower(),
-                       proc.username.lower(),
-                       proc.path,
-                       proc.cmdline))
+                      proc.username.lower(), 
+                      proc.path,
+                      proc.cmdline))
   except KeyboardInterrupt:
     log("Caught CTRL-C. Returning what we have . . .")
 
@@ -128,8 +115,12 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--prefix", type=str, action="store",
                       help="Output filename prefix.")
-  parser.add_argument("--profile", type=str, action="store",
+  parser.add_argument("--profile", type=str, action="store", default="default",
                       help="The credentials.response profile to use.")
+  parser.add_argument("--psc", action="store_true",
+                      help="Use ThreatHunter to perform the requested action")
+  parser.add_argument("--translate", action="store_true",
+                      help="Translate queries from Response to PSC format")
 
   # Time boundaries for the survey
   parser.add_argument("--days", type=int, action="store",
@@ -209,25 +200,15 @@ def main():
   else:
     output_file = open(output_filename, 'wb')
   writer = csv.writer(output_file)
-  if args.verbose:
-    writer.writerow(["start_time","md5","endpoint","username", \
-    "process_path","process_pid","parent_name","parent_pid","cmdline", \
-    "program","source"])
-  elif args.quiet:
-    writer.writerow(["endpoint","username","process_path","program", \
-    "source"])
+  writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
+  
+  if args.psc:
+    cb = CbThreatHunterAPI(profile=args.profile)
   else:
-    writer.writerow(["endpoint","username","process_path","cmdline", \
-    "program","source"])
-
-  if args.profile:
     cb = CbEnterpriseResponseAPI(profile=args.profile)
-  else:
-    cb = CbEnterpriseResponseAPI()
 
   if args.query:
-    result_set = process_search(cb, args.query, query_base, args.verbose,
-                                args.quiet)
+    result_set = process_search(cb, args.query, query_base, args.translate)
 
     for r in result_set:
       if args.verbose:
@@ -246,8 +227,7 @@ def main():
       for ioc in data:
         ioc = ioc.strip()
         query = '%s:%s' % (args.ioctype, ioc)
-        result_set = process_search(cb, query, query_base, args.verbose,
-                                    args.quiet)
+        result_set = process_search(cb, query, query_base, args.translate)
 
         for r in result_set:
           if args.verbose:
@@ -272,8 +252,7 @@ def main():
       for program,criteria in programs.items():
         log("--> %s" % program)
 
-        result_set = nested_process_search(cb, criteria, query_base,
-                                           args.verbose, args.quiet)
+        result_set = nested_process_search(cb, criteria, query_base, args.translate)
 
         for r in result_set:
           if args.verbose:
