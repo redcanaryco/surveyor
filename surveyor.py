@@ -39,15 +39,15 @@ else:
 def err(msg):
   """Format msg as an ERROR and print to stderr.
   """
-  msg = 'ERROR: %s\n' % msg
+  msg = 'ERROR: %s' % msg
   sys.stderr.write(msg)
   return
 
 
-def log(msg):
+def log(msg, newline='\n'):
   """Format msg and print to stdout.
   """
-  msg = '%s\n' % msg
+  msg = '%s%s' % (msg, newline)
   sys.stdout.write(msg)
   return
 
@@ -218,7 +218,11 @@ def main():
   writer.writerow(["endpoint","username","process_path","cmdline","program","source"])
 
   if args.query:
+    log("Processing query", newline='')
     result_set = process_search(cb, args.query, query_base, args.translate)
+
+    result_count = len(result_set)
+    log(': %s results' % result_count)
 
     for r in result_set:
       row = [r[0], r[1], r[2], r[3], args.query, 'query']
@@ -228,11 +232,16 @@ def main():
   elif args.iocfile:
     with open(args.iocfile) as iocfile:
       data = iocfile.readlines()
+      log("Processing IOC file: %s" % args.iocfile)
       for ioc in data:
         ioc = ioc.strip()
         query = '%s:%s' % (args.ioctype, ioc)
         result_set = process_search(cb, query, query_base, args.translate)
+        log("--> %s" % ioc, newline='')
 
+        result_count = len(result_set)
+        log(': %s results' % result_count)
+        
         for r in result_set:
           row = [r[0], r[1], r[2], r[3], ioc, 'ioc']
           if _python3 == False:
@@ -248,9 +257,12 @@ def main():
         programs = json.load(fh)
 
       for program,criteria in programs.items():
-        log("--> %s" % program)
+        log("--> %s" % program, newline='')
 
         result_set = nested_process_search(cb, criteria, query_base, args.translate)
+
+        result_count = len(result_set)
+        log(': %s results' % result_count)
 
         for r in result_set:
           row = [r[0], r[1], r[2], r[3], program, source]
@@ -260,6 +272,7 @@ def main():
 
   output_file.close()
 
+  log('\nResults saved: %s' % output_filename)
 
 if __name__ == '__main__':
 

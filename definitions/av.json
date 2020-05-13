@@ -1,0 +1,147 @@
+{
+    "Binary Defense": {
+        "process_name": ["bds-vision.exe"]
+    },
+
+    "Carbon Black Response": {
+        "process_name": ["cb.exe"]
+    },
+    "Crowd Strike Falcon": {
+        "process_name": ["CSFalcon.exe"]
+    },
+    "Digital Guardian": {
+        "process_name": ["dgagent.exe"]
+    },
+    "McAfee DLP": {
+        "process_name": ["fcags.exe"]
+    },
+    "McAfee DLP Watchdog": {
+        "process_name": ["fcagswd.exe"]
+    },
+    "McAfee Host Intrusion": {
+        "process_name": ["firesvc.exe"]
+    },
+    "McAfee Host Intrusion Prevention ": {
+        "process_name": ["HipMgmt.exe"]
+    },
+    "Forcepoint": {
+        "process_name": ["kvoop.exe"]
+    },
+    "McAfee Virus Scan": {
+        "process_name": ["masvc.exe"]
+    },
+    "Malware Bytes": {
+        "process_name": ["mbae.exe"]
+    },
+    "McAfee Shield": {
+        "process_name": ["mcshield.exe"]
+    },
+    "McAfee Anti Spyware": {
+        "process_name": ["mfeann.exe"]
+    },
+    "MfAfee Threat Prevention": {
+        "process_name": ["mfemactl.exe"]
+    },
+    "Windows Defender UI": {
+        "process_name": ["MSASCui.exe"]
+    },
+    "Windows Defender UI 2": {
+        "process_name": ["MSAScuiL.exe"]
+    },
+    "Windows Defender Anti Spyware": {
+        "process_name": ["msmpeng.exe"]
+    },
+    "Microsoft OneCare Live": {
+        "process_name": ["msmpsvc.exe"]
+    },
+    "OSSEC HIDS": {
+        "process_name": ["ossec.exe"]
+    },
+    "Carbon Black Parity": {
+        "process_name": ["parity.exe"]
+    },
+    "Sophos": {
+        "process_name": ["svservice.exe"]
+    },
+    "McAfee Service Shield Statistics": {
+        "process_name": ["shstat.exe"]
+    },
+    "Splunk AD Forwarder": {
+        "process_name": ["splunk-admon.exe"]
+    },
+    "Splunk Daemon": {
+        "process_name": ["splunkd.exe"]
+    },
+    "Splunk": {
+        "process_name": ["splunk.exe"]
+    },
+   "Splunk Powershell": {
+        "process_name": ["splunk-powershell.exe"]
+    },
+    "Splunk Winevtlog": {
+        "process_name": ["splunk-winevtlog.exe"]
+    },
+    "Symantec": {
+        "process_name": ["symantec.exe"]
+    },
+    "Sysmon": {
+        "process_name": ["sysmon.exe"]
+    },
+    "Tanium Client": {
+        "process_name": ["TaniumClient.exe"]
+    },
+    "Trend Micro": {
+        "process_name": ["TMCCSF.exe"]
+    },
+    "Triumfant": {
+        "process_name": ["Triumfant.exe"]
+    },
+    "McAfee vstskmgr": {
+        "process_name": ["vstskmgr.exe"]
+    },
+    "Windows Defender": {
+        "process_name": ["windefend.exe"]
+    },
+    "Webroot SecureAnywhere": {
+        "process_name": ["WRSA.exe"]
+    },
+    "Palo Alto Global Protect": {
+        "process_name": ["PanGPA.exe"]
+    },
+    "Cylance Service": {
+        "process_name": ["CylanceSvc.exe"]
+    },
+    "Cylance UI": {
+        "process_name": ["CylanceUI.exe"]
+    },
+    "Cylance Optics": {
+        "process_name": ["CyOptics.exe"]
+    },
+    "SentinelOne Service Host": {
+        "process_name": ["SentinelServiceHost.exe"]
+    },
+    "SentinelOne Static Engine": {
+        "process_name": ["SentinelStaticEngine.exe"]
+    },
+    "SentinelOne Static Engine Scanner": {
+        "process_name": ["SentinelStaticEngineScanner.exe"]
+    },
+    "BitDefender": {
+        "process_name": ["bdagent.exe"]
+    },
+    "Ivanti (now Kaspersky)": {
+        "process_name": ["kl_platf.exe"]
+    },
+    "Trend Micro Agent Monitor ": {
+        "process_name": ["PccNtMon.exe"]
+    },
+    "Trend Micro Common Client": {
+        "process_name": ["TmCCSF.exe"]
+    },
+    "Trend Micro Listner Service": {
+        "process_name": ["TmListen.exe"]
+    },
+    "Trend Micro Real Time Scan": {
+        "process_name": ["Ntrtscan.exe"]
+    }
+} 
