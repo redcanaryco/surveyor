@@ -30,6 +30,8 @@ from cbapi.response.models import Process as r_Process
 from cbapi.psc.threathunter import CbThreatHunterAPI
 from cbapi.psc.threathunter.models import Process as th_Process
 
+from cbapi.errors import ServerError
+
 if sys.version_info.major >= 3:
   _python3 = True
 else:
@@ -61,7 +63,12 @@ def process_search(cb_conn, query, query_base=None, translate=False):
   try:
     if isinstance(cb_conn, CbThreatHunterAPI):
       if translate:
-        query = cb_conn.convert_query(query)
+        try:
+          query = cb_conn.convert_query(query)
+        except ServerError:
+          log("\nCan't convert query: %s. Skipping . . ." % query)
+          return results
+
       query += query_base
       for proc in cb_conn.select(th_Process).where(query):
         results.add((str(proc.get('device_name')).lower(),
@@ -93,13 +100,18 @@ def nested_process_search(cb_conn, criteria, query_base=None, translate=False):
 
       if isinstance(cb_conn, CbThreatHunterAPI):
         if translate:
-          query = cb_conn.convert_query(query)
+          try:
+            query = cb_conn.convert_query(query)
+          except ServerError:
+            log("\nCan't convert query: %s. Skipping . . ." % query)
+            continue
+
         query += query_base
         for proc in cb_conn.select(th_Process).where(query):
           results.add((str(proc.device_name).lower(),
-                       str(proc.process_username).lower(),
-                       str(proc.process_name),
-                       str(proc.process_cmdline)))
+                        str(proc.process_username).lower(),
+                        str(proc.process_name),
+                        str(proc.process_cmdline)))
       else:
         query += query_base
         for proc in cb_conn.select(r_Process).where(query):
@@ -166,11 +178,11 @@ def main():
     if args.days:
       start_time = (datetime.now()-timedelta(days=args.days)
       ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-      query_base += f" process_start_time:[{start_time} TO *]"
+      query_base += " process_start_time:[%s TO *]" % start_time
     elif args.minutes:
       start_time = (datetime.now()-timedelta(minutes=args.minutes)
       ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-      query_base += f" process_start_time:[{start_time} TO *]"
+      query_base += " process_start_time:[%s TO *]" %start_time
     if args.hostname:
       if args.query and 'device_name' in args.query:
         parser.error('Cannot use --hostname with "device_name:" (in query)')
