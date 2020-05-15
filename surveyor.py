@@ -94,33 +94,10 @@ def nested_process_search(cb_conn, criteria, query_base=None, translate=False):
   """
   results = set()
 
-  try:
-    for search_field,terms in criteria.items():
-      query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+  for search_field,terms in criteria.items():
+    query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
 
-      if isinstance(cb_conn, CbThreatHunterAPI):
-        if translate:
-          try:
-            query = cb_conn.convert_query(query)
-          except ServerError:
-            log("\nCan't convert query: %s. Skipping . . ." % query)
-            continue
-
-        query += query_base
-        for proc in cb_conn.select(th_Process).where(query):
-          results.add((str(proc.device_name).lower(),
-                        str(proc.process_username).lower(),
-                        str(proc.process_name),
-                        str(proc.process_cmdline)))
-      else:
-        query += query_base
-        for proc in cb_conn.select(r_Process).where(query):
-          results.add((proc.hostname.lower(),
-                      proc.username.lower(), 
-                      proc.path,
-                      proc.cmdline))
-  except KeyboardInterrupt:
-    log("Caught CTRL-C. Returning what we have . . .")
+    results.update(process_search(cb_conn, query, query_base, translate))
 
   return results
 
@@ -174,6 +151,8 @@ def main():
 
   query_base = ''
   if args.cbc:
+    host_key = "device_name"
+    user_key = "process_username"
     cb = CbThreatHunterAPI(profile=args.profile)
     if args.days:
       start_time = (datetime.now()-timedelta(days=args.days)
@@ -183,29 +162,23 @@ def main():
       start_time = (datetime.now()-timedelta(minutes=args.minutes)
       ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
       query_base += " process_start_time:[%s TO *]" %start_time
-    if args.hostname:
-      if args.query and 'device_name' in args.query:
-        parser.error('Cannot use --hostname with "device_name:" (in query)')
-      query_base += ' device_name:%s' % args.hostname
-    if args.username:
-      if args.query and 'process_username' in args.query:
-        parser.error('Cannot use --username with "process_username:" (in query)')
-      query_base += ' process_username:%s' % args.username
-
   else:
+    host_key = "hostname"
+    user_key = "username"
     cb = CbEnterpriseResponseAPI(profile=args.profile)
     if args.days:
       query_base += ' start:-%dm' % (args.days*1440)
     elif args.minutes:
       query_base += ' start:-%dm' % args.minutes
-    if args.hostname:
-        if args.query and 'hostname' in args.query:
-          parser.error('Cannot use --hostname with "hostname:" (in query)')
-        query_base += ' hostname:%s' % args.hostname
-    if args.username:
-      if args.query and 'username' in args.query:
-        parser.error('Cannot use --username with "username:" (in query)')
-      query_base += ' username:%s' % args.username
+
+  if args.hostname:
+    if args.query and host_key in args.query:
+      parser.error('Cannot use --hostname with "%s:" (in query)' % host_key)
+    query_base += ' %s:%s' % (host_key, args.hostname)
+  if args.username:
+    if args.query and user_key in args.query:
+      parser.error('Cannot use --username with "%s:" (in query)' % user_key)
+    query_base += ' %s:%s' % (user_key, args.username)
 
   definition_files = []
   if args.deffile:
