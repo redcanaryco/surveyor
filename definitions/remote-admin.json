@@ -25,6 +25,10 @@
     "Microsoft TSC": { 
         "process_name": ["mstsc.exe"]
     },
+    "NetSupport Manager": {
+        "process_name": ["client32.exe"],
+        "internal_name": ["client32"]
+    },
     "RAdmin": { 
         "process_name": ["radmin3.exe",
                          "famitrfc.exe"]
