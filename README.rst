@@ -17,6 +17,19 @@ repository and sending a Pull Request with any definition updates or new
 definitions you've found useful. We'll do our best to adjudicate any differences 
 in opinions (sorry, you can't classify your coupon printer as wanted software :smile:)
 
+(Fork the Surveyor repository in Github)[https://github.com/redcanaryco/cb-response-surveyor/fork ]
+git clone git@github.com/YOUR_GITHUB_ACCOUNT/cb-response-surveyor
+cd cb-response-surveyor
+git checkout -b BRANCH_NAME_DESCRIBING_YOUR_CHANGE
+
+Make your changes locally. When you're satisfied with your updates run the following commands to submit a pull request:
+git add -a
+git commit -m "MESSAGE_FOR_UPDATING"
+git push -u origin $(git branch |grep '*'|cut -f2 -d' ')
+
+Go to github.com/YOUR_GITHUB_ACCOUNT/cb-response-surveyor and follow the instructions to create a new Pull Request.
+
+
 Installation
 ------------
 
