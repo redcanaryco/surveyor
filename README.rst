@@ -1,3 +1,9 @@
+Heads Up!
+---------
+On August 31, `cb-response-surveyor` will be renamed to `Surveyor` and updated with a new Main branch. Over the past few months we have been working hard on refactoring the codebase, adding support for a new EDR platform and new features. Since the addition of Carbon Black ThreatHunter we felt the old name no longer fits, so we decided to rebrand and pivot! We're not actually pivoting, just changing our name so we can add support for other EDR platforms as well.
+
+As all good things must come to an end so does our support for Python2. While Surveyor may run perfectly fine with Python2, we will not be adding support,  accepting bugs, feature requests or issues for Python2.
+
 cb-response-surveyor
 ================
 
