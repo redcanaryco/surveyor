@@ -92,8 +92,7 @@ def nested_process_search(cb_conn, criteria, base):
                 results.add(
                     (proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
         except cbapi.errors.ApiError as e:
-            # click.echo(e)
-            click.echo("There was an error. Moving on...")
+            click.echo(e)
             pass
         except KeyboardInterrupt:
             click.echo("Caught CTRL-C. Returning what we have . . .")

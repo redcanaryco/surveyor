@@ -5,7 +5,7 @@ from pprint import pprint
 
 import click
 
-from utils.surveyorutils import SurveyorUtils
+from common import EDRCommon
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 # Application version
@@ -41,7 +41,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
 
     # creates utility object with the profile and product to pass
     # sub functions to the correct product
-    utils = SurveyorUtils(product, profile)
+    utils = EDRCommon(product, profile)
 
     # placeholder for definition files if --defdir or --deffile
     # is selected

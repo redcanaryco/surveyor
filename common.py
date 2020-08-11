@@ -3,10 +3,10 @@ from pprint import pprint
 import click
 from cbapi import CbEnterpriseResponseAPI, CbThreatHunterAPI
 
-from products import response as cbr, threathunter as cbth
+from products import vmware_cb_response as cbr, vmware_cb_enterprise_edr as cbth
 
 
-class SurveyorUtils:
+class EDRCommon:
     def __init__(self, product, profile):
         self.product = product
         self.profile = profile

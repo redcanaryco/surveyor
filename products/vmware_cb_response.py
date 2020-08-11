@@ -11,7 +11,6 @@ from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
 
-
 def convert_relative_time(self, relative_time):
     """Convert a Cb Response relative time boundary (i.e., start:-1440m) to a
     device_timestamp:
@@ -77,10 +76,11 @@ def nested_process_search(cb_conn, criteria, base):
                              proc.username.lower(),
                              proc.path,
                              proc.cmdline))
-    except KeyboardInterrupt:
-        click.echo("Caught CTRL-C. Returning what we have . . .")
     except Exception as e:
         click.echo(e)
+        pass
+    except KeyboardInterrupt:
+        click.echo("Caught CTRL-C. Returning what we have . . .")
 
     return results
 
