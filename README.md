@@ -23,7 +23,7 @@ We encourage and welcome all contributions to Surveyor, which accepts two types 
 - Definition Files 
 - New Features  
   
-Please see our contribution page to learn more about what is accepted for the different types of contributions and how to contribute.  
+Please see our [contribution page](https://github.com/redcanaryco/cb-response-surveyor/blob/master/Contributing.md) to learn more about what is accepted for the different types of contributions and how to contribute.  
 
 ## Getting Started
 - Clone the repository from Github  
