@@ -31,7 +31,11 @@ Please see our [contribution page](https://github.com/redcanaryco/cb-response-su
 - Change to the surveyor directory  
      ```cd surveyor```  
 - Run setup.py to install all the required dependencies  
-  ```python setup.py```  
+  ```python setup.py``` 
+
+### Updating Existing Local Git Repos 
+- We strongly recommend updating any existing local clones to point to the new repository URL. You can do this by using git remote on the command line:
+``` git remote set-url origin https://github.com/redcanaryco/surveyor```
 
 ## Requirements
 In order to use Surveyor, you will need access to Carbon Black API tokens. Surveyor utilizes the Carbon Black API to run it’s queries against the endpoints in your environment.
