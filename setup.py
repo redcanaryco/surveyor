@@ -11,7 +11,7 @@ def read(fname):
 def find_scripts():
     scripts = []
     exclude = ['setup.py']
-    for file in os.scandir(''):
+    for file in os.scandir('.'):
         if file.name.endswith('.py') and file.is_file() and (file.name not in exclude):
             scripts.append(file.name)
     return scripts
@@ -36,6 +36,6 @@ setup(
         'Programming Language :: Python',
         ],
     install_requires=[
-        'cbapi=1.7.0', 'click'
+        'cbapi==1.7.0', 'click'
         ]
     )
