@@ -57,14 +57,12 @@ Unless otherwise specified with the ```--profile``` tag, the credentials and URL
 ```./surveyor.py --profile otheruser --defdir definitions```
 
 For ThreatHunter, we have found that the following API permissions work best and return the appropriate results from Surveyor. 
-- Access status and progress of long running background tasks - Read
 - Create, update, and delete custom watchlists and related reports and IOCs - Read
-- Enable or disable bypass mode of a device - Read
-- View and control access to external storage devices - Read
+- Custom Detections - Feeds - Create,Read,Update,Delete
 - Access and manage configuration settings to forward events - Read
-- Access query filters, requests, and results; create or stop query requests - Create,Read,Update,Delete
-- Access event and process data; create and cancel searches - Read
+- Access event and process data; create and cancel searches - Create,Read,Update,Delete
 - Retrieve SHA-256 hash metadata of stored binaries - Read
+- Unified Binary Store - File - Read 
 
 ## Using
 ### Definition Files
