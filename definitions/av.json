@@ -39,7 +39,7 @@
     "McAfee Anti Spyware": {
         "process_name": ["mfeann.exe"]
     },
-    "MfAfee Threat Prevention": {
+    "McAfee Threat Prevention": {
         "process_name": ["mfemactl.exe"]
     },
     "Windows Defender UI": {
