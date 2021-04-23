@@ -3,7 +3,8 @@ import json
 import os
 from pprint import pprint
 
-import click
+import click 
+from click import ClickException
 
 from common import EDRCommon
 
@@ -18,6 +19,11 @@ current_version = "1.0"
 # list of all the different products we support
 @click.option("--threathunter", 'product', help="Use this to use Cb ThreatHunter.", flag_value="cbth", default=False)
 @click.option("--response", 'product', help="Use this to use Cb Response.", flag_value="cbr", default=True)
+@click.option("--defender", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender", default=False)
+@click.option("--atp", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender", default=False)
+
+@click.option("--atpcreds", 'creds', help="Use this to define the path of the ini file with your ATP credentials", type=click.Path(exists=True))
+
 # filtering options
 @click.option("--prefix", help="Output filename prefix.", type=click.STRING)
 @click.option("--profile", help="The credentials profile to use.", type=click.STRING)
@@ -37,8 +43,11 @@ current_version = "1.0"
 @click.version_option(current_version)
 @click.pass_context
 def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfile, ioctype, query, output, defdir,
-        deffile):
+        deffile, creds):
 
+    if product == "defender" and creds is None: 
+        #TODO: Make this error message RED 
+        raise ClickException("--atpcreds with the path of the INI file is required")
     # creates utility object with the profile and product to pass
     # sub functions to the correct product
     utils = EDRCommon(product, profile)
@@ -49,7 +58,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
 
     # this will build out or store the filter query based on the parameters
     # somehow needs to be modular and easy to add to and account for
-    # different ways to do this via the different products
+    # different ways to do this via the different products`
     base_query = {}
     if username is not None:
         base_query.update({"username": username})
@@ -62,13 +71,16 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
 
     # create a single connection to the appropriate product
     # for use in our calls
-    cb_conn = utils.get_cbapi_connection()
+    if product == "defender":
+        conn = utils.get_connection_creds(creds)
+    else: 
+        conn = utils.get_connection()
 
     # set the output file
     if output:
         output_file = open(output, 'w', newline='')
     elif prefix:
-        output_file = open(f'{prefix}-survey.csv', 'w', newline='')
+       output_file = open(f'{prefix}-survey.csv', 'w', newline='')
     else:
         output_file = open('survey.csv', 'w', newline='')
 
@@ -80,7 +92,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
     if query:
         click.echo(f"Running Query: {query}")
         if utils.validate_input(query, hostname, username):
-            results = utils.process_search(cb_conn, query, base_query)
+            results = utils.process_search(conn, query, base_query)
             utils.write_csv(writer, results, query, "query")
         else:
             ctx.fail("Query and filters were incompatible. See above error.")
@@ -113,7 +125,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
                 for ioc in data:
                     ioc = ioc.strip()
                     query = f"{ioctype}:{ioc}"
-                    results = utils.process_search(cb_conn, query, base_query)
+                    results = utils.process_search(conn, query, base_query)
                     click.echo(f"-->{ioc}")
                     utils.write_csv(writer, results, ioc, 'ioc')
 
@@ -128,7 +140,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
             with open(definitions, 'r') as file:
                 programs = json.load(file)
                 for program, criteria in programs.items():
-                    nested_results = utils.nested_process_search(criteria, cb_conn, base_query)
+                    nested_results = utils.nested_process_search(criteria, conn, base_query)
                     click.echo(f"-->{program}: {len(nested_results)} results")
                     utils.write_csv(writer, nested_results, program, source)
                     results_set |= nested_results
