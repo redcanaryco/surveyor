@@ -113,7 +113,6 @@ class EDRCommon:
         data = urllib.parse.urlencode(body).encode("utf-8")
         req = urllib.request.Request(url, data)
         response = urllib.request.urlopen(req)
-        pprint(vars(response), indent=4)
         jsonResponse = json.loads(response.read())
         aadToken = jsonResponse["access_token"]
 

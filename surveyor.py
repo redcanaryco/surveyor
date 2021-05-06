@@ -47,7 +47,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
 
     if product == "defender" and creds is None: 
         #TODO: Make this error message RED 
-        raise ClickException("--atpcreds with the path of the INI file is required")
+        raise ClickException("\033[91m --atpcreds with the path of the INI file is required")
     # creates utility object with the profile and product to pass
     # sub functions to the correct product
     utils = EDRCommon(product, profile)
@@ -133,7 +133,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
     if deffile is not None or defdir is not None:
         results_set = set()
         for definitions in definition_files:
-            click.echo(f"Processing definition file for {definitions}")
+            click.echo(f"\033[96m Processing definition file for {definitions} \033[0m")
             basename = os.path.basename(definitions)
             source = os.path.splitext(basename)[0]
 
@@ -141,11 +141,14 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
                 programs = json.load(file)
                 for program, criteria in programs.items():
                     nested_results = utils.nested_process_search(criteria, conn, base_query)
-                    click.echo(f"-->{program}: {len(nested_results)} results")
+                    if len(nested_results) > 0:
+                        click.echo(f"\033[92m -->{program}: {len(nested_results)} results \033[0m")    
+                    else:                     
+                        click.echo(f"-->{program}: {len(nested_results)} results")
                     utils.write_csv(writer, nested_results, program, source)
                     results_set |= nested_results
     output_file.close()
-    click.echo(f"Results saved: {output_file.name}")
+    click.echo(f"\033[95m Results saved: {output_file.name} \033[0m")
 
 
 if __name__ == "__main__":

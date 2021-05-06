@@ -36,10 +36,11 @@ def process_search(conn, base, user_query):
     url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
     query = "DeviceEvents" + base + user_query + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath"
 
-    query_obj = {"Query":query}
+    query_obj = json.dumps({'Query': query}).encode("utf-8")    
     headers_obj = {
-        "Authorization":conn, 
-        "Content-Type":"application/json"
+        "Authorization":"Bearer " + conn, 
+        "Content-Type":"application/json", 
+        "Accept": 'application/json'
         }
    
     try: 
@@ -50,9 +51,8 @@ def process_search(conn, base, user_query):
         click.echo(f"There was an exception {e}")
 
     if response.status_code == 200: 
-       atp_results = response.json.results
-       for res in atp_results: 
-           results.add(res.DeviceName, res.AccountName, res.ProcessCommandLine, res.FolderPath)
+        for res in response.json()["Results"]: 
+            results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
 
     return results
 
@@ -61,8 +61,9 @@ def nested_process_search(conn, criteria, base):
     
     url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
     headers_obj = {
-        "Authorization":conn, 
-        "Content-Type":"application/json"
+        "Authorization":"Bearer " + conn, 
+        "Content-Type":"application/json", 
+        "Accept": 'application/json'
         }
 
     query_base = build_query(base)
@@ -90,20 +91,19 @@ def nested_process_search(conn, criteria, base):
             
             query = "union DeviceEvents, DeviceFileCertificateInfo, DeviceProcessEvents" + query_base + query + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath"
 
-            query_obj = {"Query":query}
+
+            data = json.dumps({'Query': query}).encode("utf-8")
 
             try: 
-                response = requests.post(url, data=query_obj, headers=headers_obj)
+                response = requests.post(url, data=data, headers=headers_obj)
             except KeyboardInterrupt: 
                 click.echo("Caught CTRL-C. Rerun surveyor")
             except Exception as e: 
                 click.echo(f"There was an exception {e}")
 
             if response.status_code == 200: 
-                
-                atp_results = response.json.results
-                for res in atp_results: 
-                    results.add(res.DeviceName, res.AccountName, res.ProcessCommandLine, res.FolderPath)
+                for res in response.json()["Results"]: 
+                    results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
 
     except Exception as e:
         click.echo(e)
