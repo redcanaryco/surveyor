@@ -17,10 +17,10 @@ def build_query(filters):
 
     for key, value in filters.items():
         if key == 'days':
-            query_base += f'| where Timestamp < ago({value}d)'
+            query_base += f'| where Timestamp > ago({value}d)'
 
         if key == 'minutes':
-            query_base += f'| where Timestamp < ago({value}m)'
+            query_base += f'| where Timestamp > ago({value}m)'
 
         if key == 'hostname':
             query_base += f'| where DeviceName contains "{value}"'
@@ -70,7 +70,6 @@ def nested_process_search(conn, criteria, base):
     try:
         for search_field, terms in criteria.items():            
             all_terms = ', '.join(f"'{term}'" for term in terms)
-            click.echo(all_terms)
             if search_field == 'process_name':
                 query = f"| where FileName has_any ({all_terms})"
             elif search_field == "filemod": 
