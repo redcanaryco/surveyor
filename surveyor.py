@@ -46,7 +46,6 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
         deffile, creds):
 
     if product == "defender" and creds is None: 
-        #TODO: Make this error message RED 
         raise ClickException("\033[91m --atpcreds with the path of the INI file is required")
     # creates utility object with the profile and product to pass
     # sub functions to the correct product

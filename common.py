@@ -83,13 +83,13 @@ class EDRCommon:
             return cb_conn
 
     def get_connection_creds(self, creds):
-        if self.profile: 
-            atp_profile = self.profile
-        else: 
-            atp_profile = "default"
-            #atp_profile = "demo"
         
         if self.product == 'defender':
+            if self.profile: 
+                atp_profile = self.profile
+            else: 
+                atp_profile = "default"
+        
             config = self.config_reader(creds)
             conn = self.get_atp_aadToken(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
 
