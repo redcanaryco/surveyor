@@ -95,7 +95,7 @@ class EDRCommon:
 
             return conn
     
-    def get_atp_aadToken(self, tenantID, appID, appSecret):
+    def get_aad_token(self, tenantID, appID, appSecret):
         tenantId = tenantID 
         appId = appID
         appSecret = appSecret
