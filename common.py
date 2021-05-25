@@ -91,9 +91,9 @@ class EDRCommon:
                 atp_profile = "default"
         
             config = self.config_reader(creds)
-            conn = self.get_atp_aadToken(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
+            token = self.get_aad_token(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
 
-            return conn
+            return token
     
     def get_aad_token(self, tenantID, appID, appSecret):
         tenantId = tenantID 
