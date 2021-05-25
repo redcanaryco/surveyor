@@ -49,15 +49,15 @@ class EDRCommon:
             return defender.process_search(conn, query, base_query)
 
     # If defdir or deffiles were given run the appropriate search based on the product
-    def nested_process_search(self, criteria, cb_conn, base_query):
+    def nested_process_search(self, criteria, conn, base_query):
         if self.product == "cbr":
-            return cbr.nested_process_search(cb_conn, criteria, base_query)
+            return cbr.nested_process_search(conn, criteria, base_query)
 
         elif self.product == "cbth":
-            return cbth.nested_process_search(cb_conn, criteria, base_query)
+            return cbth.nested_process_search(conn, criteria, base_query)
         
         elif self.product == "defender": 
-            return defender.nested_process_search(cb_conn, criteria, base_query)
+            return defender.nested_process_search(conn, criteria, base_query)
 
     # write the rows of the CSV
     def write_csv(self, output, results, *args):
@@ -91,11 +91,11 @@ class EDRCommon:
                 atp_profile = "default"
         
             config = self.config_reader(creds)
-            conn = self.get_atp_aadToken(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
+            conn = self.get_aad_token(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
 
             return conn
     
-    def get_atp_aadToken(self, tenantID, appID, appSecret):
+    def get_aad_token(self, tenantID, appID, appSecret):
         tenantId = tenantID 
         appId = appID
         appSecret = appSecret

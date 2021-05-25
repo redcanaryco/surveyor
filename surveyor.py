@@ -79,7 +79,7 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
     if output:
         output_file = open(output, 'w', newline='')
     elif prefix:
-       output_file = open(f'{prefix}-survey.csv', 'w', newline='')
+        output_file = open(f'{prefix}-survey.csv', 'w', newline='')
     else:
         output_file = open('survey.csv', 'w', newline='')
 
