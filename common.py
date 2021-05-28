@@ -15,13 +15,16 @@ class EDRCommon:
         self.product = product
         self.profile = profile
 
-    def validate_input(self, query, hostname, username):
+    def validate_input(self, query, hostname, username, days, minutes):
         if hostname and 'hostname' in query:
             click.echo('Cannot use --hostname with "hostname:" (in query)')
             return False
         elif username and 'username' in query:
             click.echo('Cannot use --username with "username:" (in query)')
             return False
+        elif days and minutes:
+            click.echo(f"Since both minutes and days are provided, the query will return all results from the previous {minutes} minutes")
+            return True
         else:
             return True
 

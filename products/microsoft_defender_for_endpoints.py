@@ -54,6 +54,9 @@ def process_search(conn, base, user_query):
         for res in response.json()["Results"]: 
             results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
 
+    else: 
+        click.echo(f"We received the following status code {response.status_code}")
+    
     return results
 
 def nested_process_search(conn, criteria, base):
@@ -103,7 +106,9 @@ def nested_process_search(conn, criteria, base):
             if response.status_code == 200: 
                 for res in response.json()["Results"]: 
                     results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
-
+            else: 
+                click.echo(f"We received the following status code {response.status_code}")
+    
     except Exception as e:
         click.echo(e)
         pass
