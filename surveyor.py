@@ -22,7 +22,7 @@ current_version = "1.0"
 @click.option("--defender", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender", default=False)
 @click.option("--atp", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender", default=False)
 
-@click.option("--atpcreds", 'creds', help="Use this to define the path of the ini file with your ATP credentials", type=click.Path(exists=True))
+@click.option("--creds", 'creds', help="Use this to define the path of the ini file with your ATP credentials", type=click.Path(exists=True))
 
 # filtering options
 @click.option("--prefix", help="Output filename prefix.", type=click.STRING)
