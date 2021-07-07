@@ -17,8 +17,6 @@ import traceback
 # Always use absolute path, ~/Documents doesn't work 
 ############################################################################################################
 
-#TODO document test cases in matrix better 
-
 class SurveyorTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -30,7 +28,7 @@ class SurveyorTest(unittest.TestCase):
         
         return super().setUp()
  
-    
+
     # Everything below here works wonderfully....DONT BREAK THEM >:( 
 
     def test_working_deffile_demo(self): 
@@ -38,13 +36,7 @@ class SurveyorTest(unittest.TestCase):
 
         result = runner.invoke(cli, ['--deffile', self.deffile_name, '--profile', 'demo', '--output', self.output_name])
 
-        self.assertIn(f"Processing definition file for {self.deffile_name}", result.output)
-
-        self.assertEqual(result.exit_code, 0)
-
-    def test_help_menu(self): 
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
+        self.assertIn(f"Processing definition file for {self.deffile_name}", result.output)  
 
         self.assertIn("Usage: surveyor [OPTIONS] COMMAND [ARGS]...", result.output)
         self.assertEqual(result.exit_code, 0)
@@ -72,11 +64,29 @@ class FailureSurveyorTests(unittest.TestCase):
                 self.assertIn(f"Option '{arg}' requires an argument.\n", result.output)
                 self.assertEqual(result.exit_code, 2)
 
+    def test_not_supported_option(self): 
+        runner = CliRunner()
+
+        arguments = ["--cs"]
+        
+        for arg in arguments: 
+            with self.subTest(arg=arg):
+                result = runner.invoke(cli, [arg])
+                self.assertIn(f"Error: No such option: {arg}", result.output)
+                self.assertEqual(result.exit_code, 2)
+
     def test_incorrect_deffile(self): 
         runner = CliRunner()
         result = runner.invoke(cli, ['--deffile', self.deffile_name], catch_exceptions=False)
         
         self.assertIn("Error: The deffile doesn't exist. Please try again.", result.output)
+        self.assertEqual(result.exit_code, 2)
+
+    def test_invalid_argument(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ['--re6e56r5r6rt'])
+
+        self.assertIn("Error: No such option:", result.output)
         self.assertEqual(result.exit_code, 2)
 
 
