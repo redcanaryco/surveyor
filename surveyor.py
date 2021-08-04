@@ -90,11 +90,8 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
     #if --query run the query and write results to the csv
     if query:
         click.echo(f"Running Query: {query}")
-        if utils.validate_input(query, hostname, username):
-            results = utils.process_search(conn, query, base_query)
-            utils.write_csv(writer, results, query, "query")
-        else:
-            ctx.fail("Query and filters were incompatible. See above error.")
+        results = utils.process_search(conn, query, base_query)
+        utils.write_csv(writer, results, query, "query")
 
     # if --deffile add file to list
     elif deffile:
