@@ -1,117 +1,57 @@
-from pprint import pprint
-
-import click
-from cbapi import CbEnterpriseResponseAPI, CbThreatHunterAPI
-import urllib.request
-import urllib.parse
-import json
-import configparser 
-
-from products import vmware_cb_response as cbr, vmware_cb_enterprise_edr as cbth, microsoft_defender_for_endpoints as defender
+import csv
+import logging
+from abc import ABC, abstractmethod
 
 
-class EDRCommon:
+class Product(ABC):
+    product: str = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
+    profile: str  # the profile is used to authenticate to the target platform
+    log: logging.Logger
+
     def __init__(self, product, profile):
-        self.product = product
         self.profile = profile
+        self.product = product
 
+        self.log = logging.getLogger(f'surveyor.{self.product}')
 
-    # Build the query based on the product that was chosen
-    def base_query(self, *args):
-        if self.product == "cbr":
-            return cbr.build_query(*args)
+        if not self.profile:
+            self.profile = 'default'
 
-        elif self.product == "cbth":
-            return args
+        self.log.debug(f'Authenticating to {self.product}')
+        self._authenticate()
+        self.log.debug(f'Authenticated')
 
-        elif self.product == "defender":
-            return defender.build_query(*args)
+    @abstractmethod
+    def _authenticate(self):
+        """
+        Authenticate to the target product API.
+        """
+        raise NotImplementedError()
 
+    # noinspection PyMethodMayBeStatic
+    def base_query(self):
+        """
+        Get base query parameters for the product.
+        """
+        return dict()
 
-    # Search based on the product that was chosen
-    def process_search(self, conn, base_query, query):
-        if self.product == "cbr":
-            return cbr.process_search(conn, query, base_query)
+    @abstractmethod
+    def build_query(self, filters: dict):
+        """
+        Build a base query for the product.
+        """
+        raise NotImplementedError()
 
-        elif self.product == "cbth":
-            return cbth.process_search(conn, query, base_query)
-        
-        elif self.product == "defender":
-            return defender.process_search(conn, query, base_query)
+    @abstractmethod
+    def process_search(self, base_query, query):
+        """
+        Perform a process search.
+        """
+        raise NotImplementedError()
 
-    # If defdir or deffiles were given run the appropriate search based on the product
-    def nested_process_search(self, criteria, conn, base_query):
-        if self.product == "cbr":
-            return cbr.nested_process_search(conn, criteria, base_query)
-
-        elif self.product == "cbth":
-            return cbth.nested_process_search(conn, criteria, base_query)
-        
-        elif self.product == "defender": 
-            return defender.nested_process_search(conn, criteria, base_query)
-
-    # write the rows of the CSV
-    def write_csv(self, output, results, *args):
-        for r in results:
-            row = [r[0], r[1], r[2], r[3], args[0], args[1]]
-            output.writerow(row)
-
-    def get_connection(self):
-        if self.product == 'cbr':
-            if self.profile:
-                cb_conn = CbEnterpriseResponseAPI(profile=self.profile)
-            else:
-                cb_conn = CbEnterpriseResponseAPI()
-
-            return cb_conn
-
-        elif self.product == 'cbth':
-            if self.profile:
-                cb_conn = CbThreatHunterAPI(profile=self.profile)
-            else:
-                cb_conn = CbThreatHunterAPI()
-            
-            return cb_conn
-
-    def get_connection_creds(self, creds):
-        
-        if self.product == 'defender':
-            if self.profile: 
-                atp_profile = self.profile
-            else: 
-                atp_profile = "default"
-        
-            config = self.config_reader(creds)
-            token = self.get_aad_token(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
-
-            return token
-    
-    def get_aad_token(self, tenantID, appID, appSecret):
-        tenantId = tenantID 
-        appId = appID
-        appSecret = appSecret
-
-        url = f"https://login.windows.net/{tenantID}/oauth2/token"
-
-        resourcesAppIdUri = 'https://api.securitycenter.windows.com'
-        body = {
-            "resource": resourcesAppIdUri, 
-            "client_id": appId, 
-            "client_secret":appSecret, 
-            "grant_type":"client_credentials"
-        }
-
-        data = urllib.parse.urlencode(body).encode("utf-8")
-        req = urllib.request.Request(url, data)
-        response = urllib.request.urlopen(req)
-        jsonResponse = json.loads(response.read())
-        aadToken = jsonResponse["access_token"]
-
-        return aadToken 
-
-    def config_reader(self, creds_file): 
-        config = configparser.ConfigParser()
-        config.sections()
-        config.read(creds_file)
-
-        return config 
+    @abstractmethod
+    def nested_process_search(self, criteria, base_query):
+        """
+        Performed a nested process search.
+        """
+        raise NotImplementedError()

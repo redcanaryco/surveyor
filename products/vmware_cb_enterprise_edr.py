@@ -1,20 +1,17 @@
-import csv
-import json
-import os
-import time
 import datetime
-from pprint import pprint
 
-import click
 import cbapi.errors
-from cbapi.psc.threathunter import QueryBuilder
+import click
 from cbapi.psc.threathunter import CbThreatHunterAPI, Process
+from cbapi.psc.threathunter import QueryBuilder
+
+from common import Product
 
 
-def convert_relative_time(relative_time):
-    """Convert a Cb Response relative time boundary (i.e., start:-1440m) to a
-    device_timestamp:
-      device_timestamp:[2019-06-02T00:00:00Z TO 2019-06-03T23:59:00Z]
+def _convert_relative_time(relative_time):
+    """
+    Convert a Cb Response relative time boundary (i.e., start:-1440m) to a device_timestamp:
+    device_timestamp:[2019-06-02T00:00:00Z TO 2019-06-03T23:59:00Z]
     """
     time_format = "%Y-%m-%dT%H:%M:%SZ"
     minus_minutes = relative_time.split(':')[1].split('m')[0].split('-')[1]
@@ -25,79 +22,91 @@ def convert_relative_time(relative_time):
     return device_timestamp
 
 
-def build_query(filters):
-    query_base = QueryBuilder()
+class CbEnterpriseEdr(Product):
+    product: str = 'cbth'
+    _conn: CbThreatHunterAPI  # CB Response API
 
-    for key, value in filters.items():
-        if key == "days":
-            minutes_back = f'start:-{value * 1440}m'
-            minutes_back = convert_relative_time(minutes_back)
-            query_base.and_(minutes_back)
+    def __init__(self, profile: str):
+        super().__init__(self.product, profile)
 
-        if key == "minutes":
-            minutes_back = f'start:-{value}m'
-            minutes_back = convert_relative_time(minutes_back)
-            query_base.and_(minutes_back)
+    def _authenticate(self):
+        if self.profile:
+            cb_conn = CbThreatHunterAPI(profile=self.profile)
+        else:
+            cb_conn = CbThreatHunterAPI()
 
-        if key == "hostname":
-            device_name = f'device_name:{value}'
-            query_base.and_(device_name)
+        self._conn = cb_conn
 
-        if key == "username":
-            user_name = f'username:{value}'
-            query_base.and_(user_name)
+    def build_query(self, filters: dict):
+        query_base = QueryBuilder()
 
-    return query_base
+        for key, value in filters.items():
+            if key == "days":
+                minutes_back = f'start:-{value * 1440}m'
+                minutes_back = _convert_relative_time(minutes_back)
+                query_base.and_(minutes_back)
 
+            if key == "minutes":
+                minutes_back = f'start:-{value}m'
+                minutes_back = _convert_relative_time(minutes_back)
+                query_base.and_(minutes_back)
 
-def process_search(cb_conn, base, user_query):
-    results = set()
+            if key == "hostname":
+                device_name = f'device_name:{value}'
+                query_base.and_(device_name)
 
-    if len(base) >= 1:
-        base_query = build_query(base)
-        string_query = base_query.where(user_query)
-        # click.echo(string_query)
-    else:
-        string_query = user_query
+            if key == "username":
+                user_name = f'username:{value}'
+                query_base.and_(user_name)
 
-    try:
-        query = cb_conn.select(Process)
-        for proc in query.where(string_query):
-            # click.echo(f"Results: {proc} ")
-            results.add((proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
-    except KeyboardInterrupt:
-        click.echo("Caught CTRL-C. Returning what we have.")
+        return query_base
 
-    return results
+    def process_search(self, base_query, query):
+        results = set()
 
+        if len(base_query) >= 1:
+            base_query = self.build_query(base_query)
+            string_query = base_query.where(query)
+        else:
+            string_query = query
 
-def nested_process_search(cb_conn, criteria, base):
-    results = set()
-
-    base_query = build_query(base)
-
-    # pprint(vars(base), indent=4)
-    def_query = ''
-    for search_field, terms in criteria.items():
         try:
-            def_query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
-            # convert the legacy from CbR to CbTh
-            query = cb_conn.convert_query(def_query)
+            query = self._conn.select(Process)
 
-            process = cb_conn.select(Process)
-
-            full_query = base_query.where(query)
-            for proc in process.where(full_query):
-                # for proc in process.where(query):
-                results.add(
-                    (proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
-        except cbapi.errors.ApiError as e:
-            click.echo(e)
-            pass
+            # noinspection PyUnresolvedReferences
+            for proc in query.where(string_query):
+                results.add((proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
         except KeyboardInterrupt:
-            click.echo("Caught CTRL-C. Returning what we have . . .")
-            pass
+            click.echo("Caught CTRL-C. Returning what we have.")
 
-    click.echo(len(results))
+        return results
 
-    return results
+    def nested_process_search(self, criteria, base_query):
+        results = set()
+        base_query = self.build_query(base_query)
+
+        for search_field, terms in criteria.items():
+            try:
+                def_query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+
+                # convert the legacy from CbR to CbTh
+                query = self._conn.convert_query(def_query)
+
+                process = self._conn.select(Process)
+
+                full_query = base_query.where(query)
+
+                # noinspection PyUnresolvedReferences
+                for proc in process.where(full_query):
+                    results.add(
+                        (proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
+            except cbapi.errors.ApiError as e:
+                click.echo(e)
+                pass
+            except KeyboardInterrupt:
+                click.echo("Caught CTRL-C. Returning what we have . . .")
+                pass
+
+        click.echo(len(results))
+
+        return results
