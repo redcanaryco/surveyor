@@ -1,7 +1,8 @@
 import datetime
+import logging
+from typing import Union, Tuple
 
 import cbapi.errors
-import click
 from cbapi.psc.threathunter import CbThreatHunterAPI, Process
 from cbapi.psc.threathunter import QueryBuilder
 
@@ -45,23 +46,22 @@ class CbEnterpriseEdr(Product):
                 minutes_back = f'start:-{value * 1440}m'
                 minutes_back = _convert_relative_time(minutes_back)
                 query_base.and_(minutes_back)
-
-            if key == "minutes":
+            elif key == "minutes":
                 minutes_back = f'start:-{value}m'
                 minutes_back = _convert_relative_time(minutes_back)
                 query_base.and_(minutes_back)
-
-            if key == "hostname":
+            elif key == "hostname":
                 device_name = f'device_name:{value}'
                 query_base.and_(device_name)
-
-            if key == "username":
+            elif key == "username":
                 user_name = f'username:{value}'
                 query_base.and_(user_name)
+            else:
+                self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
         return query_base
 
-    def process_search(self, base_query, query):
+    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
         results = set()
 
         if len(base_query) >= 1:
@@ -77,11 +77,11 @@ class CbEnterpriseEdr(Product):
             for proc in query.where(string_query):
                 results.add((proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
         except KeyboardInterrupt:
-            click.echo("Caught CTRL-C. Returning what we have.")
+            self._echo("Caught CTRL-C. Returning what we have.")
 
-        return results
+        self._add_results(list(results), tag)
 
-    def nested_process_search(self, criteria, base_query):
+    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
         results = set()
         base_query = self.build_query(base_query)
 
@@ -101,12 +101,12 @@ class CbEnterpriseEdr(Product):
                     results.add(
                         (proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
             except cbapi.errors.ApiError as e:
-                click.echo(e)
+                self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
+                self.log.exception(e)
                 pass
             except KeyboardInterrupt:
-                click.echo("Caught CTRL-C. Returning what we have . . .")
+                self._echo("Caught CTRL-C. Returning what we have . . .")
                 pass
 
-        click.echo(len(results))
-
-        return results
+        self._echo(f'Nested search results: {len(results)}')
+        self._add_results(list(results), tag)

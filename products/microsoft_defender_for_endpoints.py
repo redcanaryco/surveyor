@@ -1,7 +1,8 @@
 import configparser
+import logging
 import os
+from typing import Union, Tuple
 
-import click
 import requests
 
 from common import Product
@@ -65,12 +66,11 @@ class DefenderForEndpoints(Product):
                 for res in response.json()["Results"]:
                     results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
             else:
-                click.echo(f"We received the following status code {response.status_code}")
+                self._echo(f"We received the following status code {response.status_code}")
         except KeyboardInterrupt as e:
-            click.echo("Caught CTRL-C. Rerun surveyor")
-            self.log.exception(e)
+            self._echo("Caught CTRL-C. Rerun surveyor")
         except Exception as e:
-            click.echo(f"There was an exception {e}")
+            self._echo(f"There was an exception {e}")
             self.log.exception(e)
 
         return results
@@ -82,14 +82,16 @@ class DefenderForEndpoints(Product):
             "Accept": 'application/json'
         }
 
-    def process_search(self, base_query, query):
-        query = "DeviceEvents" + base_query + query + "| project DeviceName, AccountName, ProcessCommandLine, " \
-                                                      "FolderPath "
+    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+        query = query + self.build_query(base_query)
+
+        query = "DeviceEvents " + query + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath "
         query = {'Query': query}
 
-        return self._post_advanced_query(data=query, headers=self._get_default_header())
+        results = self._post_advanced_query(data=query, headers=self._get_default_header())
+        self._add_results(list(results), tag)
 
-    def nested_process_search(self, criteria, base_query):
+    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
         results = set()
 
         query_base = self.build_query(base_query)
@@ -112,6 +114,8 @@ class DefenderForEndpoints(Product):
                 elif search_field == "internal_name":
                     query = f"| where ProcessVersionInfoInternalFileName has_any ({all_terms})"
                 else:
+                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                               logging.WARNING)
                     continue
 
                 query = "union DeviceEvents, DeviceFileCertificateInfo, DeviceProcessEvents" + query_base + query \
@@ -121,9 +125,9 @@ class DefenderForEndpoints(Product):
                 for entry in self._post_advanced_query(data=data, headers=self._get_default_header()):
                     results.add(entry)
         except KeyboardInterrupt:
-            click.echo("Caught CTRL-C. Returning what we have...")
+            self._echo("Caught CTRL-C. Returning what we have...")
 
-        return results
+        self._add_results(list(results), tag)
 
     def build_query(self, filters: dict) -> str:
         query_base = ''
@@ -131,14 +135,13 @@ class DefenderForEndpoints(Product):
         for key, value in filters.items():
             if key == 'days':
                 query_base += f'| where Timestamp > ago({value}d)'
-
-            if key == 'minutes':
+            elif key == 'minutes':
                 query_base += f'| where Timestamp > ago({value}m)'
-
-            if key == 'hostname':
+            elif key == 'hostname':
                 query_base += f'| where DeviceName contains "{value}"'
-
-            if key == 'username':
+            elif key == 'username':
                 query_base += f'| where AccountName contains "{value}"'
+            else:
+                self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
         return query_base

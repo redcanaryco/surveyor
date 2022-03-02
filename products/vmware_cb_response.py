@@ -1,6 +1,7 @@
+import logging
 from datetime import datetime, timedelta
+from typing import Union, Tuple
 
-import click
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
@@ -36,29 +37,28 @@ class CbResponse(Product):
 
         self._conn = cb_conn
 
-    def build_query(self, filters: dict):
+    def build_query(self, filters: dict) -> str:
         query_base = ''
 
         for key, value in filters.items():
             if key == 'days':
                 query_base += ' start:-%dm' % (value * 1440)
-
-            if key == 'minutes':
+            elif key == 'minutes':
                 query_base += ' start:-%dm' % value
-
-            if key == 'hostname':
+            elif key == 'hostname':
                 query_base += ' hostname:%s' % value
-
-            if key == 'username':
+            elif key == 'username':
                 query_base += ' username:%s' % value
+            else:
+                self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
         return query_base
 
-    def process_search(self, base_query, query):
+    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
         results = set()
 
         query = query + self.build_query(base_query)
-        click.echo(query)
+        self._echo(query)
 
         try:
             # noinspection PyUnresolvedReferences
@@ -68,11 +68,11 @@ class CbResponse(Product):
                              proc.path,
                              proc.cmdline))
         except KeyboardInterrupt:
-            click.echo("Caught CTRL-C. Returning what we have . . .")
+            self._echo("Caught CTRL-C. Returning what we have . . .")
 
-        return results
+        self._add_results(list(results), tag)
 
-    def nested_process_search(self, criteria, base_query):
+    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
         results = set()
 
         try:
@@ -87,9 +87,10 @@ class CbResponse(Product):
                                  proc.path,
                                  proc.cmdline))
         except Exception as e:
-            click.echo(e)
+            self._echo(f'Error (see log for details): {e}', logging.ERROR)
+            self.log.exception(e)
             pass
         except KeyboardInterrupt:
-            click.echo("Caught CTRL-C. Returning what we have . . .")
+            self._echo("Caught CTRL-C. Returning what we have . . .")
 
-        return results
+        self._add_results(list(results), tag)
