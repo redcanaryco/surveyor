@@ -1,23 +1,22 @@
 import csv
+import datetime
 import json
 import logging
 import os
-import re
-from typing import Tuple
+from typing import Optional, Union, Tuple
 
 import click
 from click import ClickException
+from tqdm import tqdm
 
 from common import Product
+from help import log_echo, write_results
 from load import get_product_instance, get_products
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 
 # Application version
 current_version = "1.0"
-
-# regular expression that detects ANSI color codes
-ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
 
 def _list_products(ctx, _, value):
@@ -32,42 +31,39 @@ def _list_products(ctx, _, value):
     ctx.exit()
 
 
-def _strip_ansi_codes(message: str) -> str:
-    """
-    Strip ANSI sequences from a log string
-    """
-    return ansi_escape_regex.sub('', message)
+table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
 
 
-def _log_echo(message: str, log: logging.Logger):
+def _write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
+                   tag: Union[str, Tuple], log: logging.Logger):
     """
-    Write a command to STDOUT and the debug log stream.
+    Helper function for writing search results to CSV or STDOUT.
     """
-    click.echo(message)
+    if output:
+        if isinstance(tag, Tuple):
+            tag = tag[0]
 
-    # strip ANSI sequences from log string
-    log.debug(_strip_ansi_codes(message))
+        if len(results) > 0:
+            log_echo(f"\033[92m-->{tag}: {len(results)} results \033[0m", log)
+        else:
+            log_echo(f"-->{tag}: {len(results)} results", log)
 
-
-def _write_csv(output: csv.writer, results: list[Tuple[str, str, str, str]], program: str, source: str):
-    """
-    Write results to output CSV.
-    """
-    for hostname, username, path, command_line in results:
-        row = [hostname, username, path, command_line, program, source]
-        output.writerow(row)
-
+    write_results(output, results, program, source, template=table_template)
+    
 
 # noinspection SpellCheckingInspection
 @click.group("surveyor", context_settings=CONTEXT_SETTINGS, invoke_without_command=True, chain=False)
 # list of all the different products we support
-@click.option("--threathunter", 'product', help="Use this to use Cb ThreatHunter.", flag_value="cbth", default=False)
-@click.option("--response", 'product', help="Use this to use Cb Response.", flag_value="cbr", default=True)
-@click.option("--defender", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender",
+@click.option("--threathunter", 'product', help="Query Cb ThreatHunter.", flag_value="cbth", default=False)
+@click.option("--response", 'product', help="Query Cb Response.", flag_value="cbr", default=False)
+@click.option("--defender", 'product', help="Query Microsoft Defender for Endpoints", flag_value="defender",
               default=False)
-@click.option("--atp", 'product', help="Use this to query Microsoft Defender for Endpoints", flag_value="defender",
+@click.option("--atp", 'product', help="Query Microsoft Defender for Endpoints", flag_value="defender",
               default=False)
-@click.option("--creds", 'creds', help="Use this to define the path of the ini file with your ATP credentials",
+@click.option("--s1", 'product', help="Query SentinelOne", flag_value="s1", default=False)
+@click.option('--product', 'custom_product', help="Query the specified product",
+              type=click.Choice(list(get_products())))
+@click.option("--creds", 'creds', help="Path to credential file for SentinelOne/Defender for Endpoints",
               type=click.Path(exists=True))
 # filtering options
 @click.option("--prefix", help="Output filename prefix.", type=click.STRING)
@@ -77,27 +73,67 @@ def _write_csv(output: csv.writer, results: list[Tuple[str, str, str, str]], pro
 @click.option("--hostname", help="Target specific host by name.", type=click.STRING)
 @click.option("--username", help="Target specific username.")
 # different ways you can survey the EDR
-@click.option("--deffile", help="Definition file to process (must end in .json).", type=click.STRING)
-@click.option("--defdir", help="Directory containing multiple definition files.", type=click.STRING)
+@click.option("--deffile", 'def_file', help="Definition file to process (must end in .json).", type=click.STRING)
+@click.option("--defdir", 'def_dir', help="Directory containing multiple definition files.", type=click.STRING)
 @click.option("--query", help="A single query to execute.")
-@click.option("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype")
-@click.option("--ioctype", help="One of: ipaddr, domain, md5")
+@click.option("--iocfile", 'ioc_file', help="IOC file to process. One IOC per line. REQUIRES --ioctype")
+@click.option("--ioctype", 'ioc_type', help="One of: ipaddr, domain, md5")
 # optional output
 @click.option("--output", "--o", help="Specify the output file for the results. "
                                       "The default is create survey.csv in the current directory.")
+@click.option("--no-file", help="Write results to STDOUT instead of the output CSV", is_flag=True, default=False)
+@click.option("--no-progress", help="Suppress progress bar", is_flag=True, default=False)
 @click.version_option(current_version)
 @click.option('--products', default=False, is_flag=True, callback=_list_products, expose_value=False, is_eager=True)
+@click.option("--log-dir", 'log_dir', help="Specify the logging directory.", type=click.STRING, default='logs')
 @click.pass_context
-def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfile, ioctype, query, output, defdir,
-        deffile, creds):
+def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days: Optional[int], minutes: Optional[int],
+        product: Optional[Union[str, Product]], custom_product: Optional[str], username: Optional[str],
+        ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
+        def_dir: Optional[str], def_file: Optional[str], creds: Optional[str], no_file: bool, no_progress: bool,
+        log_dir: str):
+
+    if not product and not custom_product:
+        # default product is CBR
+        product = 'cbr'
+    elif not product:
+        product = custom_product
+    else:
+        ctx.fail(f'Please specify either --product or one of --response/--defender/etc')
+
+    # checks to ensure required parameters are present
+    if (product == 'defender' or product == 's1') and not creds:
+        # defender product requires credential file
+        raise ClickException(f"\033[91m--creds required when using {product} product\033[0m")
+
+    if ioc_file and ioc_type is None:
+        ctx.fail("--iocfile requires --ioctype")
+
+    if ioc_file and not os.path.isfile(ioc_file):
+        ctx.fail(f'Supplied --iocfile is not a file')
+
+    if (output or prefix) and no_file:
+        ctx.fail('--output and --prefix cannot be used with --no-file')
+
     # instantiate a logger
     log = logging.getLogger('surveyor')
     logging.debug(f'Product: {product}')
 
-    # perform checks to ensure required parameters are present
-    if product == "defender" and creds is None:
-        # defender product requires credential file
-        raise ClickException("\033[91m--creds required when using 'defender' platform\033[0m")
+    # configure logging
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    root.handlers = list()  # remove all default handlers
+    log_format = '[%(asctime)s] [%(levelname)-8s] [%(name)-36s] [%(filename)-20s:%(lineno)-4s] %(message)s'
+
+    # create logging directory if it does not exist
+    os.makedirs(log_dir, exist_ok=True)
+
+    # create logging file handler
+    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product}.log'
+    handler = logging.FileHandler(os.path.join(log_dir, log_file_name))
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter(log_format))
+    root.addHandler(handler)
 
     # build arguments required for product class
     # must products only require the profile name
@@ -111,11 +147,10 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
 
     # instantiate a product class instance based on the product string
     try:
-        product: Product = get_product_instance(product, **kwargs)
+        product = get_product_instance(product, **kwargs)
     except ValueError as e:
         log.exception(e)
-        click.echo(str(e))
-        ctx.exit()
+        ctx.fail(str(e))
 
     # placeholder for definition files if --defdir or --deffile is selected
     definition_files = list()
@@ -137,82 +172,102 @@ def cli(ctx, prefix, hostname, profile, days, minutes, product, username, iocfil
     if minutes is not None:
         base_query.update({"minutes": minutes})
 
-    # determine output file name
-    if output:
-        file_name = output
-    elif prefix:
-        file_name = f'{prefix}-survey.csv'
-    else:
-        file_name = 'survey.csv'
+    header = ["endpoint", "username", "process_path", "cmdline", "program", "source"]
+    if not no_file:
+        # determine output file name
+        if output:
+            file_name = output
+        elif prefix:
+            file_name = f'{prefix}-survey.csv'
+        else:
+            file_name = 'survey.csv'
 
-    with open(file_name, 'w', newline='') as output_file:
-        # care CSV writer and write the header row
+        output_file = open(file_name, 'w', newline='')
+
+        # create CSV writer and write the header row
         writer = csv.writer(output_file)
-        writer.writerow(["endpoint", "username", "process_path", "cmdline", "program", "source"])
-
-        # if --query run the query and write results to the csv
+        writer.writerow(header)
+    else:
+        output_file = None
+        writer = None
+        no_progress = True
+        template_str = f'{{:<{table_template[0]}}} {{:<{table_template[1]}}} {{:<{table_template[2]}}} ' \
+                       f'{{:<{table_template[3]}}}'
+        click.echo(template_str.format(*header))
+    
+    try:
         if query:
-            _log_echo(f"Running Query: {query}", log)
-            results = product.process_search(query, base_query)
+            # if a query is specified run it directly
+            log_echo(f"Running Custom Query: {query}", log)
+            product.process_search('query', base_query, query)
 
-            _write_csv(writer, results, query, "query")
+            for tag, results in product.get_results().items():
+                _write_results(writer, results, query, "query", tag, log)
 
-        # if --deffile add file to list
-        elif deffile:
-            if not os.path.exists(deffile):
-                ctx.fail("The deffile doesn't exist. Please try again.")
-            definition_files.append(deffile)
+        # test if deffile exists
+        # deffile can be resolved from 'definitions' folder without needing to specify path or extension
+        if def_file:
+            if not os.path.exists(def_file):
+                repo_deffile: str = os.path.join(os.path.dirname(__file__), 'definitions', def_file)
+                if not repo_deffile.endswith('.json'):
+                    repo_deffile = repo_deffile + '.json'
+
+                if os.path.isfile(repo_deffile):
+                    log.debug(f'Using repo definition file {repo_deffile}')
+                    def_file = repo_deffile
+                else:
+                    ctx.fail("The deffile doesn't exist. Please try again.")
+            definition_files.append(def_file)
 
         # if --defdir add all files to list
-        elif defdir:
-            if not os.path.exists(defdir):
+        if def_dir:
+            if not os.path.exists(def_dir):
                 ctx.fail("The defdir doesn't exist. Please try again.")
             else:
-                for root, dirs, files in os.walk(defdir):
+                for root, dirs, files in os.walk(def_dir):
                     for filename in files:
                         if os.path.splitext(filename)[1] == '.json':
-                            # if filename.endswith('.json'):
                             definition_files.append(os.path.join(root, filename))
 
-        # if --iocfile run search for iocs
-        elif iocfile:
-            if ioctype is None:
-                ctx.fail("[!] --iocfile requires --ioctype")
-            else:
-                with open(iocfile) as iocfile:
-                    data = iocfile.readlines()
-                    _log_echo(f"Processing IOC file: {iocfile}", log)
+        # run search based on IOC file
+        if ioc_file:
+            with open(ioc_file) as ioc_file:
+                data = ioc_file.readlines()
+                log_echo(f"Processing IOC file: {ioc_file}", log)
 
-                    for ioc in data:
-                        ioc = ioc.strip()
-                        query = f"{ioctype}:{ioc}"
-                        results = product.process_search(query, base_query)
-                        _log_echo(f"-->{ioc}", log)
-                        _write_csv(writer, results, ioc, 'ioc')
+                for ioc in data:
+                    ioc = ioc.strip()
+                    base_query.update({ioc_type: ioc})
+                    product.process_search(ioc, base_query, query)
+                    del base_query[ioc_type]
+
+                for tag, results in product.get_results().items():
+                    _write_results(writer, results, ioc, 'ioc', tag, log)
 
         # run search against definition files and write to csv
-        if deffile is not None or defdir is not None:
-            results_set = set()
-            for definitions in definition_files:
-                _log_echo(f"\033[96m Processing definition file for {definitions} \033[0m", log)
-
+        if def_file is not None or def_dir is not None:
+            for definitions in tqdm(definition_files, desc='Processing definition files', disable=no_progress):
                 basename = os.path.basename(definitions)
                 source = os.path.splitext(basename)[0]
 
                 with open(definitions, 'r') as file:
                     programs = json.load(file)
                     for program, criteria in programs.items():
-                        nested_results = product.nested_process_search(criteria, base_query)
+                        product.nested_process_search((program, source), criteria, base_query)
 
-                        if len(nested_results) > 0:
-                            _log_echo(f"\033[92m-->{program}: {len(nested_results)} results \033[0m", log)
-                        else:
-                            _log_echo(f"-->{program}: {len(nested_results)} results", log)
+            for (program, source), nested_results in product.get_results().items():
+                _write_results(writer, nested_results, program, source, program, log)
 
-                        _write_csv(writer, nested_results, program, source)
-                        results_set |= nested_results
-
-        _log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", log)
+        if output_file:
+            log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", log)
+    except KeyboardInterrupt:
+        log_echo("Caught CTRL-C. Exiting...", log)
+    except Exception as e:
+        log_echo(f'Caught {type(e).__name__} (see log for details): {e}', log, logging.ERROR)
+        log.exception(e)
+    finally:
+        if output_file:
+            output_file.close()
 
 
 if __name__ == "__main__":
