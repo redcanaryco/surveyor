@@ -1,44 +1,55 @@
+import csv
+import logging
 import os
-from pathlib import Path
-from typing import Iterator
+import re
+from typing import Iterator, Tuple, Optional
 
-from common import Product
-
-
-# import all files in the 'products' folder
-# this is required so that Product.__subclasses__() can resolve all implemented subclasses
-# this ensure that new subclasses in 'products' will automatically be picked up
-for module in os.listdir(os.path.join(os.path.dirname(__file__), 'products')):
-    if module == '__init__.py' or module[-3:] != '.py':
-        continue
-    __import__('products.' + module[:-3], locals(), globals())
-    del module
+import click
 
 
-def _get_subclasses():
-    seen = set()
-
-    for subclass in Product.__subclasses__():
-        if subclass.product in seen:
-            raise ValueError(f'Product {subclass.product} is declared multiple times')
-
-        seen.add(subclass.product)
-        yield subclass
+# regular expression that detects ANSI color codes
+ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
 
-def get_product_instance(product: str, **kwargs) -> Product:
+def _strip_ansi_codes(message: str) -> str:
     """
-    Get an instance of the product implementation matching the specified product string.
+    Strip ANSI sequences from a log string
     """
-    for subclass in Product.__subclasses__():
-        if subclass.product == product:
-            return subclass(**kwargs)
-
-    raise ValueError(f'Product {product} is not implemented')
+    return ansi_escape_regex.sub('', message)
 
 
-def get_products() -> Iterator[str]:
+def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG):
     """
-    Get a list of all implemented product strings.
+    Write a command to STDOUT and the debug log stream.
     """
-    return (subclass.product for subclass in _get_subclasses())
+    color_message = message
+
+    if level == logging.WARNING:
+        color_message = f'\u001b[33m{color_message}\u001b[0m'
+    elif level >= logging.ERROR:
+        color_message = f'\u001b[31m{color_message}\u001b[0m'
+
+    click.echo(color_message)
+
+    # strip ANSI sequences from log string
+    log.log(level, message)
+
+
+def write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
+                  template: Tuple[int, int, int, int, int, int] = (20, 20, 20, 20, 20, 20)):
+    """
+    Write results to output CSV.
+    """
+    template_str = f'{{:<{template[0]}}} {{:<{template[1]}}} {{:<{template[2]}}} {{:<{template[3]}}}'
+    for hostname, username, path, command_line in results:
+        row = [hostname, username, path, command_line, program, source]
+        
+        if output:
+            output.writerow(row)
+        else:
+            # trim data to make sure it fits into table format
+            for i in range(len(row)):
+                if len(row[i]) > template[i]:
+                    row[i] = row[i][:template[i] - 3] + '...'
+
+            click.echo(template_str.format(*row))

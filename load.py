@@ -1,3 +1,7 @@
+import os
+import re
+from typing import Iterator
+
 from common import Product
 
 
@@ -9,10 +13,6 @@ for module in os.listdir(os.path.join(os.path.dirname(__file__), 'products')):
         continue
     __import__('products.' + module[:-3], locals(), globals())
     del module
-
-
-# regular expression that detects ANSI color codes
-ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
 
 def _get_subclasses():
