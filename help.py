@@ -2,6 +2,7 @@ import csv
 import logging
 import os
 import re
+from datetime import datetime
 from typing import Iterator, Tuple, Optional
 
 import click
@@ -53,3 +54,10 @@ def write_results(output: Optional[csv.writer], results: list[Tuple[str, str, st
                     row[i] = row[i][:template[i] - 3] + '...'
 
             click.echo(template_str.format(*row))
+
+
+def datetime_to_epoch_millis(date: datetime) -> int:
+    """
+    Convert a datetime object to an epoch timestamp in milliseconds.
+    """
+    return int((date - datetime.utcfromtimestamp(0)).total_seconds() * 1000)

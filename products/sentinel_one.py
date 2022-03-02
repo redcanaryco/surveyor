@@ -10,10 +10,7 @@ import requests
 from requests.adapters import HTTPAdapter
 
 from common import Product
-
-
-def _get_epoch_millis(date: datetime) -> int:
-    return int((date - datetime.utcfromtimestamp(0)).total_seconds() * 1000)
+from help import datetime_to_epoch_millis
 
 
 class SentinelOne(Product):
@@ -277,11 +274,11 @@ class SentinelOne(Product):
 
                 params = self._get_default_body()
                 params.update({
-                    "fromDate": _get_epoch_millis(min_from_date),
+                    "fromDate": datetime_to_epoch_millis(min_from_date),
                     "isVerbose": False,
                     "queryType": ['events'],  # options: 'events', 'procesState'
                     "limit": 20000,
-                    "toDate": _get_epoch_millis(to_date),
+                    "toDate": datetime_to_epoch_millis(to_date),
                     "query": merged_query
                 })
 
