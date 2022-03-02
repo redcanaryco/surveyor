@@ -135,8 +135,7 @@ class SentinelOne(Product):
         # therefore we return the from/to dates separately
         return query_base, from_date, to_date
 
-    def _get_all_paginated_data(self, response: requests.Response, params: Optional[dict] = None,
-                                key='data') -> list[dict]:
+    def _get_all_paginated_data(self, response: requests.Response,key='data') -> list[dict]:
         """
         Get and return all paginated data from the response, making additional queries if necessary.
         """
@@ -144,14 +143,21 @@ class SentinelOne(Product):
 
         data = list[dict]()
         data.extend(response.json()[key])
+        
+        params = self._get_default_body()
+        params['limit'] = 1000
 
         pagination_info = response.json()['pagination']
         while pagination_info['nextCursor']:
-            response = self._session.get(pagination_info['nextCursor'],
-                                         params=params, headers=self._get_default_header())
+            response = self._session.get(response.url, params=params, headers=self._get_default_header())
             response.raise_for_status()
-            data.extend(response.json()[key])
+
+            call_data = response.json()[key]
+            self.log.debug(f'Got {len(call_data)} results in page')
+            data.extend(call_data)
+
             pagination_info = response.json()['pagination']
+            params['cursor'] = pagination_info['nextCursor']
 
         return data
 
@@ -266,8 +272,8 @@ class SentinelOne(Product):
                     merged_query += query
                     merged_tags.add(tag)
 
-                merged_tag = (",".join((x[0] if isinstance(x, Tuple) else x for x in merged_tags)),
-                              ",".join((x[1] if isinstance(x, Tuple) else x for x in merged_tags)))
+                merged_tag = (",".join(set(x[0] if isinstance(x, Tuple) else x for x in merged_tags)),
+                              ",".join(set(x[1] if isinstance(x, Tuple) else x for x in merged_tags)))
 
                 params = self._get_default_body()
                 params.update({
