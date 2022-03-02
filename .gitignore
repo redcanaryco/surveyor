@@ -116,3 +116,6 @@ ENV/
 .idea/mongoSettings.xml
 
 .idea/
+
+# other
+logs/
