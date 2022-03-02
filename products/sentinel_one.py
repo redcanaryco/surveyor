@@ -132,7 +132,7 @@ class SentinelOne(Product):
         # therefore we return the from/to dates separately
         return query_base, from_date, to_date
 
-    def _get_all_paginated_data(self, response: requests.Response,key='data') -> list[dict]:
+    def _get_all_paginated_data(self, response: requests.Response, key='data') -> list[dict]:
         """
         Get and return all paginated data from the response, making additional queries if necessary.
         """
