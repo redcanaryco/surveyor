@@ -255,6 +255,15 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
                     for program, criteria in programs.items():
                         product.nested_process_search((program, source), criteria, base_query)
 
+                        if product.has_results():
+                            # write results as they become available
+                            for _, nested_results in product.get_results().items():
+                                _write_results(writer, nested_results, program, source, program, log)
+
+                            # ensure results are only written once
+                            product.clear_results()
+
+            # write any remaining results
             for (program, source), nested_results in product.get_results().items():
                 _write_results(writer, nested_results, program, source, program, log)
 

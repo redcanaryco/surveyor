@@ -61,6 +61,18 @@ class Product(ABC):
         """
         raise NotImplementedError()
 
+    def has_results(self) -> bool:
+        """
+        Test whether product has any search results.
+        """
+        return len(self._results) > 0
+
+    def clear_results(self) -> None:
+        """
+        Clear all stored results.
+        """
+        self._results.clear()
+
     def get_results(self) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
         """
         Get results from all process_search and nested_process_search calls.

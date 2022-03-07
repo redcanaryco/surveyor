@@ -227,6 +227,12 @@ class SentinelOne(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
+    def has_results(self) -> bool:
+        return False
+
+    def clear_results(self) -> None:
+        return
+
     def get_results(self) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
         self.log.debug('Entered get_results')
 
