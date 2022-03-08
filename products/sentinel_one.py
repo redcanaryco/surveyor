@@ -250,7 +250,7 @@ class SentinelOne(Product):
 
                 self._queries[tag].append((from_date, to_date, query))
 
-                if len(self._queries) == 10:
+                if sum(len(x) for x in self._queries.values()) == 10:
                     self._process_queries()
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
