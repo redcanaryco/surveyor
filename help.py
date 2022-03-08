@@ -44,7 +44,7 @@ def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG, use_
 def write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
                   template: Tuple[int, int, int, int, int, int] = (20, 20, 20, 20, 20, 20)):
     """
-    Write results to output CSV.
+    Write results to output CSV or STDOUT.
     """
     template_str = f'{{:<{template[0]}}} {{:<{template[1]}}} {{:<{template[2]}}} {{:<{template[3]}}}'
     for hostname, username, path, command_line in results:
