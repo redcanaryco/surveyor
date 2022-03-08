@@ -38,7 +38,7 @@ def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG, use_
         click.echo(color_message)
 
     # strip ANSI sequences from log string
-    log.log(level, message)
+    log.log(level, _strip_ansi_codes(message))
 
 
 def write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
