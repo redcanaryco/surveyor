@@ -35,7 +35,7 @@ table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
 
 
 def _write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
-                   tag: Union[str, Tuple], log: logging.Logger):
+                   tag: Union[str, Tuple], log: logging.Logger, use_tqdm: bool = False):
     """
     Helper function for writing search results to CSV or STDOUT.
     """
@@ -44,9 +44,9 @@ def _write_results(output: Optional[csv.writer], results: list[Tuple[str, str, s
             tag = tag[0]
 
         if len(results) > 0:
-            log_echo(f"\033[92m-->{tag}: {len(results)} results \033[0m", log)
+            log_echo(f"\033[92m-->{tag}: {len(results)} results \033[0m", log, use_tqdm=use_tqdm)
         else:
-            log_echo(f"-->{tag}: {len(results)} results", log)
+            log_echo(f"-->{tag}: {len(results)} results", log, use_tqdm=use_tqdm)
 
     write_results(output, results, program, source, template=table_template)
     
@@ -257,8 +257,9 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 
                         if product.has_results():
                             # write results as they become available
-                            for _, nested_results in product.get_results().items():
-                                _write_results(writer, nested_results, program, source, program, log)
+                            for (c_program, c_source), nested_results in product.get_results(final_call=False).items():
+                                _write_results(writer, nested_results, program, c_source, c_program, log,
+                                               use_tqdm=True)
 
                             # ensure results are only written once
                             product.clear_results()

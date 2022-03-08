@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Callable
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -25,6 +25,7 @@ class SentinelOne(Product):
     _account_id: Optional[str]  # Account ID for SentinelOne
     _session: requests.Session
     _queries: dict[str, list[Tuple[datetime, datetime, str]]]
+    _last_request: float
 
     def __init__(self, profile: str, creds_file: str):
         if not os.path.isfile(creds_file):
@@ -32,6 +33,8 @@ class SentinelOne(Product):
 
         self.creds_file = creds_file
         self._queries = dict()
+
+        self._last_request = 0.0
 
         super().__init__(self.product, profile)
 
@@ -132,29 +135,57 @@ class SentinelOne(Product):
         # therefore we return the from/to dates separately
         return query_base, from_date, to_date
 
-    def _get_all_paginated_data(self, response: requests.Response, key='data') -> list[dict]:
+    def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
+                                key: str = 'data', after_request: Optional[Callable] = None,
+                                limit: int = 1000) -> list[dict]:
         """
         Get and return all paginated data from the response, making additional queries if necessary.
+        
+        :param url: URL to make GET request to.
+
+        :param params: Additional parameters for GET request
+
+        :param limit: Number of items to query per page.
+
+        :param headers: Additional headers for GET quest.
+
+        :param key: Dictionary key in which result data resides.
+
+        :param after_request: Optional callable that is executed after each pagination request. The callable is
+        passed the response to the last API call.
+
+        :returns: List containing data from all pages.
         """
-        response.raise_for_status()
+
+        if params is None:
+            params = dict()
+
+        params.update(self._get_default_body())
+        params['limit'] = limit
+
+        if headers is None:
+            headers = dict()
+
+        headers.update(self._get_default_header())
 
         data = list[dict]()
-        data.extend(response.json()[key])
-        
-        params = self._get_default_body()
-        params['limit'] = 1000
 
-        pagination_info = response.json()['pagination']
-        while pagination_info['nextCursor']:
-            response = self._session.get(response.url, params=params, headers=self._get_default_header())
+        next_cursor = True
+        while next_cursor:
+            response = self._session.get(url, params=params, headers=headers)
+
+            if after_request:
+                # execute after request callback
+                after_request(response)
+
             response.raise_for_status()
 
             call_data = response.json()[key]
             self.log.debug(f'Got {len(call_data)} results in page')
             data.extend(call_data)
 
-            pagination_info = response.json()['pagination']
-            params['cursor'] = pagination_info['nextCursor']
+            next_cursor = response.json()['pagination']['nextCursor']
+            params['cursor'] = next_cursor
 
         return data
 
@@ -162,11 +193,6 @@ class SentinelOne(Product):
         """
         Retrieve events associated with a SentinelOne Deep Visibility query ID.
         """
-        params = {
-            'queryId': query_id,
-            'limit': 1000,
-        }
-
         while True:
             query_status_response = self._session.get(self._build_url('/web/api/v2.1/dv/query-status'),
                                                       params={'queryId': query_id}, headers=self._get_default_header())
@@ -179,12 +205,11 @@ class SentinelOne(Product):
                 if data['responseState'] == 'FAILED':
                     raise ValueError(f'S1QL query failed with message "{data["responseError"]}"')
 
-                response = self._session.get(self._build_url('/web/api/v2.1/dv/events'),
-                                             params=params, headers=self._get_default_header())
-
-                return self._get_all_paginated_data(response)
+                return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
+                                                    params={'queryId': query_id})
             else:
-                time.sleep(10)
+                # query-status endpoint has a one request per second rate limit
+                time.sleep(1)
 
     def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
@@ -224,21 +249,16 @@ class SentinelOne(Product):
                     self._queries[tag] = list()
 
                 self._queries[tag].append((from_date, to_date, query))
+
+                if len(self._queries) == 10:
+                    self._process_queries()
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-    def has_results(self) -> bool:
-        return False
-
-    def clear_results(self) -> None:
-        return
-
-    def get_results(self) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
-        self.log.debug('Entered get_results')
-
-        if len(self._queries) == 0:
-            return dict()
-
+    def _process_queries(self):
+        """
+        Process all cached queries.
+        """
         queries = set[Tuple[str, str]]()
 
         min_from_date = datetime.utcnow()
@@ -253,7 +273,6 @@ class SentinelOne(Product):
 
         queries = list(queries)
 
-        results = dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]()
         try:
             # merge queries into one large query
             first = True
@@ -290,8 +309,16 @@ class SentinelOne(Product):
 
                 self.log.debug(f'Query params: {params}')
 
+                # ensure we do not submit more than one request every 60 seconds to comply with rate limit
+                seconds_sice_last_request = time.time() - self._last_request
+                if seconds_sice_last_request < 60:
+                    sleep_seconds = 60 - seconds_sice_last_request
+                    self.log.debug(f'Sleeping for {sleep_seconds}')
+                    time.sleep(sleep_seconds)
+
                 query_response = self._session.post(self._build_url('/web/api/v2.1/dv/init-query'),
                                                     headers=self._get_default_header(), data=json.dumps(params))
+                self._last_request = time.time()
 
                 body = query_response.json()
                 if 'errors' in body and any(('could not parse query' in x['detail'] for x in body['errors'])):
@@ -303,14 +330,27 @@ class SentinelOne(Product):
                 query_id = body['data']['queryId']
                 self.log.info(f'Query ID is {query_id}')
 
-                results[merged_tag] = list()
-                for event in self._get_dv_events(query_id):
+                events = self._get_dv_events(query_id)
+                self.log.debug(f'Got {len(events)} events')
+
+                self._results[merged_tag] = list()
+                for event in events:
                     hostname = event['endpointName']
                     username = event['srcProcUser']
                     path = event['processImagePath']
                     command_line = event['srcProcCmdLine']
-                    results[merged_tag].append((hostname, username, path, command_line))
+                    self._results[merged_tag].append((hostname, username, path, command_line))
+
+            self._queries.clear()
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
-        return results
+    def get_results(self, final_call: bool = True) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
+        self.log.debug('Entered get_results')
+
+        # process any unprocessed queries
+        if final_call and len(self._queries) > 0:
+            self.log.debug(f'Executing additional _process_queries')
+            self._process_queries()
+
+        return self._results

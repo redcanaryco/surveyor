@@ -10,10 +10,12 @@ class Product(ABC):
     profile: str  # the profile is used to authenticate to the target platform
     _results: dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]
     log: logging.Logger
+    _tqdm_echo: bool = False
 
-    def __init__(self, product, profile):
+    def __init__(self, product, profile, tqdm_echo: bool = False):
         self.profile = profile
         self.product = product
+        self._tqdm_echo = tqdm_echo
 
         self.log = logging.getLogger(f'surveyor.{self.product}')
 
@@ -73,9 +75,12 @@ class Product(ABC):
         """
         self._results.clear()
 
-    def get_results(self) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
+    def get_results(self, final_call: bool = True) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
         """
         Get results from all process_search and nested_process_search calls.
+
+        :param final_call: Indicates whether this is the final time get_results will be called for this
+        set of process searches.
 
         :returns: A dictionary whose keys represent the tags used to identify searches. The dictionary values
         are lists containing the search results as tuples with members: hostname, username, path, command_line.
@@ -98,4 +103,4 @@ class Product(ABC):
         """
         Write a message to STDOUT and the debug log stream.
         """
-        log_echo(message, self.log, level)
+        log_echo(message, self.log, level, use_tqdm=self._tqdm_echo)
