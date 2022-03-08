@@ -6,6 +6,11 @@ from help import log_echo
 
 
 class Product(ABC):
+    """
+    Base class for surveyor product implementations.
+
+    Subclasses must implement all abstract methods and invoke this class's constructor.
+    """
     product: str = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
     profile: str  # the profile is used to authenticate to the target platform
     _results: dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]
