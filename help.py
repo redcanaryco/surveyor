@@ -9,6 +9,8 @@ import click
 
 
 # regular expression that detects ANSI color codes
+from tqdm import tqdm
+
 ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
 
@@ -19,7 +21,7 @@ def _strip_ansi_codes(message: str) -> str:
     return ansi_escape_regex.sub('', message)
 
 
-def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG):
+def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG, use_tqdm: bool = False):
     """
     Write a command to STDOUT and the debug log stream.
     """
@@ -30,7 +32,10 @@ def log_echo(message: str, log: logging.Logger, level: int = logging.DEBUG):
     elif level >= logging.ERROR:
         color_message = f'\u001b[31m{color_message}\u001b[0m'
 
-    click.echo(color_message)
+    if use_tqdm:
+        tqdm.write(color_message)
+    else:
+        click.echo(color_message)
 
     # strip ANSI sequences from log string
     log.log(level, message)
