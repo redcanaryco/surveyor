@@ -27,7 +27,7 @@ class SentinelOne(Product):
     _queries: dict[str, list[Tuple[datetime, datetime, str]]]
     _last_request: float
 
-    def __init__(self, profile: str, creds_file: str):
+    def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
@@ -36,7 +36,7 @@ class SentinelOne(Product):
 
         self._last_request = 0.0
 
-        super().__init__(self.product, profile)
+        super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
         config = configparser.ConfigParser()

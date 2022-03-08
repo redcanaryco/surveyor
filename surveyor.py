@@ -145,6 +145,8 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     if creds:
         kwargs['creds_file'] = creds
 
+    kwargs['tqdm_echo'] = not no_progress
+
     # instantiate a product class instance based on the product string
     try:
         product = get_product_instance(product, **kwargs)

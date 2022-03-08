@@ -12,7 +12,7 @@ class Product(ABC):
     log: logging.Logger
     _tqdm_echo: bool = False
 
-    def __init__(self, product, profile, tqdm_echo: bool = False):
+    def __init__(self, product, profile, tqdm_echo: bool = False, **kwargs):
         self.profile = profile
         self.product = product
         self._tqdm_echo = tqdm_echo

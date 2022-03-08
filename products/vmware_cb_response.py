@@ -26,8 +26,8 @@ class CbResponse(Product):
     product: str = 'cbr'
     _conn: CbEnterpriseResponseAPI  # CB Response API
 
-    def __init__(self, profile: str):
-        super().__init__(self.product, profile)
+    def __init__(self, profile: str, **kwargs):
+        super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
         if self.profile:

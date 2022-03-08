@@ -16,13 +16,13 @@ class DefenderForEndpoints(Product):
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
 
-    def __init__(self, profile: str, creds_file: str):
+    def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
         self.creds_file = creds_file
 
-        super().__init__(self.product, profile)
+        super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
         config = configparser.ConfigParser()
