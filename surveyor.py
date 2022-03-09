@@ -48,9 +48,9 @@ def _write_results(output: Optional[csv.writer], results: list[Result], program:
             tag = tag[0]
 
         if len(results) > 0:
-            log_echo(f"\033[92m-->{tag}: {len(results)} results \033[0m", log, use_tqdm=use_tqdm)
+            log_echo(f"\033[92m-->{tag.tag}: {len(results)} results \033[0m", log, use_tqdm=use_tqdm)
         else:
-            log_echo(f"-->{tag}: {len(results)} results", log, use_tqdm=use_tqdm)
+            log_echo(f"-->{tag.tag}: {len(results)} results", log, use_tqdm=use_tqdm)
 
     for result in results:
         row = [result.hostname, result.username, result.path, result.command_line, program, source]
@@ -58,7 +58,7 @@ def _write_results(output: Optional[csv.writer], results: list[Result], program:
         if output:
             if result.other_data:
                 row.extend(result.other_data)
-                
+
             output.writerow(row)
         else:
             # trim data to make sure it fits into table format
