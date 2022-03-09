@@ -290,8 +290,8 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
                             product.clear_results()
 
             # write any remaining results
-            for (program, source), nested_results in product.get_results().items():
-                _write_results(writer, nested_results, program, source, program, log)
+            for tag, nested_results in product.get_results().items():
+                _write_results(writer, nested_results, tag.tag, tag.data, tag, log)
 
         if output_file:
             log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", log)
