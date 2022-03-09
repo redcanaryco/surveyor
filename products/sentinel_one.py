@@ -3,14 +3,35 @@ import json
 import logging
 import os
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Union, Callable
 
 import requests
 from requests.adapters import HTTPAdapter
 
-from common import Product
+from common import Product, Tag, Result
 from help import datetime_to_epoch_millis
+
+
+@dataclass
+class Query:
+    start_date: datetime
+    end_date: datetime
+    parameter: Optional[str]
+    operator: Optional[str]
+    search_value: Optional[str]
+    full_query: Optional[str] = None
+
+
+PARAMETER_MAPPING: dict[str, str] = {
+    'process_name': 'ProcessName',
+    'ipaddr': 'IP',
+    'cmdline': 'CmdLine',
+    'digsig_publisher': 'SrcProcPublisher',
+    'domain': 'Url',
+    'internal_name': 'TgtFileInternalName'
+}
 
 
 class SentinelOne(Product):
@@ -24,7 +45,7 @@ class SentinelOne(Product):
     _site_id: Optional[str]  # Site ID for SentinelOne
     _account_id: Optional[str]  # Account ID for SentinelOne
     _session: requests.Session
-    _queries: dict[str, list[Tuple[datetime, datetime, str]]]
+    _queries: dict[Tag, list[Query]]
     _last_request: float
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
@@ -211,7 +232,7 @@ class SentinelOne(Product):
                 # query-status endpoint has a one request per second rate limit
                 time.sleep(1)
 
-    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
         query = query + build_query
         self._echo(f'Built Query: {query}')
@@ -219,39 +240,34 @@ class SentinelOne(Product):
         if tag not in self._queries:
             self._queries[tag] = list()
 
-        self._queries[tag].append((from_date, to_date, query))
+        query = Query(from_date, to_date, None, None, None, query)
+        self._queries[tag].append(query)
 
-    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict):
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
 
         try:
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f'"{term}"' for term in terms)
 
-                if search_field == 'process_name':
-                    query = f"ProcessName in contains anycase ({all_terms})"
-                elif search_field == "ipaddr":
-                    query = f"IP in contains anycase ({all_terms})"
-                elif search_field == "cmdline":
-                    query = f"CmdLine in contains anycase ({all_terms})"
-                elif search_field == "digsig_publisher":
-                    query = f"SrcProcPublisher in contains anycase ({all_terms})"
-                elif search_field == "domain":
-                    query = f"Url in contains anycase ({all_terms})"
-                elif search_field == "internal_name":
-                    query = f"TgtFileInternalName in contains anycase ({all_terms})"
-                else:
+                if search_field not in PARAMETER_MAPPING:
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
 
+                parameter = PARAMETER_MAPPING[search_field]
+                search_value = all_terms
+
+                if len(terms) > 1:
+                    search_value = f'({all_terms})'
+                    operator = 'in contains anycase'
+                else:
+                    operator = 'contains'
+
                 if tag not in self._queries:
                     self._queries[tag] = list()
 
-                self._queries[tag].append((from_date, to_date, query))
-
-                if sum(len(x) for x in self._queries.values()) == 10:
-                    self._process_queries()
+                self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
@@ -259,51 +275,79 @@ class SentinelOne(Product):
         """
         Process all cached queries.
         """
-        queries = set[Tuple[str, str]]()
+        start_date = datetime.utcnow()
+        end_date = start_date
 
-        min_from_date = datetime.utcnow()
-        to_date = min_from_date
-
-        for tag, values in self._queries.items():
-            for from_date, _, query in values:
-                if from_date < min_from_date:
-                    min_from_date = from_date
-
-                queries.add((tag, query))
-
-        queries = list(queries)
+        # determine earliest start date
+        for tag, queries in self._queries.items():
+            for query in queries:
+                if query.start_date < start_date:
+                    start_date = query.start_date
 
         try:
-            # merge queries into one large query
-            first = True
-            for i in range(0, len(queries), 10):
-                # do not chain more than 10 ORs in a S1QL query
+            # queries with certain operators can be combined into a more compact query format
 
-                if first:
-                    first = False
+            # key is a tuple of the query operator and parameter
+            # value is a list of Tuples where each tupe contains the query tag and search value
+            combined_queries = dict[Tuple[str, str], list[Tuple[Tag, str]]]()
+
+            # tuple contains tag and full query
+            # these chunks will be combined with OR statements and executed
+            query_text = list[Tuple[Tag, str]]()
+
+            for tag, queries in self._queries.items():
+                for query in queries:
+                    if query.operator == 'contains':
+                        key = (query.operator, query.parameter)
+                        if query.operator not in combined_queries:
+                            combined_queries[key] = list()
+
+                        combined_queries[key].append((tag, query.search_value))
+                    else:
+                        full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
+                        query_text.append((tag, full_query))
+
+            # merge combined queries and add them to query_text
+            data: list[Tuple[Tag, str]]
+            for (operator, parameter), data in combined_queries.items():
+                if operator == 'contains':
+                    full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
+
+                    tag = Tag(','.join(tag[0].tag for tag in data), ','.join(tag[0].data for tag in data))
+                    query_text.append((tag, full_query))
                 else:
-                    # S1 has rate limit of 1 DB search per 60 seconds
-                    time.sleep(60)
+                    raise NotImplementedError(f'Combining operator "{operator}" queries is not support')
 
-                merged_tags = set()
+            # all queries that need to be executed are now in query_text
+            # execute queries in chunks
+            chunk_size = 10
+
+            # merge queries into one large query and execute it
+            for i in range(0, len(query_text), chunk_size):
+                # do not chain more than 10 ORs in a S1QL query
+                merged_tags = set[Tag]()
                 merged_query = ''
-                for tag, query in queries[i:i + 10]:
+                for tag, query in query_text[i:i + chunk_size]:
+                    # combine queries with ORs
                     if merged_query:
                         merged_query += ' OR '
 
                     merged_query += query
+
+                    # add tags to set to de-duplicate
                     merged_tags.add(tag)
 
-                merged_tag = (",".join(set(x[0] if isinstance(x, Tuple) else x for x in merged_tags)),
-                              ",".join(set(x[1] if isinstance(x, Tuple) else x for x in merged_tags)))
+                # merge all query tags into a single string
+                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(tag.data for tag in merged_tags))
 
+                # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
-                    "fromDate": datetime_to_epoch_millis(min_from_date),
+                    "fromDate": datetime_to_epoch_millis(start_date),
                     "isVerbose": False,
                     "queryType": ['events'],  # options: 'events', 'procesState'
                     "limit": 20000,
-                    "toDate": datetime_to_epoch_millis(to_date),
+                    "toDate": datetime_to_epoch_millis(end_date),
                     "query": merged_query
                 })
 
@@ -316,6 +360,7 @@ class SentinelOne(Product):
                     self.log.debug(f'Sleeping for {sleep_seconds}')
                     time.sleep(sleep_seconds)
 
+                # start deep visibility API call
                 query_response = self._session.post(self._build_url('/web/api/v2.1/dv/init-query'),
                                                     headers=self._get_default_header(), data=json.dumps(params))
                 self._last_request = time.time()
@@ -339,13 +384,15 @@ class SentinelOne(Product):
                     username = event['srcProcUser']
                     path = event['processImagePath']
                     command_line = event['srcProcCmdLine']
-                    self._results[merged_tag].append((hostname, username, path, command_line))
+
+                    result = Result(hostname, username, path, command_line)
+                    self._results[merged_tag].append(result)
 
             self._queries.clear()
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
-    def get_results(self, final_call: bool = True) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
+    def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:
         self.log.debug('Entered get_results')
 
         # process any unprocessed queries
