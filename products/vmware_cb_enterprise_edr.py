@@ -1,12 +1,11 @@
 import datetime
 import logging
-from typing import Union, Tuple
 
 import cbapi.errors
 from cbapi.psc.threathunter import CbThreatHunterAPI, Process
 from cbapi.psc.threathunter import QueryBuilder
 
-from common import Product
+from common import Product, Result, Tag
 
 
 def _convert_relative_time(relative_time):
@@ -61,7 +60,7 @@ class CbEnterpriseEdr(Product):
 
         return query_base
 
-    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         results = set()
 
         if len(base_query) >= 1:
@@ -75,13 +74,14 @@ class CbEnterpriseEdr(Product):
 
             # noinspection PyUnresolvedReferences
             for proc in query.where(string_query):
-                results.add((proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
+                result = Result(proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0])
+                results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have.")
 
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results = set()
         base_query = self.build_query(base_query)
 
@@ -98,8 +98,9 @@ class CbEnterpriseEdr(Product):
 
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
-                    results.add(
-                        (proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0]))
+                    result = Result(proc.device_name, proc.process_username[0], proc.process_name,
+                                    proc.process_cmdline[0])
+                    results.add(result)
             except cbapi.errors.ApiError as e:
                 self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)

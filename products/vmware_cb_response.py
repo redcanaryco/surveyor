@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Union, Tuple
 
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
-from common import Product
+from common import Product, Tag, Result
 
 
 def _convert_relative_time(relative_time):
@@ -54,7 +53,7 @@ class CbResponse(Product):
 
         return query_base
 
-    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         results = set()
 
         query = query + self.build_query(base_query)
@@ -63,16 +62,14 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                results.add((proc.hostname.lower(),
-                             proc.username.lower(),
-                             proc.path,
-                             proc.cmdline))
+                result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline)
+                results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results = set()
 
         try:
@@ -82,10 +79,8 @@ class CbResponse(Product):
 
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
-                    results.add((proc.hostname.lower(),
-                                 proc.username.lower(),
-                                 proc.path,
-                                 proc.cmdline))
+                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline)
+                    results.add(result)
         except Exception as e:
             self._echo(f'Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)

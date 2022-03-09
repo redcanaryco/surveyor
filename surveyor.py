@@ -9,8 +9,8 @@ import click
 from click import ClickException
 from tqdm import tqdm
 
-from common import Product
-from help import log_echo, write_results
+from common import Product, Tag, Result
+from help import log_echo
 from load import get_product_instance, get_products
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
@@ -32,10 +32,14 @@ def _list_products(ctx, _, value):
 
 
 table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
+table_template_str = f'{{:<{table_template[0]}}} ' \
+                     f'{{:<{table_template[1]}}} ' \
+                     f'{{:<{table_template[2]}}} ' \
+                     f'{{:<{table_template[3]}}}'
 
 
-def _write_results(output: Optional[csv.writer], results: list[Tuple[str, str, str, str]], program: str, source: str,
-                   tag: Union[str, Tuple], log: logging.Logger, use_tqdm: bool = False):
+def _write_results(output: Optional[csv.writer], results: list[Result], program: str, source: str,
+                   tag: Tag, log: logging.Logger, use_tqdm: bool = False):
     """
     Helper function for writing search results to CSV or STDOUT.
     """
@@ -48,7 +52,21 @@ def _write_results(output: Optional[csv.writer], results: list[Tuple[str, str, s
         else:
             log_echo(f"-->{tag}: {len(results)} results", log, use_tqdm=use_tqdm)
 
-    write_results(output, results, program, source, template=table_template)
+    for result in results:
+        row = [result.hostname, result.username, result.path, result.command_line, program, source]
+
+        if output:
+            if result.other_data:
+                row.extend(result.other_data)
+                
+            output.writerow(row)
+        else:
+            # trim data to make sure it fits into table format
+            for i in range(len(row)):
+                if len(row[i]) > table_template[i]:
+                    row[i] = row[i][:table_template[i] - 3] + '...'
+
+            click.echo(table_template_str.format(*row))
     
 
 # noinspection SpellCheckingInspection
@@ -174,7 +192,12 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     if minutes is not None:
         base_query.update({"minutes": minutes})
 
+    # default header, shared by all products
     header = ["endpoint", "username", "process_path", "cmdline", "program", "source"]
+
+    # add any additional rows that the current product includes to header
+    header.extend(product.get_other_row_headers())
+
     if not no_file:
         # determine output file name
         if output:
@@ -184,7 +207,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         else:
             file_name = 'survey.csv'
 
-        output_file = open(file_name, 'w', newline='')
+        output_file = open(file_name, 'w', newline='', encoding='utf-8')
 
         # create CSV writer and write the header row
         writer = csv.writer(output_file)
@@ -201,7 +224,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         if query:
             # if a query is specified run it directly
             log_echo(f"Running Custom Query: {query}", log)
-            product.process_search('query', base_query, query)
+            product.process_search(Tag('query'), base_query, query)
 
             for tag, results in product.get_results().items():
                 _write_results(writer, results, query, "query", tag, log)
@@ -240,7 +263,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
                 for ioc in data:
                     ioc = ioc.strip()
                     base_query.update({ioc_type: ioc})
-                    product.process_search(ioc, base_query, query)
+                    product.process_search(Tag(ioc), base_query, query)
                     del base_query[ioc_type]
 
                 for tag, results in product.get_results().items():
@@ -255,12 +278,12 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
                 with open(definitions, 'r') as file:
                     programs = json.load(file)
                     for program, criteria in programs.items():
-                        product.nested_process_search((program, source), criteria, base_query)
+                        product.nested_process_search(Tag(program, data=source), criteria, base_query)
 
                         if product.has_results():
                             # write results as they become available
-                            for (c_program, c_source), nested_results in product.get_results(final_call=False).items():
-                                _write_results(writer, nested_results, program, c_source, c_program, log,
+                            for tag, nested_results in product.get_results(final_call=False).items():
+                                _write_results(writer, nested_results, program, tag.data, tag, log,
                                                use_tqdm=True)
 
                             # ensure results are only written once

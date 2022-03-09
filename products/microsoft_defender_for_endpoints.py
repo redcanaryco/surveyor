@@ -5,7 +5,7 @@ from typing import Union, Tuple
 
 import requests
 
-from common import Product
+from common import Product, Tag, Result
 
 
 class DefenderForEndpoints(Product):
@@ -55,7 +55,7 @@ class DefenderForEndpoints(Product):
 
         return response.json()['access_token']
 
-    def _post_advanced_query(self, data: dict, headers: dict):
+    def _post_advanced_query(self, data: dict, headers: dict) -> list[Result]:
         results = set()
 
         try:
@@ -64,16 +64,17 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    results.add((res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"]))
+                    result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"])
+                    results.add(result)
             else:
                 self._echo(f"We received the following status code {response.status_code}")
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Rerun surveyor")
         except Exception as e:
             self._echo(f"There was an exception {e}")
             self.log.exception(e)
 
-        return results
+        return list(results)
 
     def _get_default_header(self):
         return {
@@ -82,7 +83,7 @@ class DefenderForEndpoints(Product):
             "Accept": 'application/json'
         }
 
-    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query + self.build_query(base_query)
 
         query = "DeviceEvents " + query + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath "
@@ -91,7 +92,7 @@ class DefenderForEndpoints(Product):
         results = self._post_advanced_query(data=query, headers=self._get_default_header())
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results = set()
 
         query_base = self.build_query(base_query)

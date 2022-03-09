@@ -1,8 +1,24 @@
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Tuple, Optional, Any, Union
 
 from help import log_echo
+
+
+@dataclass(eq=True, frozen=True)
+class Tag:
+    tag: str
+    data: Optional[str] = None
+
+
+@dataclass(eq=True, frozen=True)
+class Result:
+    hostname: str
+    username: str
+    path: str
+    command_line: str
+    other_data: Optional[Tuple] = None  # use tuples as they are immutable
 
 
 class Product(ABC):
@@ -13,7 +29,7 @@ class Product(ABC):
     """
     product: str = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
     profile: str  # the profile is used to authenticate to the target platform
-    _results: dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]
+    _results: dict[Tag, list[Result]]
     log: logging.Logger
     _tqdm_echo: bool = False
 
@@ -55,14 +71,14 @@ class Product(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def process_search(self, tag: Union[str, Tuple], base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         """
         Perform a process search.
         """
         raise NotImplementedError()
 
     @abstractmethod
-    def nested_process_search(self, tag: Union[str, Tuple], criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         """
         Performed a nested process search.
         """
@@ -80,7 +96,7 @@ class Product(ABC):
         """
         self._results.clear()
 
-    def get_results(self, final_call: bool = True) -> dict[Union[str, Tuple], list[Tuple[str, str, str, str]]]:
+    def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:
         """
         Get results from all process_search and nested_process_search calls.
 
@@ -92,7 +108,14 @@ class Product(ABC):
         """
         return self._results
 
-    def _add_results(self, results: list[Tuple[str, str, str, str]], tag: Optional[str] = None):
+    # noinspection PyMethodMayBeStatic
+    def get_other_row_headers(self) -> list[str]:
+        """
+        Retrieve any additional headers this product includes in results.
+        """
+        return list()
+
+    def _add_results(self, results: list[Result], tag: Optional[Tag] = None):
         """
         Add results to the result store.
         """
