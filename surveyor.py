@@ -1,15 +1,15 @@
 import csv
+import dataclasses
 import datetime
 import json
 import logging
 import os
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Callable
 
 import click
-from click import ClickException
 from tqdm import tqdm
 
-from common import Product, Tag, Result
+from common import Tag, Result
 from help import log_echo
 from load import get_product_instance, get_products
 
@@ -67,22 +67,30 @@ def _write_results(output: Optional[csv.writer], results: list[Result], program:
                     row[i] = row[i][:table_template[i] - 3] + '...'
 
             click.echo(table_template_str.format(*row))
-    
+
+
+@dataclasses.dataclass
+class ExecutionOptions:
+    prefix: Optional[str]
+    hostname: Optional[str]
+    profile: str
+    days: Optional[int]
+    minutes: Optional[int]
+    username: Optional[str]
+    ioc_file: Optional[str]
+    ioc_type: Optional[str]
+    query: Optional[str]
+    output: Optional[str]
+    def_dir: Optional[str]
+    def_file: Optional[str]
+    no_file: bool
+    no_progress: bool
+    log_dir: str
+    product_args: dict
+
 
 # noinspection SpellCheckingInspection
 @click.group("surveyor", context_settings=CONTEXT_SETTINGS, invoke_without_command=True, chain=False)
-# list of all the different products we support
-@click.option("--threathunter", 'product', help="Query Cb ThreatHunter.", flag_value="cbth", default=False)
-@click.option("--response", 'product', help="Query Cb Response.", flag_value="cbr", default=False)
-@click.option("--defender", 'product', help="Query Microsoft Defender for Endpoints", flag_value="defender",
-              default=False)
-@click.option("--atp", 'product', help="Query Microsoft Defender for Endpoints", flag_value="defender",
-              default=False)
-@click.option("--s1", 'product', help="Query SentinelOne", flag_value="s1", default=False)
-@click.option('--product', 'custom_product', help="Query the specified product",
-              type=click.Choice(list(get_products())))
-@click.option("--creds", 'creds', help="Path to credential file for SentinelOne/Defender for Endpoints",
-              type=click.Path(exists=True))
 # filtering options
 @click.option("--prefix", help="Output filename prefix.", type=click.STRING)
 @click.option("--profile", help="The credentials profile to use.", type=click.STRING)
@@ -101,36 +109,86 @@ def _write_results(output: Optional[csv.writer], results: list[Result], program:
                                       "The default is create survey.csv in the current directory.")
 @click.option("--no-file", help="Write results to STDOUT instead of the output CSV", is_flag=True, default=False)
 @click.option("--no-progress", help="Suppress progress bar", is_flag=True, default=False)
+# version option
 @click.version_option(current_version)
-@click.option('--products', default=False, is_flag=True, callback=_list_products, expose_value=False, is_eager=True)
+# logging options
 @click.option("--log-dir", 'log_dir', help="Specify the logging directory.", type=click.STRING, default='logs')
 @click.pass_context
 def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days: Optional[int], minutes: Optional[int],
-        product: Optional[Union[str, Product]], custom_product: Optional[str], username: Optional[str],
+        username: Optional[str],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
-        def_dir: Optional[str], def_file: Optional[str], creds: Optional[str], no_file: bool, no_progress: bool,
+        def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
         log_dir: str):
 
-    if not product and not custom_product:
-        # default product is CBR
-        product = 'cbr'
-    elif not product:
-        product = custom_product
-    else:
-        ctx.fail(f'Please specify either --product or one of --response/--defender/etc')
+    ctx.ensure_object(dict)
+    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
+                               def_dir, def_file, no_file, no_progress, log_dir, dict())
 
-    # checks to ensure required parameters are present
-    if (product == 'defender' or product == 's1') and not creds:
-        # defender product requires credential file
-        raise ClickException(f"\033[91m--creds required when using {product} product\033[0m")
+    if ctx.invoked_subcommand is None:
+        survey(ctx, 'cbr')
 
-    if ioc_file and ioc_type is None:
+
+# S1 options
+@cli.command('s1', help="Query SentinelOne")
+@click.option("--site-id", help="ID of SentinelOne site to query", multiple=True, default=None)
+@click.option("--account-id", help="ID of SentinelOne site to query", multiple=True, default=None)
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.pass_context
+def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], creds: Optional[str]):
+    ctx.obj.product_args = {
+        'creds_file': creds,
+        'site_id': list(site_id),
+        'account_id': list(account_id)
+    }
+
+    survey(ctx, 's1')
+
+
+@cli.command('threathunter', help="Query Cb ThreatHunter")
+@click.pass_context
+def cbth(ctx):
+    survey(ctx, 'cbth')
+
+
+@cli.command('cbr', help="Query Cb Response")
+@click.pass_context
+def cbr(ctx):
+    survey(ctx, 'cbr')
+
+
+@cli.command('response', help="Query Cb Response")
+@click.pass_context
+def response_alternate(ctx):
+    survey(ctx, 'cbr')
+
+
+@cli.command('defender', help="Query Microsoft Defender for Endpoints")
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True))
+@click.pass_context
+def defender(ctx, creds: Optional[str]):
+    ctx.obj.product_args = {'creds_file': creds}
+    survey(ctx, 'defender')
+
+
+@cli.command('atp', help="Query Microsoft Defender for Endpoints")
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.pass_context
+def defender_alternate(ctx, creds: Optional[str]):
+    ctx.obj.product_args = {'creds_file': creds}
+    survey(ctx, 'defender')
+
+
+def survey(ctx, product: str = 'cbr'):
+    ctx.ensure_object(ExecutionOptions)
+    opt: ExecutionOptions = ctx.obj
+
+    if opt.ioc_file and opt.ioc_type is None:
         ctx.fail("--iocfile requires --ioctype")
 
-    if ioc_file and not os.path.isfile(ioc_file):
+    if opt.ioc_file and not os.path.isfile(opt.ioc_file):
         ctx.fail(f'Supplied --iocfile is not a file')
 
-    if (output or prefix) and no_file:
+    if (opt.output or opt.prefix) and opt.no_file:
         ctx.fail('--output and --prefix cannot be used with --no-file')
 
     # instantiate a logger
@@ -144,11 +202,11 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     log_format = '[%(asctime)s] [%(levelname)-8s] [%(name)-36s] [%(filename)-20s:%(lineno)-4s] %(message)s'
 
     # create logging directory if it does not exist
-    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(opt.log_dir, exist_ok=True)
 
     # create logging file handler
     log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product}.log'
-    handler = logging.FileHandler(os.path.join(log_dir, log_file_name))
+    handler = logging.FileHandler(os.path.join(opt.log_dir, log_file_name))
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(log_format))
     root.addHandler(handler)
@@ -156,14 +214,13 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     # build arguments required for product class
     # must products only require the profile name
     kwargs = {
-        'profile': profile
+        'profile': opt.profile
     }
 
-    # add any custom required properties to kwargs
-    if creds:
-        kwargs['creds_file'] = creds
+    if len(opt.product_args) > 0:
+        kwargs.update(opt.product_args)
 
-    kwargs['tqdm_echo'] = not no_progress
+    kwargs['tqdm_echo'] = not opt.no_progress
 
     # instantiate a product class instance based on the product string
     try:
@@ -180,17 +237,17 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     base_query = product.base_query()
 
     # add filters specified by user
-    if username is not None:
-        base_query.update({"username": username})
+    if opt.username is not None:
+        base_query.update({"username": opt.username})
 
-    if hostname is not None:
-        base_query.update({"hostname": hostname})
+    if opt.hostname is not None:
+        base_query.update({"hostname": opt.hostname})
 
-    if days is not None:
-        base_query.update({"days": days})
+    if opt.days is not None:
+        base_query.update({"days": opt.days})
 
-    if minutes is not None:
-        base_query.update({"minutes": minutes})
+    if opt.minutes is not None:
+        base_query.update({"minutes": opt.minutes})
 
     # default header, shared by all products
     header = ["endpoint", "username", "process_path", "cmdline", "program", "source"]
@@ -198,12 +255,12 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     # add any additional rows that the current product includes to header
     header.extend(product.get_other_row_headers())
 
-    if not no_file:
+    if not opt.no_file:
         # determine output file name
-        if output:
-            file_name = output
-        elif prefix:
-            file_name = f'{prefix}-survey.csv'
+        if opt.output:
+            file_name = opt.output
+        elif opt.prefix:
+            file_name = f'{opt.prefix}-survey.csv'
         else:
             file_name = 'survey.csv'
 
@@ -215,63 +272,63 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
     else:
         output_file = None
         writer = None
-        no_progress = True
+        opt.no_progress = True
         template_str = f'{{:<{table_template[0]}}} {{:<{table_template[1]}}} {{:<{table_template[2]}}} ' \
                        f'{{:<{table_template[3]}}}'
         click.echo(template_str.format(*header))
-    
+
     try:
-        if query:
+        if opt.query:
             # if a query is specified run it directly
-            log_echo(f"Running Custom Query: {query}", log)
-            product.process_search(Tag('query'), base_query, query)
+            log_echo(f"Running Custom Query: {opt.query}", log)
+            product.process_search(Tag('query'), base_query, opt.query)
 
             for tag, results in product.get_results().items():
-                _write_results(writer, results, query, "query", tag, log)
+                _write_results(writer, results, opt.query, "query", tag, log)
 
         # test if deffile exists
         # deffile can be resolved from 'definitions' folder without needing to specify path or extension
-        if def_file:
-            if not os.path.exists(def_file):
-                repo_deffile: str = os.path.join(os.path.dirname(__file__), 'definitions', def_file)
+        if opt.def_file:
+            if not os.path.exists(opt.def_file):
+                repo_deffile: str = os.path.join(os.path.dirname(__file__), 'definitions', opt.def_file)
                 if not repo_deffile.endswith('.json'):
                     repo_deffile = repo_deffile + '.json'
 
                 if os.path.isfile(repo_deffile):
                     log.debug(f'Using repo definition file {repo_deffile}')
-                    def_file = repo_deffile
+                    opt.def_file = repo_deffile
                 else:
                     ctx.fail("The deffile doesn't exist. Please try again.")
-            definition_files.append(def_file)
+            definition_files.append(opt.def_file)
 
         # if --defdir add all files to list
-        if def_dir:
-            if not os.path.exists(def_dir):
+        if opt.def_dir:
+            if not os.path.exists(opt.def_dir):
                 ctx.fail("The defdir doesn't exist. Please try again.")
             else:
-                for root, dirs, files in os.walk(def_dir):
+                for root, dirs, files in os.walk(opt.def_dir):
                     for filename in files:
                         if os.path.splitext(filename)[1] == '.json':
                             definition_files.append(os.path.join(root, filename))
 
         # run search based on IOC file
-        if ioc_file:
-            with open(ioc_file) as ioc_file:
+        if opt.ioc_file:
+            with open(opt.ioc_file) as ioc_file:
                 data = ioc_file.readlines()
                 log_echo(f"Processing IOC file: {ioc_file}", log)
 
                 for ioc in data:
                     ioc = ioc.strip()
-                    base_query.update({ioc_type: ioc})
-                    product.process_search(Tag(ioc), base_query, query)
-                    del base_query[ioc_type]
+                    base_query.update({opt.ioc_type: ioc})
+                    product.process_search(Tag(ioc), base_query, opt.query)
+                    del base_query[opt.ioc_type]
 
                 for tag, results in product.get_results().items():
                     _write_results(writer, results, ioc, 'ioc', tag, log)
 
         # run search against definition files and write to csv
-        if def_file is not None or def_dir is not None:
-            for definitions in tqdm(definition_files, desc='Processing definition files', disable=no_progress):
+        if opt.def_file is not None or opt.def_dir is not None:
+            for definitions in tqdm(definition_files, desc='Processing definition files', disable=opt.no_progress):
                 basename = os.path.basename(definitions)
                 source = os.path.splitext(basename)[0]
 
@@ -304,6 +361,21 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         if output_file:
             output_file.close()
 
+
+def create_generic_product_command(name: str) -> Callable:
+    @click.pass_context
+    def command(ctx):
+        survey(ctx, name)
+
+    command.__name__ = name
+    return command
+
+
+# create click commands for all products that don't have a command function defined
+for product_name in get_products():
+    dir_res = dir()
+    if product_name not in dir_res:
+        cli.command(name=product_name, help=f'Query {product_name}')(create_generic_product_command(product_name))
 
 if __name__ == "__main__":
     cli()
