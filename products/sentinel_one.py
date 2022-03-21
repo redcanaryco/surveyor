@@ -3,9 +3,10 @@ import json
 import logging
 import os
 import time
+from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Union, Callable
+from typing import Optional, Tuple, Callable
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -47,8 +48,10 @@ class SentinelOne(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]]
     _last_request: float
+    _site_ids: list[str]
 
-    def __init__(self, profile: str, creds_file: str, **kwargs):
+    def __init__(self, profile: str, creds_file: str, account_id: Optional[list[str]] = None,
+                 site_id: Optional[list[str]] = None, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
@@ -58,6 +61,47 @@ class SentinelOne(Product):
         self._last_request = 0.0
 
         super().__init__(self.product, profile, **kwargs)
+
+        config = configparser.ConfigParser()
+        config.read(self.creds_file)
+
+        # instantiate site_ids and account_ids if not set
+        site_ids = site_id if site_id else list()
+        account_ids = account_id if account_id else list()
+
+        # extract account/site ID from configuration if set
+        if 'account_id' in config[profile] and config[profile]['account_id'] not in account_ids:
+            account_ids.append(config[profile]['account_id'])
+
+        if 'site_id' in config[profile] and config[profile]['site_id'] not in site_ids:
+            site_ids.append(config[profile]['site_id'])
+
+        # determine site IDs to query (default is all)
+        self._site_ids = site_ids
+
+        # ensure specified site IDs are valid
+        site_response_data = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                          params={'siteIds': ','.join(site_ids)},
+                                                          add_default_params=False)
+        existing_site_ids = set[int]()
+        for response in site_response_data:
+            for site in response['sites']:
+                existing_site_ids.add(site['id'])
+
+        for scope_id in self._site_ids:
+            if scope_id not in existing_site_ids:
+                raise ValueError(f'Site with ID {scope_id} does not exist')
+
+        # get site IDs for each specified account id
+        for scope_id in account_ids:
+            for response in self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                         params={'accountId': scope_id},
+                                                         add_default_params=False):
+                for site in response['sites']:
+                    if site['id'] not in self._site_ids:
+                        self._site_ids.append(site['id'])
+
+        self.log.debug(f'Site IDs: {self._site_ids}')
 
     def _authenticate(self):
         config = configparser.ConfigParser()
@@ -100,9 +144,8 @@ class SentinelOne(Product):
         data = self._session.get(self._build_url('/web/api/v2.1/agents/count'),
                                  headers=self._get_default_header(),
                                  params=self._get_default_body()).json()
-
         if 'errors' in data:
-            if data['code'] == 4010010:
+            if data['errors'][0]['code'] == 4010010:
                 raise ValueError(f'Failed to authenticate to SentinelOne: {data}')
             else:
                 raise ValueError(f'Error when authenticating to SentinelOne: {data}')
@@ -131,7 +174,7 @@ class SentinelOne(Product):
     def build_query(self, filters: dict) -> Tuple[str, datetime, datetime]:
         to_date = datetime.utcnow()
         from_date = to_date - timedelta(days=14)
-        
+
         query_base = ''
 
         for key, value in filters.items():
@@ -157,8 +200,9 @@ class SentinelOne(Product):
         return query_base, from_date, to_date
 
     def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
-                                key: str = 'data', after_request: Optional[Callable] = None,
-                                limit: int = 1000) -> list[dict]:
+                                key: str = 'data', after_request: Optional[Callable] = None, limit: int = 1000,
+                                no_progress: bool = True, progress_desc: str = 'Retrieving data',
+                                add_default_params: bool = True) -> list[dict]:
         """
         Get and return all paginated data from the response, making additional queries if necessary.
         
@@ -175,13 +219,20 @@ class SentinelOne(Product):
         :param after_request: Optional callable that is executed after each pagination request. The callable is
         passed the response to the last API call.
 
+        :param no_progress: Suppress progress bar.
+
+        :param progress_desc: Specify description for progress bar.
+
+        :param add_default_params: Whether _get_default_body() should be added to parameter set.
+
         :returns: List containing data from all pages.
         """
-
         if params is None:
             params = dict()
 
-        params.update(self._get_default_body())
+        if add_default_params:
+            params.update(self._get_default_body())
+
         params['limit'] = limit
 
         if headers is None:
@@ -190,47 +241,75 @@ class SentinelOne(Product):
         headers.update(self._get_default_header())
 
         data = list[dict]()
+        total: int = 0
 
         next_cursor = True
-        while next_cursor:
-            response = self._session.get(url, params=params, headers=headers)
+        with tqdm(desc=progress_desc, disable=not self._tqdm_echo or no_progress) as p_bar:
+            while next_cursor:
+                response = self._session.get(url, params=params, headers=headers)
 
-            if after_request:
-                # execute after request callback
-                after_request(response)
+                if after_request:
+                    # execute after request callback
+                    after_request(response)
 
-            response.raise_for_status()
+                response.raise_for_status()
 
-            call_data = response.json()[key]
-            self.log.debug(f'Got {len(call_data)} results in page')
-            data.extend(call_data)
+                call_data = response.json()[key]
 
-            next_cursor = response.json()['pagination']['nextCursor']
-            params['cursor'] = next_cursor
+                if not isinstance(call_data, list):
+                    call_data = [call_data]
 
-        return data
+                self.log.debug(f'Got {len(call_data)} results in page')
+                data.extend(call_data)
+                pagination_data = response.json()['pagination']
+
+                # update progress bar
+                if pagination_data['totalItems'] > total:
+                    total = pagination_data['totalItems']
+                    p_bar.reset(total=total)
+
+                p_bar.update(len(call_data))
+
+                next_cursor = pagination_data['nextCursor']
+                params['cursor'] = next_cursor
+
+            return data
 
     def _get_dv_events(self, query_id: str) -> list[dict]:
         """
         Retrieve events associated with a SentinelOne Deep Visibility query ID.
         """
-        while True:
-            query_status_response = self._session.get(self._build_url('/web/api/v2.1/dv/query-status'),
-                                                      params={'queryId': query_id}, headers=self._get_default_header())
-            query_status_response.raise_for_status()
-            data = query_status_response.json()['data']
+        p_bar = tqdm(desc='Running query', disable=not self._tqdm_echo, total=100)
 
-            self.log.debug(str(data))
+        try:
+            last_progress_status = 0
+            while True:
+                query_status_response = self._session.get(self._build_url('/web/api/v2.1/dv/query-status'),
+                                                          params={'queryId': query_id}, headers=self._get_default_header())
+                query_status_response.raise_for_status()
+                data = query_status_response.json()['data']
 
-            if data['progressStatus'] == 100 or data['responseState'] == 'FAILED':
-                if data['responseState'] == 'FAILED':
-                    raise ValueError(f'S1QL query failed with message "{data["responseError"]}"')
+                self.log.debug(str(data))
 
-                return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
-                                                    params={'queryId': query_id})
-            else:
-                # query-status endpoint has a one request per second rate limit
-                time.sleep(1)
+                p_bar.update(data['progressStatus'] - last_progress_status)
+                last_progress_status = data['progressStatus']
+
+                if data['progressStatus'] == 100 or data['responseState'] == 'FAILED':
+                    if data['responseState'] == 'FAILED':
+                        raise ValueError(f'S1QL query failed with message "{data["responseError"]}"')
+
+                    p_bar.close()
+
+                    return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
+                                                        params={'queryId': query_id},
+                                                        no_progress=False,
+                                                        progress_desc='Retrieving query results')
+                else:
+                    # query-status endpoint has a one request per second rate limit
+                    time.sleep(1)
+        except Exception as e:
+            p_bar.close()
+            raise e
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
@@ -340,6 +419,11 @@ class SentinelOne(Product):
                 # merge all query tags into a single string
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(tag.data for tag in merged_tags))
 
+                if len(self._site_ids):
+                    # restrict query to specified sites
+                    # S1QL does not support restricting a query to a specified account ID
+                    merged_query = f'SiteID in contains ("' + '", "'.join(self._site_ids) + f'") AND ({merged_query})'
+
                 # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
@@ -380,12 +464,14 @@ class SentinelOne(Product):
 
                 self._results[merged_tag] = list()
                 for event in events:
+                    # event_time = event['eventTime']
                     hostname = event['endpointName']
                     username = event['srcProcUser']
                     path = event['processImagePath']
                     command_line = event['srcProcCmdLine']
+                    additional_data = (event['siteId'])
 
-                    result = Result(hostname, username, path, command_line)
+                    result = Result(hostname, username, path, command_line, additional_data)
                     self._results[merged_tag].append(result)
 
             self._queries.clear()
@@ -401,3 +487,6 @@ class SentinelOne(Product):
             self._process_queries()
 
         return self._results
+
+    def get_other_row_headers(self) -> list[str]:
+        return ['Site ID']
