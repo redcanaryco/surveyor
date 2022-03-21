@@ -51,7 +51,7 @@ class SentinelOne(Product):
     _site_ids: list[str]
 
     def __init__(self, profile: str, creds_file: str, account_id: Optional[list[str]] = None,
-                 site_id: Optional[list[str]] = None, **kwargs):
+                 site_id: Optional[list[str]] = None, account_name: Optional[list[str]] = None, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
@@ -68,6 +68,7 @@ class SentinelOne(Product):
         # instantiate site_ids and account_ids if not set
         site_ids = site_id if site_id else list()
         account_ids = account_id if account_id else list()
+        account_names = account_name if account_name else list()
 
         # extract account/site ID from configuration if set
         if 'account_id' in config[profile] and config[profile]['account_id'] not in account_ids:
@@ -75,6 +76,9 @@ class SentinelOne(Product):
 
         if 'site_id' in config[profile] and config[profile]['site_id'] not in site_ids:
             site_ids.append(config[profile]['site_id'])
+
+        if 'account_name' in config[profile] and config[profile]['account_name'] not in account_names:
+            account_names.append(config[profile]['account_name'])
 
         # determine site IDs to query (default is all)
         self._site_ids = site_ids
@@ -96,6 +100,14 @@ class SentinelOne(Product):
         for scope_id in account_ids:
             for response in self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
                                                          params={'accountId': scope_id},
+                                                         add_default_params=False):
+                for site in response['sites']:
+                    if site['id'] not in self._site_ids:
+                        self._site_ids.append(site['id'])
+
+        for name in account_names:
+            for response in self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                         params={'name': name},
                                                          add_default_params=False):
                 for site in response['sites']:
                     if site['id'] not in self._site_ids:
