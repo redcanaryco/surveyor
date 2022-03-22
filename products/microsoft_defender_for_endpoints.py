@@ -1,7 +1,7 @@
 import configparser
+import json
 import logging
 import os
-from typing import Union, Tuple
 
 import requests
 
@@ -33,6 +33,10 @@ class DefenderForEndpoints(Product):
             raise ValueError(f'Profile {self.profile} is not present in credential file')
 
         section = config[self.profile]
+
+        if 'tenantId' not in section or 'appId' not in section or 'appSecret' not in section:
+            raise ValueError(f'Credential file must contain tenantId, appId, and appSecret values')
+
         self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
 
     def _get_aad_token(self, tenant_id: str, app_id: str, app_secret: str):
@@ -60,14 +64,14 @@ class DefenderForEndpoints(Product):
 
         try:
             url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
-            response = requests.post(url, data=data, headers=headers)
+            response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
                     result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"])
                     results.add(result)
             else:
-                self._echo(f"We received the following status code {response.status_code}")
+                self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Rerun surveyor")
         except Exception as e:
@@ -86,7 +90,10 @@ class DefenderForEndpoints(Product):
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query + self.build_query(base_query)
 
-        query = "DeviceEvents " + query + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+        query = "DeviceEvents " + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+        query = query.rstrip()
+
+        self.log.debug(f'Query: {query}')
         query = {'Query': query}
 
         results = self._post_advanced_query(data=query, headers=self._get_default_header())
@@ -101,26 +108,29 @@ class DefenderForEndpoints(Product):
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f"'{term}'" for term in terms)
                 if search_field == 'process_name':
-                    query = f"| where FileName has_any ({all_terms})"
+                    query = f" | where FileName has_any ({all_terms})"
                 elif search_field == "filemod":
-                    query = f"| where FileName has_any ({all_terms})"
+                    query = f" | where FileName has_any ({all_terms})"
                 elif search_field == "ipaddr":
-                    query = f"| where RemoteIP has_any ({all_terms})"
+                    query = f" | where RemoteIP has_any ({all_terms})"
                 elif search_field == "cmdline":
-                    query = f"| where ProcessCommandLine has_any ({all_terms})"
+                    query = f" | where ProcessCommandLine has_any ({all_terms})"
                 elif search_field == "digsig_publisher":
-                    query = f"| where Signer has_any ({all_terms})"
+                    query = f" | where Signer has_any ({all_terms})"
                 elif search_field == "domain":
-                    query = f"| where RemoteUrl has_any ({all_terms})"
+                    query = f" | where RemoteUrl has_any ({all_terms})"
                 elif search_field == "internal_name":
-                    query = f"| where ProcessVersionInfoInternalFileName has_any ({all_terms})"
+                    query = f" | where ProcessVersionInfoInternalFileName has_any ({all_terms})"
                 else:
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
 
                 query = "union DeviceEvents, DeviceFileCertificateInfo, DeviceProcessEvents" + query_base + query \
-                        + "| project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+                        + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+                query = query.rstrip()
+
+                self.log.debug(f'Query: {query}')
                 data = {'Query': query}
 
                 for entry in self._post_advanced_query(data=data, headers=self._get_default_header()):
