@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import sys
 from typing import Optional, Tuple, Callable
 
 import click
@@ -12,6 +13,14 @@ from tqdm import tqdm
 from common import Tag, Result
 from help import log_echo
 from load import get_product_instance, get_products
+
+
+# ensure Python version is compatible
+if not sys.version_info.major == 3 and sys.version_info.minor >= 9:
+    print('Python 3.9 or higher is required to run Surveyor.')
+    print(f'You are using Python v{sys.version_info.major}.{sys.version_info.minor}')
+    exit(1)
+
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 
