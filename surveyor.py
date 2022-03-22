@@ -193,6 +193,9 @@ def survey(ctx, product: str = 'cbr'):
     if (opt.output or opt.prefix) and opt.no_file:
         ctx.fail('--output and --prefix cannot be used with --no-file')
 
+    if opt.days and opt.minutes:
+        ctx.fail('--days and --minutes are mutually exclusive')
+
     # instantiate a logger
     log = logging.getLogger('surveyor')
     logging.debug(f'Product: {product}')
