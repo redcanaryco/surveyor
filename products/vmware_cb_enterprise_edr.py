@@ -53,7 +53,7 @@ class CbEnterpriseEdr(Product):
                 device_name = f'device_name:{value}'
                 query_base.and_(device_name)
             elif key == "username":
-                user_name = f'username:{value}'
+                user_name = f'process_username:{value}'
                 query_base.and_(user_name)
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
@@ -74,7 +74,8 @@ class CbEnterpriseEdr(Product):
 
             # noinspection PyUnresolvedReferences
             for proc in query.where(string_query):
-                result = Result(proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0])
+                result = Result(proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0],
+                                (proc.device_timestamp,))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have.")
@@ -87,7 +88,16 @@ class CbEnterpriseEdr(Product):
 
         for search_field, terms in criteria.items():
             try:
+                # quote terms with spaces in them
+                terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+
+                # translate search fields not handled by convert_query
+                if search_field == 'username':
+                    search_field = 'process_username'
+
                 def_query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+
+                self.log.debug(f'Query {tag}: {def_query}')
 
                 # convert the legacy from CbR to CbTh
                 query = self._conn.convert_query(def_query)
@@ -96,18 +106,21 @@ class CbEnterpriseEdr(Product):
 
                 full_query = base_query.where(query)
 
+                self.log.debug(f'Full Query: {full_query}')
+
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
                     result = Result(proc.device_name, proc.process_username[0], proc.process_name,
-                                    proc.process_cmdline[0])
+                                    proc.process_cmdline[0], (proc.device_timestamp,))
                     results.add(result)
             except cbapi.errors.ApiError as e:
                 self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
-                pass
             except KeyboardInterrupt:
                 self._echo("Caught CTRL-C. Returning what we have . . .")
-                pass
 
-        self._echo(f'Nested search results: {len(results)}')
+        self.log.debug(f'Nested search results: {len(results)}')
         self._add_results(list(results), tag)
+
+    def get_other_row_headers(self) -> list[str]:
+        return ['Device Timestamp']
