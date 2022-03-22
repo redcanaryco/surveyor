@@ -476,12 +476,11 @@ class SentinelOne(Product):
 
                 self._results[merged_tag] = list()
                 for event in events:
-                    # event_time = event['eventTime']
                     hostname = event['endpointName']
                     username = event['srcProcUser']
                     path = event['processImagePath']
                     command_line = event['srcProcCmdLine']
-                    additional_data = (event['siteId'], event['siteName'])
+                    additional_data = (event['eventTime'], event['siteId'], event['siteName'])
 
                     result = Result(hostname, username, path, command_line, additional_data)
                     self._results[merged_tag].append(result)
@@ -501,4 +500,4 @@ class SentinelOne(Product):
         return self._results
 
     def get_other_row_headers(self) -> list[str]:
-        return ['Site ID', 'Site Name']
+        return ['Event Time', 'Site ID', 'Site Name']
