@@ -62,7 +62,8 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline)
+                result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                                (proc.start,))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
@@ -76,10 +77,13 @@ class CbResponse(Product):
             for search_field, terms in criteria.items():
                 query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
                 query += self.build_query(base_query)
+                
+                self.log.debug(f'Query: {query}')
 
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
-                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline)
+                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                                    (proc.start,))
                     results.add(result)
         except Exception as e:
             self._echo(f'Error (see log for details): {e}', logging.ERROR)
@@ -89,3 +93,6 @@ class CbResponse(Product):
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
         self._add_results(list(results), tag)
+
+    def get_other_row_headers(self) -> list[str]:
+        return ['Process Start']
