@@ -68,7 +68,8 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"])
+                    result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"],
+                                    (res["Timestamp"],))
                     results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
@@ -90,7 +91,8 @@ class DefenderForEndpoints(Product):
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query + self.build_query(base_query)
 
-        query = "DeviceEvents " + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+        query = "DeviceEvents " + query + \
+                " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
         query = query.rstrip()
 
         self.log.debug(f'Query: {query}')
@@ -127,7 +129,7 @@ class DefenderForEndpoints(Product):
                     continue
 
                 query = "union DeviceEvents, DeviceFileCertificateInfo, DeviceProcessEvents" + query_base + query \
-                        + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath "
+                        + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
                 query = query.rstrip()
 
                 self.log.debug(f'Query: {query}')
@@ -156,3 +158,6 @@ class DefenderForEndpoints(Product):
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
         return query_base
+
+    def get_other_row_headers(self) -> list[str]:
+        return ['Timestamp']
