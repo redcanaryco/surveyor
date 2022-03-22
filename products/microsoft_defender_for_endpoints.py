@@ -12,7 +12,7 @@ class DefenderForEndpoints(Product):
     """
     Surveyor implementation for product "Microsoft Defender For Endpoint"
     """
-    product: str = 'defender'
+    product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
 

@@ -146,38 +146,30 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
     survey(ctx, 's1')
 
 
-@cli.command('threathunter', help="Query Cb ThreatHunter")
+@cli.command('cbc', help="Query VMware Cb Enterprise EDR")
 @click.pass_context
 def cbth(ctx):
-    survey(ctx, 'cbth')
+    survey(ctx, 'cbc')
 
 
-@cli.command('cbr', help="Query Cb Response")
+@cli.command('cbr', help="Query VMware Cb Response")
 @click.pass_context
 def cbr(ctx):
     survey(ctx, 'cbr')
 
 
-@cli.command('response', help="Query Cb Response")
+@cli.command('cbr', help="Query Cb Response")
 @click.pass_context
 def response_alternate(ctx):
     survey(ctx, 'cbr')
 
 
-@cli.command('defender', help="Query Microsoft Defender for Endpoints")
+@cli.command('dfe', help="Query Microsoft Defender for Endpoints")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True))
 @click.pass_context
-def defender(ctx, creds: Optional[str]):
+def dfe(ctx, creds: Optional[str]):
     ctx.obj.product_args = {'creds_file': creds}
-    survey(ctx, 'defender')
-
-
-@cli.command('atp', help="Query Microsoft Defender for Endpoints")
-@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
-@click.pass_context
-def defender_alternate(ctx, creds: Optional[str]):
-    ctx.obj.product_args = {'creds_file': creds}
-    survey(ctx, 'defender')
+    survey(ctx, 'dfe')
 
 
 def survey(ctx, product: str = 'cbr'):

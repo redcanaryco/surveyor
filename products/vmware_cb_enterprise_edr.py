@@ -23,7 +23,7 @@ def _convert_relative_time(relative_time):
 
 
 class CbEnterpriseEdr(Product):
-    product: str = 'cbth'
+    product: str = 'cbc'
     _conn: CbThreatHunterAPI  # CB Response API
 
     def __init__(self, profile: str, **kwargs):
