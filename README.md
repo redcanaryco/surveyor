@@ -15,16 +15,31 @@ Surveyor currently supports the following EDR platforms:
 - VMware Carbon Black® (Cb) Enterprise Response
 - VMware Carbon Black Cloud Enterprise EDR (formerly Carbon Black ThreatHunter)
 - Microsoft Defender for Endpoint
+- SentinelOne
 
 You can find out more about Surveyor from [this blog post](https://redcanary.com/blog/carbon-black-response-how-tos-surveyor/).
 
 ## Get started
 
 For information about installing and using Surveyor, see the [Getting started](https://github.com/redcanaryco/surveyor/wiki/Getting-started)
-page of the wiki.
+page of the wiki. Surveyor requires Python 3.9+.
 
 ## Contribute to Surveyor
 
 We encourage and welcome your contributions to Surveyor. For more information,
 see the [Contributing to Surveyor](https://github.com/redcanaryco/surveyor/wiki/Contributing-to-Surveyor)
 page of the wiki.
+
+## Query Samples
+
+#### Running the `sysinternals` definition file using the `cbr` product:
+
+```
+surveyor.py --deffile sysinternals cbr
+```
+
+#### Running the `sysinternals` definition file using the `dfe` product:
+
+```
+surveyor.py --deffile sysinternals dfe --creds dfe_creds.ini
+```
