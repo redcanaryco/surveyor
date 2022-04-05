@@ -7,7 +7,10 @@ baseline their environments and identify abnormal activity.
 ## Current Version: 2.0
 
 Version 2.0 introduced breaking changes to the command line interface and support for SentinelOne. 
-If you are looking for the prior version of Surveyor, see the v1.0 release.
+If you are looking for the prior version of Surveyor, see the v1.0 release. 
+
+If you are new to version 2.0 please see the [Getting started](https://github.com/redcanaryco/surveyor/wiki/Getting-started) page of the wiki
+and explore the new command line interface via `surveyor.py --help`.
 
 ## Analyze your endpoints
 
