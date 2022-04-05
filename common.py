@@ -1,117 +1,134 @@
-from pprint import pprint
+import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Tuple, Optional, Any, Union
 
-import click
-from cbapi import CbEnterpriseResponseAPI, CbThreatHunterAPI
-import urllib.request
-import urllib.parse
-import json
-import configparser 
-
-from products import vmware_cb_response as cbr, vmware_cb_enterprise_edr as cbth, microsoft_defender_for_endpoints as defender
+from help import log_echo
 
 
-class EDRCommon:
-    def __init__(self, product, profile):
-        self.product = product
+@dataclass(eq=True, frozen=True)
+class Tag:
+    tag: str
+    data: Optional[str] = None
+
+
+@dataclass(eq=True, frozen=True)
+class Result:
+    hostname: str
+    username: str
+    path: str
+    command_line: str
+    other_data: Optional[Tuple] = None  # use tuples as they are immutable
+
+
+class Product(ABC):
+    """
+    Base class for surveyor product implementations.
+
+    Subclasses must implement all abstract methods and invoke this class's constructor.
+    """
+    product: str = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
+    profile: str  # the profile is used to authenticate to the target platform
+    _results: dict[Tag, list[Result]]
+    log: logging.Logger
+    _tqdm_echo: bool = False
+
+    def __init__(self, product, profile, tqdm_echo: bool = False, **kwargs):
         self.profile = profile
+        self.product = product
+        self._tqdm_echo = tqdm_echo
 
+        self.log = logging.getLogger(f'surveyor.{self.product}')
 
-    # Build the query based on the product that was chosen
-    def base_query(self, *args):
-        if self.product == "cbr":
-            return cbr.build_query(*args)
+        if not self.profile:
+            self.profile = 'default'
 
-        elif self.product == "cbth":
-            return args
+        self._results = dict()
 
-        elif self.product == "defender":
-            return defender.build_query(*args)
+        self.log.debug(f'Authenticating to {self.product}')
+        self._authenticate()
+        self.log.debug(f'Authenticated')
 
+    @abstractmethod
+    def _authenticate(self) -> None:
+        """
+        Authenticate to the target product API.
+        """
+        raise NotImplementedError()
 
-    # Search based on the product that was chosen
-    def process_search(self, conn, base_query, query):
-        if self.product == "cbr":
-            return cbr.process_search(conn, query, base_query)
+    # noinspection PyMethodMayBeStatic
+    def base_query(self) -> dict:
+        """
+        Get base query parameters for the product.
+        """
+        return dict()
 
-        elif self.product == "cbth":
-            return cbth.process_search(conn, query, base_query)
-        
-        elif self.product == "defender":
-            return defender.process_search(conn, query, base_query)
+    @abstractmethod
+    def build_query(self, filters: dict) -> Any:
+        """
+        Build a base query for the product.
+        """
+        raise NotImplementedError()
 
-    # If defdir or deffiles were given run the appropriate search based on the product
-    def nested_process_search(self, criteria, conn, base_query):
-        if self.product == "cbr":
-            return cbr.nested_process_search(conn, criteria, base_query)
+    @abstractmethod
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+        """
+        Perform a process search.
+        """
+        raise NotImplementedError()
 
-        elif self.product == "cbth":
-            return cbth.nested_process_search(conn, criteria, base_query)
-        
-        elif self.product == "defender": 
-            return defender.nested_process_search(conn, criteria, base_query)
+    @abstractmethod
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
+        """
+        Performed a nested process search.
+        """
+        raise NotImplementedError()
 
-    # write the rows of the CSV
-    def write_csv(self, output, results, *args):
-        for r in results:
-            row = [r[0], r[1], r[2], r[3], args[0], args[1]]
-            output.writerow(row)
+    def has_results(self) -> bool:
+        """
+        Test whether product has any search results.
+        """
+        return len(self._results) > 0
 
-    def get_connection(self):
-        if self.product == 'cbr':
-            if self.profile:
-                cb_conn = CbEnterpriseResponseAPI(profile=self.profile)
-            else:
-                cb_conn = CbEnterpriseResponseAPI()
+    def clear_results(self) -> None:
+        """
+        Clear all stored results.
+        """
+        self._results.clear()
 
-            return cb_conn
+    def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:
+        """
+        Get results from all process_search and nested_process_search calls.
 
-        elif self.product == 'cbth':
-            if self.profile:
-                cb_conn = CbThreatHunterAPI(profile=self.profile)
-            else:
-                cb_conn = CbThreatHunterAPI()
-            
-            return cb_conn
+        :param final_call: Indicates whether this is the final time get_results will be called for this
+        set of process searches.
 
-    def get_connection_creds(self, creds):
-        
-        if self.product == 'defender':
-            if self.profile: 
-                atp_profile = self.profile
-            else: 
-                atp_profile = "default"
-        
-            config = self.config_reader(creds)
-            token = self.get_aad_token(config[atp_profile]['tenantId'], config[atp_profile]['appId'], config[atp_profile]['appSecret'])
+        :returns: A dictionary whose keys represent the tags used to identify searches. The dictionary values
+        are lists containing the search results as tuples with members: hostname, username, path, command_line.
+        """
+        return self._results
 
-            return token
-    
-    def get_aad_token(self, tenantID, appID, appSecret):
-        tenantId = tenantID 
-        appId = appID
-        appSecret = appSecret
+    # noinspection PyMethodMayBeStatic
+    def get_other_row_headers(self) -> list[str]:
+        """
+        Retrieve any additional headers this product includes in results.
+        """
+        return list()
 
-        url = f"https://login.windows.net/{tenantID}/oauth2/token"
+    def _add_results(self, results: list[Result], tag: Optional[Tag] = None):
+        """
+        Add results to the result store.
+        """
+        if not tag:
+            tag = '_default'
 
-        resourcesAppIdUri = 'https://api.securitycenter.windows.com'
-        body = {
-            "resource": resourcesAppIdUri, 
-            "client_id": appId, 
-            "client_secret":appSecret, 
-            "grant_type":"client_credentials"
-        }
+        if tag not in self._results:
+            self._results[tag] = list()
 
-        data = urllib.parse.urlencode(body).encode("utf-8")
-        req = urllib.request.Request(url, data)
-        response = urllib.request.urlopen(req)
-        jsonResponse = json.loads(response.read())
-        aadToken = jsonResponse["access_token"]
+        self._results[tag].extend(results)
 
-        return aadToken 
-
-    def config_reader(self, creds_file): 
-        config = configparser.ConfigParser()
-        config.sections()
-        config.read(creds_file)
-
-        return config 
+    def _echo(self, message: str, level: int = logging.DEBUG):
+        """
+        Write a message to STDOUT and the debug log stream.
+        """
+        log_echo(message, self.log, level, use_tqdm=self._tqdm_echo)

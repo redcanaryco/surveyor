@@ -36,6 +36,6 @@ setup(
         'Programming Language :: Python',
         ],
     install_requires=[
-        'cbapi==1.7.0', 'click'
+        'cbapi==1.7.0', 'click', 'requests', 'tqdm'
         ]
     )
