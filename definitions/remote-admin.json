@@ -1,7 +1,60 @@
 {
+    "AweRay (AweSun)": {
+        "process_name": ["aweray_remote*.exe"],
+        "domain": ["asapi.aweray.net", 
+                   "asapi-us.aweray.net"],
+        "digsig_publisher": ["AWERAY PTE. LTD."]
+    },
     "Ammyy Admin": { 
         "process_name": ["aa_v*.exe"],
         "domain": ["ammyy.com"]
+    },
+    "AeroAdmin" : {
+        "process_name": ["AeroAdmin.exe"],
+        "domain": ["aeroadmin.com"],
+        "digsig_publisher": ["AeroAdmin LLC"]
+    },
+    "AnyDesk" :{
+        "process_name": ["anydesk.exe"],
+        "domain": ["net.anydesk.com"],
+        "digsig_publisher": ["philandro Software GmbH"]
+    },
+    "AnyViewer" : {
+        "process_name": ["AnyViewerSetup.exe", 
+                        "RCClient.exe", 
+                        "RCService.exe"],
+        "domain": ["aomeisoftware.com"],
+        "digsig_publisher": ["AOMEI International Network Limited"]
+    },
+    "Atera": {
+        "process_name": ["atera_agent.exe"]
+    },
+    "BeyondTrust (Bomgar)": {
+        "process_name": ["bomgar-scc.exe",
+                         "bomgar-rdp.exe"],
+        "domain": ["bomgarcloud.com"],
+        "digsig_publisher": ["Bomgar Corporation"]
+    },
+    "ConnectWise Control": {
+        "process_name": ["screenconnect.clientservice.exe",
+                        "screenconnect.windowsclient.exe"],
+        "domain": ["live.screenconnect.com"],
+        "digsig_publisher": ["ConnectWise, LLC"]
+    },
+    "Chrome Remote Desktop": {
+        "cmdline": ["cmdline:efmjfjelnicpmdcmfikempdhlmainjcb*"],
+        "domain": ["remotedesktop.google.com"]
+    },
+    "DameWare": { 
+        "process_name": ["dwrcs.exe"],
+        "internal_name": ["DWRCST"]
+    },
+    "Distant Desktop": {
+        "process_name": ["distant-desktop.exe"]
+    },
+    "DW Service": {
+        "process_name": ["dwagsvc.exe"],
+        "digsig_publisher": ["DWSNET OÜ"]
     },
     "GoToMyPC": { 
         "process_name": ["g2comm.exe",
@@ -12,6 +65,11 @@
                          "g2svc.exe",
                          "g2tray.exe",
                          "gopcsrv.exe"]
+    },
+    "LiteManager": {
+        "process_name": ["ROMServer.exe", 
+                        "ROMFUSClient.exe"],
+        "digsig_publisher": ["Yakhnovets Denis Aleksandrovich IP"]
     },
     "LogMeIn": { 
         "process_name": ["lmiignition.exe",
@@ -27,11 +85,9 @@
     },
     "NetSupport Manager": {
         "process_name": ["client32.exe"],
-        "internal_name": ["client32"]
-    },
-    "RAdmin": { 
-        "process_name": ["radmin3.exe",
-                         "famitrfc.exe"]
+        "internal_name": ["client32"],
+        "domain": ["geo.netsupportsoftware.com"],
+        "digsig_publisher": ["NetSupport Ltd"]
     },
     "PCAnywhere Client": { 
         "process_name": ["awrem32.exe"]
@@ -39,9 +95,37 @@
     "PCAnywhere Server": { 
         "process_name": ["awhost32.exe"]
     },
+    "Pulseway": {
+        "process_name": ["PCMonitorManager.exe", 
+                        "pcmonitorsrv.exe"],
+        "digsig_publisher": ["MMSoft Design Ltd."]
+    },
+    "RAdmin": { 
+        "process_name": ["radmin3.exe",
+                         "famitrfc.exe"]
+    },
+    "RemoteUtilities": {
+        "process_name": ["rutserv.exe"],
+        "domain": ["remoteutilities.com"],
+        "digsig_publisher": ["Remote Utilities LLC"]
+    },
+    "ScreenConnect": {
+        "process_name": ["Remote Workforce Client.exe"],
+        "internal_name": ["RemoteWorkforceClientWpf.exe"]
+    },
     "ShowMyPC": { 
         "process_name": ["smpcsetup.exe",
                          "showmypc*.exe"]
+    },
+    "Splashtop": {
+        "process_name": ["strwinclt.exe"],
+        "digsig_publisher": ["Splashtop Inc."]
+    },
+    "Supremo": {
+        "process_name": ["supremo.exe", 
+                         "supremohelper.exe",
+                         "supremosystem.exe"],
+        "digsig_publisher": ["Nanosystems S.r.l."]
     },
     "TeamViewer Desktop": { 
         "process_name": ["teamviewer_desktop.exe",
@@ -52,13 +136,18 @@
                          "teamviewer_service.exe",
                          "teamviewerhost"]
     },
-    "DameWare": { 
-        "process_name": ["dwrcs.exe"],
-        "internal_name": ["DWRCST"]
-    },
     "VNC": {
         "process_name": ["winvnc.exe", 
                          "vncviewer.exe",
-                         "winvncsc.exe"]
+                         "winvncsc.exe", 
+                         "winwvc.exe"],
+        "digsig_publisher": ["uvnc bvba"]
+    },
+    "Zoho Assist": {
+        "process_name": ["Zaservice.exe", 
+                        "Zohours.exe",
+                        "ZohoMeeting.exe"],
+        "domain": ["assist.zoho.com"],
+        "digsig_publisher": ["ZOHO CORPORATION PRIVATE LIMITED"]
     }
 }
