@@ -33,7 +33,7 @@
         "process_name": ["adprep.exe"]
     },
     "dsacl": {
-        "process_name": ["dsacl.exe"]
+        "process_name": ["dsacls.exe", "dsacl.exe"]
     },
     "dsamain": {
         "process_name": ["ntdsutil.exe"]
@@ -52,5 +52,49 @@
     },
     "adinfo": {
         "process_name": ["adinfo.exe"]
+    },
+    "replmon": {
+        "process_name": ["replmon.exe"]
+    },
+    "repadmin": {
+        "process_name": ["repadmin.exe"]
+    },
+    "gpotool": {
+        "process_name": ["gpotool.exe"]
+    },
+    "dsastat": {
+        "process_name": ["dsastat.exe"]
+    },
+    "dnscmd": {
+        "process_name": ["dnscmd.exe"]
+    },
+    "ACLDIAG": {
+        "process_name": ["ACLDIAG.EXE"]
+    },
+    "adsiedit": {
+        "process_name": ["mmc.exe"],
+        "cmdline": ["adsiedit.msc"]
+    },
+    "Active Directory Administrative Center": {
+        "process_name": ["dsac.exe"]
+    },
+    "Active Directory Domains and Trusts": {
+        "process_name": ["mmc.exe"],
+        "cmdline": ["domain.msc"]
+    },
+    "adaminstall": {
+        "process_name": ["adaminstall.exe"]
+    },
+    "Active Directory Sites and Services": {
+        "process_name": ["mmc.exe"],
+        "cmdline": ["dssite.msc"]
+    },
+    "Active Directory Users and Computers": {
+        "process_name": ["mmc.exe"],
+        "cmdline": ["dsa.msc"]
+    },
+    "Group Policy Management": {
+        "process_name": ["mmc.exe"],
+        "cmdline": ["gpmc.msc"]
     }
 }
