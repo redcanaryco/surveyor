@@ -32,8 +32,8 @@
     "adprep": {
         "process_name": ["adprep.exe"]
     },
-    "dsacls": {
-        "process_name": ["dsacls.exe"]
+    "dsacl": {
+        "process_name": ["dsacls.exe", "dsacl.exe"]
     },
     "dsamain": {
         "process_name": ["ntdsutil.exe"]
