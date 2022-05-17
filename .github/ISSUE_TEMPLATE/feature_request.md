@@ -10,6 +10,8 @@ assignees: ''
 **Which category is the feature part of?**
 - [ ] Carbon Black Response
 - [ ] Threat Hunter
+- [ ] Defender for Endpoint
+- [ ] Sentinel1
 - [ ] Definition File
 - [ ] Code Feature - impacts all products 
 - [ ] New product support
