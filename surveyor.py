@@ -173,7 +173,7 @@ def response_alternate(ctx):
 
 
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
-@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True))
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
 def dfe(ctx, creds: Optional[str]):
     ctx.obj.product_args = {'creds_file': creds}
