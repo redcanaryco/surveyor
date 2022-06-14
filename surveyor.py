@@ -142,16 +142,13 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 @click.option("--account-id", help="ID of SentinelOne account to query", multiple=True, default=None)
 @click.option("--account-name", help="Name of SentinelOne account to query", multiple=True, default=None)
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
-@click.option("--fast", 'fast', help="Group queries for faster results", type=click.BOOL, required=False)
 @click.pass_context
-def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str],
-       fast: bool):
+def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str]):
     ctx.obj.product_args = {
         'creds_file': creds,
         'site_id': list(site_id),
         'account_id': list(account_id),
-        'account_name': list(account_name),
-        'fast': fast
+        'account_name': list(account_name)
     }
 
     survey(ctx, 's1')
@@ -176,7 +173,7 @@ def response_alternate(ctx):
 
 
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
-@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True))
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
 def dfe(ctx, creds: Optional[str]):
     ctx.obj.product_args = {'creds_file': creds}
