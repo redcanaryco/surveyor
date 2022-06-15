@@ -1,9 +1,10 @@
 import datetime
 import logging
 
-import cbapi.errors
-from cbapi.psc.threathunter import CbThreatHunterAPI, Process
-from cbapi.psc.threathunter import QueryBuilder
+import cbc_sdk.errors
+from cbc_sdk.rest_api import CBCloudAPI
+from cbc_sdk.platform import Process
+from cbc_sdk.base import QueryBuilder
 
 from common import Product, Result, Tag
 
@@ -24,16 +25,16 @@ def _convert_relative_time(relative_time):
 
 class CbEnterpriseEdr(Product):
     product: str = 'cbc'
-    _conn: CbThreatHunterAPI  # CB Response API
+    _conn: CBCloudAPI  # CB Cloud API
 
     def __init__(self, profile: str, **kwargs):
         super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
         if self.profile:
-            cb_conn = CbThreatHunterAPI(profile=self.profile)
+            cb_conn = CBCloudAPI(profile=self.profile)
         else:
-            cb_conn = CbThreatHunterAPI()
+            cb_conn = CBCloudAPI()
 
         self._conn = cb_conn
 
@@ -113,7 +114,7 @@ class CbEnterpriseEdr(Product):
                     result = Result(proc.device_name, proc.process_username[0], proc.process_name,
                                     proc.process_cmdline[0], (proc.device_timestamp,))
                     results.add(result)
-            except cbapi.errors.ApiError as e:
+            except cbc_sdk.errors.ApiError as e:
                 self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
             except KeyboardInterrupt:
