@@ -156,7 +156,7 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
 
 @cli.command('cbc', help="Query VMware Cb Enterprise EDR")
 @click.pass_context
-def cbth(ctx):
+def cbc(ctx):
     survey(ctx, 'cbc')
 
 
