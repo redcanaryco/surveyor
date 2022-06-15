@@ -18,15 +18,15 @@ def find_scripts():
 
 
 setup(
-    name='cb-response-surveyor',
+    name='surveyor',
     author='Keith McCammon',
     author_email='keith@redcanary.com',
-    url='https://github.com/redcanaryco/cb-response-surveyor',
+    url='https://github.com/redcanaryco/surveyor',
     license='MIT',
     packages=find_packages(),
     scripts=find_scripts(),
-    description='Extracts summarized process data from Cb Enterprise Response ',
-    version='0.1',
+    description='Extracts summarized process data from EDR platforms',
+    version='2.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -36,6 +36,6 @@ setup(
         'Programming Language :: Python',
         ],
     install_requires=[
-        'cbapi==1.7.0', 'click', 'requests', 'tqdm'
+        'cbapi==1.7.0', 'click', 'requests', 'tqdm', 'carbon-black-cloud-sdk'
         ]
     )
