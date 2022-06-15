@@ -16,7 +16,7 @@ for module in os.listdir(os.path.join(os.path.dirname(__file__), 'products')):
 
     # cbapi module has broken imports for Python 3.10+
     # importing it here would result in none of the products working on Python 3.10+
-    if sub_module == 'vmware_cb_response' or sub_module == 'vmware_cb_enterprise_edr':
+    if sub_module == 'vmware_cb_response':
         continue
 
     __import__('products.' + sub_module, locals(), globals())
@@ -50,15 +50,6 @@ def get_product_instance(product: str, **kwargs) -> Product:
         from products.vmware_cb_response import CbResponse
         return CbResponse(**kwargs)
 
-    if product == 'cbc':
-        if sys.version_info.major == 3 and sys.version_info.minor > 9:
-            click.secho(f'cbc only functions on Python 3.9 due to a library limitation '
-                        f'(this will be resolved in a future update)', fg='red')
-            exit(1)
-
-        from products.vmware_cb_enterprise_edr import CbEnterpriseEdr
-        return CbEnterpriseEdr(**kwargs)
-
     for subclass in _get_subclasses():
         if subclass.product == product:
             return subclass(**kwargs)
@@ -70,4 +61,4 @@ def get_products() -> Iterable[str]:
     """
     Get a list of all implemented product strings.
     """
-    return [subclass.product for subclass in _get_subclasses()] + ['cbr', 'cbc']
+    return [subclass.product for subclass in _get_subclasses()] + ['cbr']
