@@ -8,6 +8,14 @@ from cbc_sdk.base import QueryBuilder
 
 from common import Product, Result, Tag
 
+PARAMETER_MAPPING: dict[str, str] = {
+    'process_name': 'process_name',
+    'ipaddr': 'netconn_ipv4',
+    'cmdline': 'process_cmdline',
+    'digsig_publisher': 'process_publisher',
+    'domain': 'netconn_domain',
+    'internal_name': 'process_internal_name',
+}
 
 def _convert_relative_time(relative_time):
     """
@@ -92,16 +100,14 @@ class CbEnterpriseEdr(Product):
                 # quote terms with spaces in them
                 terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
 
-                # translate search fields not handled by convert_query
-                if search_field == 'username':
-                    search_field = 'process_username'
+                if search_field not in PARAMETER_MAPPING:
+                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                               logging.WARNING)
+                    continue
 
-                def_query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+                query = '(' + ' OR '.join('%s:%s' % (PARAMETER_MAPPING[search_field], term) for term in terms) + ')'
 
-                self.log.debug(f'Query {tag}: {def_query}')
-
-                # convert the legacy from CbR to CbTh
-                query = self._conn.convert_query(def_query)
+                self.log.debug(f'Query {tag}: {query}')
 
                 process = self._conn.select(Process)
 
@@ -115,7 +121,7 @@ class CbEnterpriseEdr(Product):
                                     proc.process_cmdline[0], (proc.device_timestamp,))
                     results.add(result)
             except cbc_sdk.errors.ApiError as e:
-                self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
+                self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
             except KeyboardInterrupt:
                 self._echo("Caught CTRL-C. Returning what we have . . .")
