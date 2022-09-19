@@ -395,6 +395,8 @@ class SentinelOne(Product):
                             combined_queries[key] = list()
 
                         combined_queries[key].append((tag, query.search_value))
+                    elif query.full_query is not None:
+                        query_text.append((tag, query.full_query))
                     else:
                         full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
                         query_text.append((tag, full_query))
