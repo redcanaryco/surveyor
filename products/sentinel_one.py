@@ -432,7 +432,7 @@ class SentinelOne(Product):
                     merged_tags.add(tag)
 
                 # merge all query tags into a single string
-                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(tag.data for tag in merged_tags))
+                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
 
                 if len(self._site_ids):
                     # restrict query to specified sites
