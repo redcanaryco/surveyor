@@ -83,18 +83,19 @@ class SentinelOne(Product):
         # determine site IDs to query (default is all)
         self._site_ids = site_ids
 
-        # ensure specified site IDs are valid
-        site_response_data = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                          params={'siteIds': ','.join(site_ids)},
-                                                          add_default_params=False)
-        existing_site_ids = set[int]()
-        for response in site_response_data:
-            for site in response['sites']:
-                existing_site_ids.add(site['id'])
+        if self._site_ids: # only run this if there is an actual list of site IDs to iterate over
+            # ensure specified site IDs are valid
+            site_response_data = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                            params={'siteIds': ','.join(site_ids)},
+                                                            add_default_params=False)
+            existing_site_ids = set[int]()
+            for response in site_response_data:
+                for site in response['sites']:
+                    existing_site_ids.add(site['id'])
 
-        for scope_id in self._site_ids:
-            if scope_id not in existing_site_ids:
-                raise ValueError(f'Site with ID {scope_id} does not exist')
+            for scope_id in self._site_ids:
+                if scope_id not in existing_site_ids:
+                    raise ValueError(f'Site with ID {scope_id} does not exist')
 
         # get site IDs for each specified account id
         for scope_id in account_ids:
@@ -394,6 +395,8 @@ class SentinelOne(Product):
                             combined_queries[key] = list()
 
                         combined_queries[key].append((tag, query.search_value))
+                    elif query.full_query is not None:
+                        query_text.append((tag, query.full_query))
                     else:
                         full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
                         query_text.append((tag, full_query))
@@ -429,7 +432,7 @@ class SentinelOne(Product):
                     merged_tags.add(tag)
 
                 # merge all query tags into a single string
-                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(tag.data for tag in merged_tags))
+                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
 
                 if len(self._site_ids):
                     # restrict query to specified sites
