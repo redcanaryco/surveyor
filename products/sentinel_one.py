@@ -354,7 +354,7 @@ class SentinelOne(Product):
                     search_value = f'({all_terms})'
                     operator = 'in contains anycase'
                 else:
-                    operator = 'contains'
+                    operator = 'containscis'
 
                 if tag not in self._queries:
                     self._queries[tag] = list()
