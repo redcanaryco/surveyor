@@ -205,11 +205,6 @@ class SentinelOne(Product):
                     query_base += ' AND '
 
                 query_base += f' UserName containscis "{value}"'
-            elif key == 'process_name':
-                if query_base:
-                    query_base += ' AND '
-
-                query_base += f' ProcessName containscis "{value}"'
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
