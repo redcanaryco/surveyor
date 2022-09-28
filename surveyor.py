@@ -344,7 +344,7 @@ def survey(ctx, product: str = 'cbr'):
 
                         if product.has_results():
                             # write results as they become available
-                            for tag, nested_results in product.get_results(final_call=False).items():
+                            for tag, nested_results in product.get_results(base_query, final_call=False).items():
                                 _write_results(writer, nested_results, program, tag.data, tag, log,
                                                use_tqdm=True)
 
@@ -352,7 +352,7 @@ def survey(ctx, product: str = 'cbr'):
                             product.clear_results()
 
             # write any remaining results
-            for tag, nested_results in product.get_results().items():
+            for tag, nested_results in product.get_results(base_query).items():
                 _write_results(writer, nested_results, tag.tag, tag.data, tag, log)
 
         if output_file:

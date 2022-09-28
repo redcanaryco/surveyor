@@ -351,7 +351,6 @@ class SentinelOne(Product):
 
                 parameter = PARAMETER_MAPPING[search_field]
                 search_value = all_terms
-
                 if len(terms) > 1:
                     search_value = f'({all_terms})'
                     operator = 'in contains anycase'
@@ -360,18 +359,19 @@ class SentinelOne(Product):
 
                 if tag not in self._queries:
                     self._queries[tag] = list()
-
                 self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-    def _process_queries(self):
+    def _process_queries(self, base_query: dict):
         """
         Process all cached queries.
         """
         start_date = datetime.utcnow()
         end_date = start_date
-
+        
+        query_base, from_date, to_date = self.build_query(base_query)
+        
         # determine earliest start date
         for tag, queries in self._queries.items():
             for query in queries:
@@ -408,7 +408,6 @@ class SentinelOne(Product):
             for (operator, parameter), data in combined_queries.items():
                 if operator == 'containscis':
                     full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
-
                     tag = Tag(','.join(tag[0].tag for tag in data), ','.join(tag[0].data for tag in data))
                     query_text.append((tag, full_query))
                 else:
@@ -435,7 +434,11 @@ class SentinelOne(Product):
 
                 # merge all query tags into a single string
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
-
+                
+                if len(query_base):
+                    # add base query filter if they exist
+                    merged_query = f'{query_base} ({merged_query})'
+                    
                 if len(self._site_ids):
                     # restrict query to specified sites
                     # S1QL does not support restricting a query to a specified account ID
@@ -494,13 +497,13 @@ class SentinelOne(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
-    def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:
+    def get_results(self, base_query: dict, final_call: bool = True) -> dict[Tag, list[Result]]:
         self.log.debug('Entered get_results')
 
         # process any unprocessed queries
         if final_call and len(self._queries) > 0:
             self.log.debug(f'Executing additional _process_queries')
-            self._process_queries()
+            self._process_queries(base_query)
 
         return self._results
 
