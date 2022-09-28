@@ -288,7 +288,7 @@ def survey(ctx, product: str = 'cbr'):
             log_echo(f"Running Custom Query: {opt.query}", log)
             product.process_search(Tag('query'), base_query, opt.query)
 
-            for tag, results in product.get_results().items():
+            for tag, results in product.get_results(base_query).items():
                 _write_results(writer, results, opt.query, "query", tag, log)
 
         # test if deffile exists
@@ -328,7 +328,7 @@ def survey(ctx, product: str = 'cbr'):
                     product.process_search(Tag(ioc), base_query, opt.query)
                     del base_query[opt.ioc_type]
 
-                for tag, results in product.get_results().items():
+                for tag, results in product.get_results(base_query).items():
                     _write_results(writer, results, ioc, 'ioc', tag, log)
 
         # run search against definition files and write to csv
