@@ -60,8 +60,61 @@ class SentinelOne(Product):
 
         self._last_request = 0.0
 
-        super().__init__(self.product, profile, **kwargs)
+        # Save these values to `self` for reference in _authenticate()
+        self.site_id = site_id
+        self.account_id = account_id
+        self.account_name = account_name
 
+        super().__init__(self.product, profile, **kwargs)
+    
+    def _authenticate(self):
+        config = configparser.ConfigParser()
+        config.read(self.creds_file)
+
+        if self.profile not in config:
+            raise ValueError(f'Profile {self.profile} is not present in credential file')
+
+        section = config[self.profile]
+
+        # ensure configuration has required fields
+        if 'url' not in section:
+            raise ValueError(f'S1 configuration invalid, ensure "url" is specified')
+
+        # extract required information from configuration
+        if 'token' in section:
+            self._token = section['token']
+        else:
+            if 'S1_TOKEN' not in os.environ:
+                raise ValueError(f'S1 configuration invalid, specify "token" configuration value or "S1_TOKEN" '
+                                 f'environment variable')
+            self._token = os.environ['S1_TOKEN']
+
+        self._url = section['url'].rstrip('/')
+
+        if not self._url.startswith('https://'):
+            raise ValueError(f'URL must start with "https://"')
+
+        # create a session and a pooled HTTPAdapter
+        self._session = requests.session()
+        self._session.mount('https://', HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=3))
+
+        # generate a list of site_ids based on config file and cmdline input
+        self._get_site_ids(self.site_id, self.account_id, self.account_name)
+
+        if len(self._site_ids) < 1:
+            raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
+
+        # test API key by retrieving the sensor count, which is a fast operation
+        data = self._session.get(self._build_url('/web/api/v2.1/agents/count'),
+                                 headers=self._get_default_header(),
+                                 params=self._get_default_body()).json()
+        if 'errors' in data:
+            if data['errors'][0]['code'] == 4010010:
+                raise ValueError(f'Failed to authenticate to SentinelOne: {data}')
+            else:
+                raise ValueError(f'Error when authenticating to SentinelOne: {data}')
+
+    def _get_site_ids(self, site_id, account_id, account_name):
         config = configparser.ConfigParser()
         config.read(self.creds_file)
 
@@ -71,17 +124,18 @@ class SentinelOne(Product):
         account_names = account_name if account_name else list()
 
         # extract account/site ID from configuration if set
-        if 'account_id' in config[profile] and config[profile]['account_id'] not in account_ids:
-            account_ids.append(config[profile]['account_id'])
+        if 'account_id' in config[self.profile] and config[self.profile]['account_id'] not in account_ids:
+            account_ids.append(config[self.profile]['account_id'])
 
-        if 'site_id' in config[profile] and config[profile]['site_id'] not in site_ids:
-            site_ids.append(config[profile]['site_id'])
+        if 'site_id' in config[self.profile] and config[self.profile]['site_id'] not in site_ids:
+            site_ids.append(config[self.profile]['site_id'])
 
-        if 'account_name' in config[profile] and config[profile]['account_name'] not in account_names:
-            account_names.append(config[profile]['account_name'])
+        if 'account_name' in config[self.profile] and config[self.profile]['account_name'] not in account_names:
+            account_names.append(config[self.profile]['account_name'])
 
         # determine site IDs to query (default is all)
         self._site_ids = site_ids
+        self._account_ids = account_ids
 
         if self._site_ids: # only run this if there is an actual list of site IDs to iterate over
             # ensure specified site IDs are valid
@@ -114,54 +168,12 @@ class SentinelOne(Product):
                     if site['id'] not in self._site_ids:
                         self._site_ids.append(site['id'])
 
+        # remove unncessary variables from self
+        self.__dict__.pop('site_id',None)
+        self.__dict__.pop('account_id',None)
+        self.__dict__.pop('account_name',None)
+
         self.log.debug(f'Site IDs: {self._site_ids}')
-
-    def _authenticate(self):
-        config = configparser.ConfigParser()
-        config.read(self.creds_file)
-
-        if self.profile not in config:
-            raise ValueError(f'Profile {self.profile} is not present in credential file')
-
-        section = config[self.profile]
-
-        # ensure configuration has required fields
-        if 'url' not in section:
-            raise ValueError(f'S1 configuration invalid, ensure "url" is specified')
-
-        if 'site_id' not in section and 'account_id' not in section:
-            raise ValueError(f'S1 configuration invalid, specify a site_id or account_id')
-
-        # extract required information from configuration
-        if 'token' in section:
-            self._token = section['token']
-        else:
-            if 'S1_TOKEN' not in os.environ:
-                raise ValueError(f'S1 configuration invalid, specify "token" configuration value or "S1_TOKEN" '
-                                 f'environment variable')
-            self._token = os.environ['S1_TOKEN']
-
-        self._site_id = section['site_id'] if 'site_id' in section else None
-        self._account_id = section['account_id'] if 'account_id' in section else None
-
-        self._url = section['url'].rstrip('/')
-
-        if not self._url.startswith('https://'):
-            raise ValueError(f'URL must start with "https://"')
-
-        # create a session and a pooled HTTPAdapter
-        self._session = requests.session()
-        self._session.mount('https://', HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=3))
-
-        # test API key by retrieving the sensor count, which is a fast operation
-        data = self._session.get(self._build_url('/web/api/v2.1/agents/count'),
-                                 headers=self._get_default_header(),
-                                 params=self._get_default_body()).json()
-        if 'errors' in data:
-            if data['errors'][0]['code'] == 4010010:
-                raise ValueError(f'Failed to authenticate to SentinelOne: {data}')
-            else:
-                raise ValueError(f'Error when authenticating to SentinelOne: {data}')
 
     def _build_url(self, stem: str):
         """
@@ -176,7 +188,7 @@ class SentinelOne(Product):
         """
         Get the default request body for a SentinelOne API query.
         """
-        return {"siteIds": [self._site_id]} if self._site_id else {"accountIds": [self._account_id]}
+        return {"siteIds": self._site_ids} if self._site_ids else {"accountIds": [self._account_ids]}
 
     def _get_default_header(self):
         """
