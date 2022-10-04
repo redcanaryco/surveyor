@@ -210,8 +210,6 @@ class SentinelOne(Product):
 
         # S1 requires the date range to be supplied in the query request, not the query text
         # therefore we return the from/to dates separately
-        if query_base:
-            query_base = f'({query_base}) AND'
         return query_base, from_date, to_date
 
     def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
@@ -328,7 +326,7 @@ class SentinelOne(Product):
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
-        query = f'{build_query} ({query})'
+        query = f'({build_query}) AND ({query})'
         self._echo(f'Built Query: {query}')
 
         if tag not in self._queries:
