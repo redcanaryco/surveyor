@@ -389,7 +389,7 @@ class SentinelOne(Product):
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    if query.operator == 'containscis':
+                    if query.operator in ('contains', 'containscis', 'contains anycase'):
                         key = (query.operator, query.parameter)
                         if key not in combined_queries:
                             combined_queries[key] = list()
@@ -404,7 +404,7 @@ class SentinelOne(Product):
             # merge combined queries and add them to query_text
             data: list[Tuple[Tag, str]]
             for (operator, parameter), data in combined_queries.items():
-                if operator == 'containscis':
+                if operator in ('contains', 'containscis', 'contains anycase'):
                     full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
 
                     tag = Tag(','.join(tag[0].tag for tag in data), ','.join(tag[0].data for tag in data))
