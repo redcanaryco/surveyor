@@ -1,0 +1,125 @@
+{
+    "addinprocess.exe": {
+        "process_name": ["addinprocess.exe"]
+    },
+    "addinprocess32.exe": {
+        "process_name": ["addinprocess32.exe"]
+    },
+    "addinutil.exe": {
+        "process_name": ["addinutil.exe"]
+    },
+    "aspnet_compiler.exe": {
+        "process_name": ["aspnet_compiler.exe"]
+    },
+    "bash.exe": {
+        "process_name": ["bash.exe"]
+    },
+    "bginfo.exe": {
+        "process_name": ["bginfo.exe"]
+    },
+    "cdb.exe": {
+        "process_name": ["cdb.exe"]
+    },
+    "cscript.exe": {
+        "process_name": ["cscript.exe"]
+    },
+    "csi.exe": {
+        "process_name": ["csi.exe"]
+    },
+    "dbghost.exe": {
+        "process_name": ["dbghost.exe"]
+    },
+    "dbgsvc.exe": {
+        "process_name": ["dbgsvc.exe"]
+    },
+    "dnx.exe": {
+        "process_name": ["dnx.exe"]
+    },
+    "dotnet.exe": {
+        "process_name": ["dotnet.exe"]
+    },
+    "fsi.exe": {
+        "process_name": ["fsi.exe"]
+    },
+    "fsiAnyCpu.exe": {
+        "process_name": ["fsiAnyCpu.exe"]
+    },
+    "infdefaultinstall.exe": {
+        "process_name": ["infdefaultinstall.exe"]
+    },
+    "kd.exe": {
+        "process_name": ["kd.exe"]
+    },
+    "kill.exe": {
+        "process_name": ["kill.exe"]
+    },
+    "lxssmanager.dll": {
+        "modload": ["lxssmanager.dll"]
+    },
+    "lxrun.exe": {
+        "process_name": ["lxrun.exe"]
+    },
+    "Microsoft.Build.dll": {
+        "modload": ["Microsoft.Build.dll"]
+    },
+    "Microsoft.Build.Framework.dll": {
+        "modload": ["Microsoft.Build.Framework.dll"]
+    },
+    "Microsoft.Workflow.Compiler.exe": {
+        "process_name": ["Microsoft.Workflow.Compiler.exe"]
+    },
+    "msbuild.exe": {
+        "process_name": ["msbuild.exe"]
+    },
+    "msbuild.dll": {
+        "modload": ["msbuild.dll"]
+    },
+    "mshta.exe": {
+        "process_name": ["mshta.exe"]
+    },
+    "ntkd.exe": {
+        "process_name": ["ntkd.exe"]
+    },
+    "ntsd.exe": {
+        "process_name": ["ntsd.exe"]
+    },
+    "powershellcustomhost.exe": {
+        "process_name": ["powershellcustomhost.exe"]
+    },
+    "rcsi.exe": {
+        "process_name": ["rcsi.exe"]
+    },
+    "runscripthelper.exe": {
+        "process_name": ["runscripthelper.exe"]
+    },
+    "texttransform.exe": {
+        "process_name": ["texttransform.exe"]
+    },
+    "visualuiaverifynative.exe": {
+        "process_name": ["visualuiaverifynative.exe"]
+    },
+    "system.management.automation.dll": {
+        "modload": ["system.management.automation.dll"]
+    },
+    "wfc.exe": {
+        "process_name": ["wfc.exe"]
+    },
+    "windbg.exe": {
+        "process_name": ["windbg.exe"]
+    },
+    "wmic.exe": {
+        "process_name": ["wmic.exe"]
+    },
+    "wscript.exe": {
+        "process_name": ["wscript.exe"]
+    },
+    "wsl.exe": {
+        "process_name": ["wsl.exe"]
+    },
+    "wslconfig.exe": {
+        "process_name": ["wslconfig.exe"]
+    },
+    "wslhost.exe": {
+        "process_name": ["wslhost.exe"]
+    }
+}
