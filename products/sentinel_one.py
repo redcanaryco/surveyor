@@ -188,7 +188,7 @@ class SentinelOne(Product):
         """
         Get the default request body for a SentinelOne API query.
         """
-        return {"siteIds": self._site_ids} if self._site_ids else {"accountIds": [self._account_ids]}
+        return {"siteIds": self._site_ids} if self._site_ids else {"accountIds": self._account_ids}
 
     def _get_default_header(self):
         """
