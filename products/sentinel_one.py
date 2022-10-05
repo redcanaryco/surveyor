@@ -338,9 +338,10 @@ class SentinelOne(Product):
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
         if query_base not in self._queries:
+            query = f'({query_base}) AND '
             if tag not in self._queries:
                     self._queries[Tag("filter")] = list()
-            self._queries[Tag("filter")].append(Query(from_date, to_date, None, None, None, query_base))
+            self._queries[Tag("filter")].append(Query(from_date, to_date, None, None, None, query))
         try:
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f'"{term}"' for term in terms)
@@ -426,7 +427,7 @@ class SentinelOne(Product):
                 merged_query = ''
                 for tag, query in query_text[i:i + chunk_size]:
                     # combine queries with ORs
-                    if merged_query:
+                    if merged_query and not merged_query.endswith("AND ") and not merged_query.endswith("OR "):
                         merged_query += ' OR '
 
                     merged_query += query
