@@ -326,7 +326,8 @@ class SentinelOne(Product):
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
-        query = f'({build_query}) AND ({query})'
+        if build_query:
+            query = f'({build_query}) AND ({query})'
         self._echo(f'Built Query: {query}')
 
         if tag not in self._queries:
