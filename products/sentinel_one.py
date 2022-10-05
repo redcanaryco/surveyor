@@ -134,8 +134,10 @@ class SentinelOne(Product):
                 if id not in site_ids:
                     site_ids.append(id)
 
-        if 'account_name' in config[self.profile] and config[self.profile]['account_name'] not in account_names:
-            account_names.append(config[self.profile]['account_name'])
+        if 'account_name' in config[self.profile]:
+            for name in config[self.profile]['account_name'].split(','):
+                if name not in account_names:
+                    account_names.append(name)
 
         # determine site IDs to query (default is all)
         self._site_ids = site_ids
