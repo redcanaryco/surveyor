@@ -127,17 +127,17 @@ class SentinelOne(Product):
         if 'account_id' in config[self.profile]:
             for id in config[self.profile]['account_id'].split(','):
                 if id not in account_ids:
-                    account_ids.append(id)
+                    account_ids.append(id.strip())
 
         if 'site_id' in config[self.profile]:
             for id in config[self.profile]['site_id'].split(','):
                 if id not in site_ids:
-                    site_ids.append(id)
+                    site_ids.append(id.strip())
 
         if 'account_name' in config[self.profile]:
             for name in config[self.profile]['account_name'].split(','):
                 if name not in account_names:
-                    account_names.append(name)
+                    account_names.append(name.strip())
 
         # determine site IDs to query (default is all)
         self._site_ids = site_ids
