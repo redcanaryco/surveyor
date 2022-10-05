@@ -124,8 +124,10 @@ class SentinelOne(Product):
         account_names = account_name if account_name else list()
 
         # extract account/site ID from configuration if set
-        if 'account_id' in config[self.profile] and config[self.profile]['account_id'] not in account_ids:
-            account_ids.append(config[self.profile]['account_id'])
+        if 'account_id' in config[self.profile]:
+            for id in config[self.profile]['account_id'].split(','):
+                if id not in account_ids:
+                    account_ids.append(id)
 
         if 'site_id' in config[self.profile] and config[self.profile]['site_id'] not in site_ids:
             site_ids.append(config[self.profile]['site_id'])
