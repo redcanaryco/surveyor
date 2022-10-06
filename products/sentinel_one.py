@@ -7,6 +7,7 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Callable
+import sys
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -101,7 +102,7 @@ class SentinelOne(Product):
         # generate a list of site_ids based on config file and cmdline input
         self._get_site_ids(self.site_id, self.account_id, self.account_name)
 
-        if len(self._site_ids) < 1:
+        if len(self._site_ids) < 1 and len(self._account_ids) < 1:
             raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
 
         # test API key by retrieving the sensor count, which is a fast operation
@@ -119,9 +120,10 @@ class SentinelOne(Product):
         config.read(self.creds_file)
 
         # instantiate site_ids and account_ids if not set
-        site_ids = site_id if site_id else list()
-        account_ids = account_id if account_id else list()
-        account_names = account_name if account_name else list()
+        # make it all lists so more data can be appended from the config file
+        site_ids = (site_id) if site_id else list()
+        account_ids = (account_id) if account_id else list()
+        account_names = (account_name) if account_name else list()
 
         # extract account/site ID from configuration if set
         if 'account_id' in config[self.profile]:
@@ -139,40 +141,50 @@ class SentinelOne(Product):
                 if name not in account_names:
                     account_names.append(name.strip())
 
-        # determine site IDs to query (default is all)
-        self._site_ids = site_ids
-        self._account_ids = account_ids
+        # determine site and account IDs to query (default is all)
+        self._site_ids = list()
+        self._account_ids = list()
 
-        if self._site_ids: # only run this if there is an actual list of site IDs to iterate over
-            # ensure specified site IDs are valid
-            site_response_data = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                            params={'siteIds': ','.join(site_ids)},
-                                                            add_default_params=False)
-            existing_site_ids = set[int]()
-            for response in site_response_data:
-                for site in response['sites']:
-                    existing_site_ids.add(site['id'])
+        if account_ids: # verify provided account IDs are valid
+            response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
+                                                    params={'ids': ','.join(account_ids)},
+                                                    add_default_params=False)
+            for account in response:
+                if account['id'] not in self._account_ids:
+                    self._account_ids.append(account['id'])
 
-            for scope_id in self._site_ids:
-                if scope_id not in existing_site_ids:
-                    raise ValueError(f'Site with ID {scope_id} does not exist')
+            diff = list(set(account_ids) - set(self._account_ids))
+            if len(diff) > 0:
+                self.log.warning(f'Account IDs {",".join(diff)} not found.')
 
-        # get site IDs for each specified account id
-        for scope_id in account_ids:
-            for response in self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                         params={'accountId': scope_id},
-                                                         add_default_params=False):
-                for site in response['sites']:
-                    if site['id'] not in self._site_ids:
+        temp_account_name = list()
+        for name in account_names: # verify provided account names are valid
+            response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
+                                                    params={'name': name},
+                                                    add_default_params=False)
+            for account in response:
+                temp_account_name.append(account['name'])
+                if account['id'] not in self._account_ids:
+                    self._account_ids.append(account['id'])
+        
+        diff = list(set(account_names) - set(temp_account_name))
+        if len(diff) > 0:
+            self.log.warning(f'Account names {",".join(diff)} not found')
+
+        if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
+            response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                    params={'siteIds': ','.join(site_ids)},
+                                                    add_default_params=False)
+            temp_site_ids = list()
+            for item in response:
+                for site in item['sites']:
+                    temp_site_ids.append(site['id'])
+                    if site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
                         self._site_ids.append(site['id'])
 
-        for name in account_names:
-            for response in self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                         params={'name': name},
-                                                         add_default_params=False):
-                for site in response['sites']:
-                    if site['id'] not in self._site_ids:
-                        self._site_ids.append(site['id'])
+        diff = list(set(site_ids) - set(temp_site_ids))
+        if len(diff) > 0:
+            self.log.warning(f'Site IDs {",".join(diff)} not found')
 
         # remove unncessary variables from self
         self.__dict__.pop('site_id',None)
@@ -180,6 +192,7 @@ class SentinelOne(Product):
         self.__dict__.pop('account_name',None)
 
         self.log.debug(f'Site IDs: {self._site_ids}')
+        self.log.debug(f'Account IDs: {self._account_ids}')
 
     def _build_url(self, stem: str):
         """
@@ -194,7 +207,12 @@ class SentinelOne(Product):
         """
         Get the default request body for a SentinelOne API query.
         """
-        return {"siteIds": self._site_ids} if self._site_ids else {"accountIds": self._account_ids}
+        body = {}
+        if self._site_ids:
+            body['siteIds'] = self._site_ids
+        if self._account_ids:
+            body['accountIds'] = self._account_ids
+        return body
 
     def _get_default_header(self):
         """
