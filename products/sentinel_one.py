@@ -470,11 +470,6 @@ class SentinelOne(Product):
                 # merge all query tags into a single string
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
 
-                if len(self._site_ids):
-                    # restrict query to specified sites
-                    # S1QL does not support restricting a query to a specified account ID
-                    merged_query = f'SiteID in contains ("' + '", "'.join(self._site_ids) + f'") AND ({merged_query})'
-
                 # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
