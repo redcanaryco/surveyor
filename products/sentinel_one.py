@@ -338,7 +338,7 @@ class SentinelOne(Product):
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
-        if query_base not in self._queries:
+        if query_base and query_base not in self._queries:
             query = f'({query_base}) AND '
             if tag not in self._queries:
                     self._queries[Tag("filter")] = list()
