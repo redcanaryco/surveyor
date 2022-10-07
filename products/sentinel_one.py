@@ -170,8 +170,10 @@ class SentinelOne(Product):
         diff = list(set(account_names) - set(temp_account_name))
         if len(diff) > 0:
             self.log.warning(f'Account names {",".join(diff)} not found')
-        temp_site_ids = list()
+
+        
         if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
+            temp_site_ids = list()
             response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
                                                     params={'siteIds': ','.join(site_ids)},
                                                     add_default_params=False)
@@ -181,9 +183,9 @@ class SentinelOne(Product):
                     if site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
                         self._site_ids.append(site['id'])
 
-        diff = list(set(site_ids) - set(temp_site_ids))
-        if len(diff) > 0:
-            self.log.warning(f'Site IDs {",".join(diff)} not found')
+            diff = list(set(site_ids) - set(temp_site_ids))
+            if len(diff) > 0:
+                self.log.warning(f'Site IDs {",".join(diff)} not found')
 
         # remove unncessary variables from self
         self.__dict__.pop('site_id',None)
