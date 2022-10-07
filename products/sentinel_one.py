@@ -170,12 +170,11 @@ class SentinelOne(Product):
         diff = list(set(account_names) - set(temp_account_name))
         if len(diff) > 0:
             self.log.warning(f'Account names {",".join(diff)} not found')
-
+        temp_site_ids = list()
         if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
             response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
                                                     params={'siteIds': ','.join(site_ids)},
                                                     add_default_params=False)
-            temp_site_ids = list()
             for item in response:
                 for site in item['sites']:
                     temp_site_ids.append(site['id'])
