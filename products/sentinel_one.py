@@ -326,8 +326,7 @@ class SentinelOne(Product):
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
-        if build_query:
-            query = f'({build_query}) AND ({query})'
+        self._query_base = build_query
         self._echo(f'Built Query: {query}')
 
         if tag not in self._queries:
@@ -338,11 +337,7 @@ class SentinelOne(Product):
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
-        if query_base and query_base not in self._queries:
-            query = f'({query_base}) AND '
-            if tag not in self._queries:
-                    self._queries[Tag("filter")] = list()
-            self._queries[Tag("filter")].append(Query(from_date, to_date, None, None, None, query))
+        self._query_base = query_base
         try:
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f'"{term}"' for term in terms)
@@ -428,7 +423,7 @@ class SentinelOne(Product):
                 merged_query = ''
                 for tag, query in query_text[i:i + chunk_size]:
                     # combine queries with ORs
-                    if merged_query and not merged_query.endswith("AND ") and not merged_query.endswith("OR "):
+                    if merged_query:
                         merged_query += ' OR '
 
                     merged_query += query
@@ -439,11 +434,15 @@ class SentinelOne(Product):
                 # merge all query tags into a single string
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
 
+                if len(self._query_base):
+                    # add base_query filter to merged query string
+                    merged_query = f'{self._query_base} AND ({merged_query})'
+                    
                 if len(self._site_ids):
                     # restrict query to specified sites
                     # S1QL does not support restricting a query to a specified account ID
                     merged_query = f'SiteID in contains ("' + '", "'.join(self._site_ids) + f'") AND ({merged_query})'
-
+                
                 # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
