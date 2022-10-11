@@ -100,20 +100,11 @@ class SentinelOne(Product):
         self._session.mount('https://', HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=3))
 
         # generate a list of site_ids based on config file and cmdline input
+        # this will also test API keys as it goes
         self._get_site_ids(self.site_id, self.account_id, self.account_name)
 
         if len(self._site_ids) < 1 and len(self._account_ids) < 1:
             raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
-
-        # test API key by retrieving the sensor count, which is a fast operation
-        data = self._session.get(self._build_url('/web/api/v2.1/agents/count'),
-                                 headers=self._get_default_header(),
-                                 params=self._get_default_body()).json()
-        if 'errors' in data:
-            if data['errors'][0]['code'] == 4010010:
-                raise ValueError(f'Failed to authenticate to SentinelOne: {data}')
-            else:
-                raise ValueError(f'Error when authenticating to SentinelOne: {data}')
 
     def _get_site_ids(self, site_id, account_id, account_name):
         config = configparser.ConfigParser()
@@ -149,6 +140,13 @@ class SentinelOne(Product):
             response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
                                                     params={'ids': ','.join(account_ids)},
                                                     add_default_params=False)
+
+            if 'errors' in response:
+                if response['errors'][0]['code'] == 4010010:
+                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                else:
+                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                    
             for account in response:
                 if account['id'] not in self._account_ids:
                     self._account_ids.append(account['id'])
@@ -162,6 +160,13 @@ class SentinelOne(Product):
             response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
                                                     params={'name': name},
                                                     add_default_params=False)
+
+            if 'errors' in response:
+                if response['errors'][0]['code'] == 4010010:
+                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                else:
+                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+
             for account in response:
                 temp_account_name.append(account['name'])
                 if account['id'] not in self._account_ids:
@@ -170,17 +175,26 @@ class SentinelOne(Product):
         diff = list(set(account_names) - set(temp_account_name))
         if len(diff) > 0:
             self.log.warning(f'Account names {",".join(diff)} not found')
-
         
         if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
             temp_site_ids = list()
             response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
                                                     params={'siteIds': ','.join(site_ids)},
                                                     add_default_params=False)
+
+            if 'errors' in response:
+                if response['errors'][0]['code'] == 4010010:
+                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                else:
+                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+
             for item in response:
                 for site in item['sites']:
                     temp_site_ids.append(site['id'])
-                    if site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
+                    if site['accountId'] in self._account_ids: # default to use the smallest scope
+                        self._account_ids.remove(site['accountId'])
+                        self.log.debug(f'Scope reduced from Account ID {site["accountId"]} to Site ID {site["id"]}')
+                    if site['id'] not in self._site_ids:
                         self._site_ids.append(site['id'])
 
             diff = list(set(site_ids) - set(temp_site_ids))
