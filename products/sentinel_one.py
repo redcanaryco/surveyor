@@ -110,92 +110,113 @@ class SentinelOne(Product):
         config = configparser.ConfigParser()
         config.read(self.creds_file)
 
-        # instantiate site_ids and account_ids if not set
-        # make it all lists so more data can be appended from the config file
+        # check if any cmdline stuff was input - that will take precedence over config file stuff
         site_ids = (site_id) if site_id else list()
         account_ids = (account_id) if account_id else list()
         account_names = (account_name) if account_name else list()
 
-        # extract account/site ID from configuration if set
-        if 'account_id' in config[self.profile]:
-            for id in config[self.profile]['account_id'].split(','):
-                if id not in account_ids:
-                    account_ids.append(id.strip())
+        if not site_ids and not account_ids and not account_names:
+            # extract account/site ID from configuration if set
+            if 'account_id' in config[self.profile]:
+                for id in config[self.profile]['account_id'].split(','):
+                    if id not in account_ids:
+                        account_ids.append(id.strip())
 
-        if 'site_id' in config[self.profile]:
-            for id in config[self.profile]['site_id'].split(','):
-                if id not in site_ids:
-                    site_ids.append(id.strip())
+            if 'site_id' in config[self.profile]:
+                for id in config[self.profile]['site_id'].split(','):
+                    if id not in site_ids:
+                        site_ids.append(id.strip())
 
-        if 'account_name' in config[self.profile]:
-            for name in config[self.profile]['account_name'].split(','):
-                if name not in account_names:
-                    account_names.append(name.strip())
+            if 'account_name' in config[self.profile]:
+                for name in config[self.profile]['account_name'].split(','):
+                    if name not in account_names:
+                        account_names.append(name.strip())
 
         # determine site and account IDs to query (default is all)
         self._site_ids = list()
         self._account_ids = list()
 
         if account_ids: # verify provided account IDs are valid
-            response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
-                                                    params={'ids': ','.join(account_ids)},
-                                                    add_default_params=False)
+            # create batch of 10 account IDs per call
+            counter = 0
+            temp_list = []
+            i = 0
+            while i < len(account_ids):
+                temp_list.append(account_ids[i])
+                counter += 1
+                if counter == 10 or i == len(account_ids) - 1:
+                    response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
+                                                            params={'ids': ','.join(temp_list)},
+                                                            add_default_params=False)
 
-            if 'errors' in response:
-                if response['errors'][0]['code'] == 4010010:
-                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                else:
-                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
-                    
-            for account in response:
-                if account['id'] not in self._account_ids:
-                    self._account_ids.append(account['id'])
+                    if 'errors' in response:
+                        if response['errors'][0]['code'] == 4010010:
+                            raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                        else:
+                            raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+
+                    for account in response:
+                        if account['id'] not in self._account_ids:
+                            self._account_ids.append(account['id'])
+
+                    counter = 0
+                    temp_list = []
+                i += 1
 
             diff = list(set(account_ids) - set(self._account_ids))
             if len(diff) > 0:
                 self.log.warning(f'Account IDs {",".join(diff)} not found.')
 
-        temp_account_name = list()
-        for name in account_names: # verify provided account names are valid
-            response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
-                                                    params={'name': name},
-                                                    add_default_params=False)
+        if account_names: # verify provided account names are valid
+            temp_account_name = list()
+            for name in account_names:
+                response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
+                                                        params={'name': name},
+                                                        add_default_params=False)
 
-            if 'errors' in response:
-                if response['errors'][0]['code'] == 4010010:
-                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                else:
-                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                if 'errors' in response:
+                    if response['errors'][0]['code'] == 4010010:
+                        raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                    else:
+                        raise ValueError(f'Error when authenticating to SentinelOne: {response}')
 
-            for account in response:
-                temp_account_name.append(account['name'])
-                if account['id'] not in self._account_ids:
-                    self._account_ids.append(account['id'])
-        
-        diff = list(set(account_names) - set(temp_account_name))
-        if len(diff) > 0:
-            self.log.warning(f'Account names {",".join(diff)} not found')
+                for account in response:
+                    temp_account_name.append(account['name'])
+                    if account['id'] not in self._account_ids:
+                        self._account_ids.append(account['id'])
+            
+            diff = list(set(account_names) - set(temp_account_name))
+            if len(diff) > 0:
+                self.log.warning(f'Account names {",".join(diff)} not found')
         
         if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
             temp_site_ids = list()
-            response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                    params={'siteIds': ','.join(site_ids)},
-                                                    add_default_params=False)
+            # create batches of 10 site_ids
+            counter = 0
+            temp_list = []
+            i = 0
+            while i < len(site_ids):
+                temp_list.append(site_ids[i])
+                counter += 1
+                if counter == 10 or i == len(site_ids) - 1:
+                    response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                            params={'siteIds': ','.join(site_ids)},
+                                                            add_default_params=False)
 
-            if 'errors' in response:
-                if response['errors'][0]['code'] == 4010010:
-                    raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                else:
-                    raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                    if 'errors' in response:
+                        if response['errors'][0]['code'] == 4010010:
+                            raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
+                        else:
+                            raise ValueError(f'Error when authenticating to SentinelOne: {response}')
 
-            for item in response:
-                for site in item['sites']:
-                    temp_site_ids.append(site['id'])
-                    if site['accountId'] in self._account_ids: # default to use the smallest scope
-                        self._account_ids.remove(site['accountId'])
-                        self.log.debug(f'Scope reduced from Account ID {site["accountId"]} to Site ID {site["id"]}')
-                    if site['id'] not in self._site_ids:
-                        self._site_ids.append(site['id'])
+                    for item in response:
+                        for site in item['sites']:
+                            temp_site_ids.append(site['id'])
+                            if site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
+                                self._site_ids.append(site['id'])
+                    counter = 0
+                    temp_list = []
+                i += 1
 
             diff = list(set(site_ids) - set(temp_site_ids))
             if len(diff) > 0:
