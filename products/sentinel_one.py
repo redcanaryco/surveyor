@@ -171,7 +171,7 @@ class SentinelOne(Product):
             temp_account_name = list()
             for name in account_names:
                 response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
-                                                        params={'name': name},
+                                                        params={'states': "active", 'name': name},
                                                         add_default_params=False)
 
                 if 'errors' in response:
