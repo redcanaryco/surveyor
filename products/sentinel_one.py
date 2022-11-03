@@ -200,7 +200,7 @@ class SentinelOne(Product):
                 counter += 1
                 if counter == 10 or i == len(site_ids) - 1:
                     response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                            params={'siteIds': ','.join(site_ids)},
+                                                            params={'state': "active", 'siteIds': ','.join(site_ids)},
                                                             add_default_params=False)
 
                     if 'errors' in response:
