@@ -326,7 +326,7 @@ class SentinelOne(Product):
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
-        query = query + build_query
+        self._query_base = build_query
         self._echo(f'Built Query: {query}')
 
         if tag not in self._queries:
@@ -337,7 +337,7 @@ class SentinelOne(Product):
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
-
+        self._query_base = query_base
         try:
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f'"{term}"' for term in terms)
@@ -389,9 +389,9 @@ class SentinelOne(Product):
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    if query.operator == 'contains':
+                    if query.operator in ('contains', 'containscis', 'contains anycase'):
                         key = (query.operator, query.parameter)
-                        if query.operator not in combined_queries:
+                        if key not in combined_queries:
                             combined_queries[key] = list()
 
                         combined_queries[key].append((tag, query.search_value))
@@ -404,7 +404,7 @@ class SentinelOne(Product):
             # merge combined queries and add them to query_text
             data: list[Tuple[Tag, str]]
             for (operator, parameter), data in combined_queries.items():
-                if operator == 'contains':
+                if operator in ('contains', 'containscis', 'contains anycase'):
                     full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
 
                     tag = Tag(','.join(tag[0].tag for tag in data), ','.join(tag[0].data for tag in data))
@@ -434,11 +434,15 @@ class SentinelOne(Product):
                 # merge all query tags into a single string
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
 
+                if len(self._query_base):
+                    # add base_query filter to merged query string
+                    merged_query = f'{self._query_base} AND ({merged_query})'
+                    
                 if len(self._site_ids):
                     # restrict query to specified sites
                     # S1QL does not support restricting a query to a specified account ID
                     merged_query = f'SiteID in contains ("' + '", "'.join(self._site_ids) + f'") AND ({merged_query})'
-
+                
                 # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
