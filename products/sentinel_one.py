@@ -7,7 +7,6 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Callable
-import sys
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -509,11 +508,6 @@ class SentinelOne(Product):
                 if len(self._query_base):
                     # add base_query filter to merged query string
                     merged_query = f'{self._query_base} AND ({merged_query})'
-                    
-                if len(self._site_ids):
-                    # restrict query to specified sites
-                    # S1QL does not support restricting a query to a specified account ID
-                    merged_query = f'SiteID in contains ("' + '", "'.join(self._site_ids) + f'") AND ({merged_query})'
                 
                 # build request body for DV API call
                 params = self._get_default_body()
