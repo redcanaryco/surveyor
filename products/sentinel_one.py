@@ -146,7 +146,7 @@ class SentinelOne(Product):
                 counter += 1
                 if counter == 10 or i == len(account_ids) - 1:
                     response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
-                                                            params={'ids': ','.join(temp_list)},
+                                                            params={'states': "active", 'ids': ','.join(temp_list)},
                                                             add_default_params=False)
 
                     if 'errors' in response:
