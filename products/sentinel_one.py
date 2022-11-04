@@ -387,6 +387,7 @@ class SentinelOne(Product):
                     return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
                                                         params={'queryId': query_id},
                                                         no_progress=False,
+                                                        add_default_params=False,
                                                         progress_desc='Retrieving query results')
                 else:
                     # query-status endpoint has a one request per second rate limit
