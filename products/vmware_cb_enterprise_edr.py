@@ -83,8 +83,10 @@ class CbEnterpriseEdr(Product):
 
             # noinspection PyUnresolvedReferences
             for proc in query.where(string_query):
-                result = Result(proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0],
-                                (proc.device_timestamp,))
+                deets = proc.get_details()
+
+                result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], deets['process_cmdline'][0],
+                                (deets['device_timestamp'], deets['process_guid'],))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have.")
@@ -117,8 +119,9 @@ class CbEnterpriseEdr(Product):
 
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
-                    result = Result(proc.device_name, proc.process_username[0], proc.process_name,
-                                    proc.process_cmdline[0], (proc.device_timestamp,))
+                    deets = proc.get_details()
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'],
+                                    deets['process_cmdline'][0], (deets['device_timestamp'], deets['process_guid'],))
                     results.add(result)
             except cbc_sdk.errors.ApiError as e:
                 self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
@@ -130,4 +133,4 @@ class CbEnterpriseEdr(Product):
         self._add_results(list(results), tag)
 
     def get_other_row_headers(self) -> list[str]:
-        return ['Device Timestamp']
+        return ['Device Timestamp', 'Process GUID']
