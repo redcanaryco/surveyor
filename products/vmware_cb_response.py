@@ -6,6 +6,7 @@ from cbapi.response.models import Process
 
 from common import Product, Tag, Result
 
+import sys, json
 
 def _convert_relative_time(relative_time):
     """
@@ -26,6 +27,8 @@ class CbResponse(Product):
     _conn: CbEnterpriseResponseAPI  # CB Response API
 
     def __init__(self, profile: str, **kwargs):
+        self._sensor_group = kwargs['sensor_group']
+
         super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
@@ -51,6 +54,10 @@ class CbResponse(Product):
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
+        if self._sensor_group:
+            for name in self._sensor_group:
+                query_base += ' group:"%s"' % name
+        
         return query_base
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
@@ -62,8 +69,9 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
+                print(proc)
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
-                                (proc.start,))
+                                (proc.start, proc.id))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
@@ -95,4 +103,4 @@ class CbResponse(Product):
         self._add_results(list(results), tag)
 
     def get_other_row_headers(self) -> list[str]:
-        return ['Process Start']
+        return ['Process Start', 'Process GUID']

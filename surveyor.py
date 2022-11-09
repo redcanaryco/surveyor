@@ -153,22 +153,30 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
 
     survey(ctx, 's1')
 
-
+# CbC options
 @cli.command('cbc', help="Query VMware Cb Enterprise EDR")
 @click.pass_context
 def cbth(ctx):
     survey(ctx, 'cbc')
 
-
+# CbR Options
 @cli.command('cbr', help="Query VMware Cb Response")
+@click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
 @click.pass_context
-def cbr(ctx):
+def cbr(ctx, sensor_group: Optional[Tuple]):
+    ctx.obj.product_args = {
+        'sensor_group': list(sensor_group)
+    }
     survey(ctx, 'cbr')
 
-
+# CbR Options
 @cli.command('cbr', help="Query Cb Response")
+@click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
 @click.pass_context
-def response_alternate(ctx):
+def response_alternate(ctx, sensor_group: Optional[Tuple]):
+    ctx.obj.product_args = {
+        'sensor_group': list(sensor_group)
+    }
     survey(ctx, 'cbr')
 
 
