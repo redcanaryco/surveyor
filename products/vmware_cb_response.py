@@ -69,7 +69,6 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                print(proc)
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
                 results.add(result)
