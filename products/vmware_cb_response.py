@@ -1,26 +1,9 @@
 import logging
-from datetime import datetime, timedelta
 
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.response.models import Process
 
 from common import Product, Tag, Result
-
-import sys, json
-
-def _convert_relative_time(relative_time):
-    """
-    Convert a Cb Response relative time boundary (i.e., start:-1440m) to a device_timestamp:
-    device_timestamp:[2019-06-02T00:00:00Z TO 2019-06-03T23:59:00Z]
-    """
-    time_format = "%Y-%m-%dT%H:%M:%SZ"
-    minus_minutes = relative_time.split(':')[1].split('m')[0].split('-')[1]
-    end_time = datetime.now()
-    start_time = end_time - timedelta(minutes=int(minus_minutes))
-    device_timestamp = 'device_timestamp:[{0} TO {1}]'.format(start_time.strftime(time_format),
-                                                              end_time.strftime(time_format))
-    return device_timestamp
-
 
 class CbResponse(Product):
     product: str = 'cbr'
@@ -82,7 +65,7 @@ class CbResponse(Product):
 
         try:
             for search_field, terms in criteria.items():
-                query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+                query = '(' + ' OR '.join('%s:"%s"' % (search_field, term) for term in terms) + ')'
                 query += self.build_query(base_query)
                 
                 self.log.debug(f'Query: {query}')
