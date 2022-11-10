@@ -5,6 +5,7 @@ from cbapi.response.models import Process
 
 from common import Product, Tag, Result
 
+
 class CbResponse(Product):
     product: str = 'cbr'
     _conn: CbEnterpriseResponseAPI  # CB Response API
