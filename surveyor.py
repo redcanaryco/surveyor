@@ -169,16 +169,6 @@ def cbr(ctx, sensor_group: Optional[Tuple]):
     }
     survey(ctx, 'cbr')
 
-# CbR Options
-@cli.command('cbr', help="Query Cb Response")
-@click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
-@click.pass_context
-def response_alternate(ctx, sensor_group: Optional[Tuple]):
-    ctx.obj.product_args = {
-        'sensor_group': list(sensor_group)
-    }
-    survey(ctx, 'cbr')
-
 
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
