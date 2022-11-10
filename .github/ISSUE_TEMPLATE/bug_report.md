@@ -17,6 +17,8 @@ A clear and concise description of what the bug is.
 **What product is impacted?**
 - [ ] Carbon Black Response
 - [ ] Carbon Black Threat Hunter
+- [ ] Defender for Endpoints
+- [ ] SentinelOne
 - [ ] Other
 
 **To Reproduce**
