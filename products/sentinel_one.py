@@ -556,9 +556,19 @@ class SentinelOne(Product):
                 for event in events:
                     hostname = event['endpointName']
                     username = event['srcProcUser']
-                    path = event['processImagePath']
+                    path = event['srcProcImagePath']
+                    srcprocstorylineid = event['srcProcStorylineId'] if 'srcProcStorylineId' in event else 'None'
+                    srcprocdisplayname = event['srcProcDisplayName'] if 'srcProcDisplayName' in event else 'None'
+                    tgtprocdisplayname = event['tgtProcDisplayName'] if 'tgtProcDisplayName' in event else 'None'
+                    tgtfilepath = event['tgtFilePath'] if 'tgtFilePath' in event else 'None'
+                    scrprocparentimagepath = event['srcProcParentImagePath'] if 'srcProcParentImagePath' in event else 'None'
+                    tgtprocimagepath = event['tgtProcImagePath'] if 'tgtProcImagePath' in event else 'None'
+                    url = event['forensicUrl'] if 'forensicUrl' in event else 'None'
+                    srcip = event['srcIp'] if 'srcIp' in event else 'None'
+                    dstip = event['dstIp'] if 'dstIp' in event else 'None'
+                    dnsrequest = event['dnsRequest'] if 'dnsRequest' in event else 'None'
                     command_line = event['srcProcCmdLine']
-                    additional_data = (event['eventTime'], event['siteId'], event['siteName'])
+                    additional_data = (srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, url, srcip, dstip, dnsrequest, event['eventType'], event['eventTime'], event['siteId'], event['siteName'])
 
                     result = Result(hostname, username, path, command_line, additional_data)
                     self._results[merged_tag].append(result)
@@ -578,4 +588,4 @@ class SentinelOne(Product):
         return self._results
 
     def get_other_row_headers(self) -> list[str]:
-        return ['Event Time', 'Site ID', 'Site Name']
+        return ['SrcProcStorylineId', 'SrcProcDisplayName', 'SrcProcParentImagePath', 'TgtProcDisplayName', 'TgtProcPath', 'TgtFilePath', 'Network URL', 'Source IP', 'Dest IP', 'DNS Request', 'EventType', 'Event Time', 'Site ID', 'Site Name']
