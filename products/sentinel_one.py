@@ -27,6 +27,7 @@ class Query:
 
 
 PARAMETER_MAPPING: dict[str, str] = {
+    'query': 'query', # non-existent field to specify a fully defined query string in a definition file.
     'process_name': 'ProcessName',
     'ipaddr': 'IP',
     'cmdline': 'CmdLine',
@@ -428,6 +429,8 @@ class SentinelOne(Product):
                     operator = 'in contains anycase'
                 elif not re.findall(r'\w+\.\w+', search_value):
                     operator = 'regexp'
+                elif parameter == 'query':
+                    operator = 'raw'
                 else:
                     operator = 'containscis'
 
@@ -472,6 +475,10 @@ class SentinelOne(Product):
                         combined_queries[key].append((tag, query.search_value))
                     elif query.full_query is not None:
                         query_text.append((tag, query.full_query))
+                    elif query.operator == 'raw' and query.parameter == 'query':
+                        query.search_value = query.search_value.lstrip('\"')
+                        full_query = f'({query.search_value})'
+                        query_text.append((tag, full_query))
                     else:
                         if re.findall(r'(?:\" AND)', query.search_value):
                             for value in query.search_value.split(','):
