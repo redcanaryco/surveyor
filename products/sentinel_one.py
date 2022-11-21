@@ -29,9 +29,13 @@ PARAMETER_MAPPING: dict[str, str] = {
     'process_name': 'ProcessName',
     'ipaddr': 'IP',
     'cmdline': 'CmdLine',
-    'digsig_publisher': 'SrcProcPublisher',
-    'domain': 'Url',
-    'internal_name': 'TgtFileInternalName'
+    'digsig_publisher': 'Publisher',
+    'domain': 'DNS',
+    'internal_name': 'TgtFileInternalName',
+    'url': 'Url',
+    'filemod': 'FilePath',
+    'modload': 'ModulePath',
+    'process_file_description': 'SrcProcDisplayName'
 }
 
 
