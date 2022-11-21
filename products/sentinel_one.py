@@ -7,6 +7,7 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Callable
+import re
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -422,9 +423,11 @@ class SentinelOne(Product):
                 parameter = PARAMETER_MAPPING[search_field]
                 search_value = all_terms
 
-                if len(terms) > 1:
+                if len(terms) > 1 and not re.findall(r'(?:\" AND)', search_value):
                     search_value = f'({all_terms})'
                     operator = 'in contains anycase'
+                elif not re.findall(r'\w+\.\w+', search_value):
+                    operator = 'regexp'
                 else:
                     operator = 'containscis'
 
@@ -461,7 +464,7 @@ class SentinelOne(Product):
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    if query.operator in ('contains', 'containscis', 'contains anycase'):
+                    if query.operator in ('contains', 'containscis', 'contains anycase') and not re.findall(r'(?:\" AND)', query.search_value):
                         key = (query.operator, query.parameter)
                         if key not in combined_queries:
                             combined_queries[key] = list()
@@ -470,8 +473,13 @@ class SentinelOne(Product):
                     elif query.full_query is not None:
                         query_text.append((tag, query.full_query))
                     else:
-                        full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
-                        query_text.append((tag, full_query))
+                        if re.findall(r'(?:\" AND)', query.search_value):
+                            for value in query.search_value.split(','):
+                                full_query = f'({query.parameter} {query.operator} {value})'
+                                query_text.append((tag, full_query))
+                        else:
+                            full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
+                            query_text.append((tag, full_query))
 
             # merge combined queries and add them to query_text
             data: list[Tuple[Tag, str]]
