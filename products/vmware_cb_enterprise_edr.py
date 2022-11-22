@@ -84,9 +84,12 @@ class CbEnterpriseEdr(Product):
             # noinspection PyUnresolvedReferences
             for proc in query.where(string_query):
                 deets = proc.get_details()
-
-                result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], deets['process_cmdline'][0],
-                                (deets['device_timestamp'], deets['process_guid'],))
+                if 'process_cmdline' in deets:
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], deets['process_cmdline'][0],
+                                    (deets['device_timestamp'], deets['process_guid'],))
+                else:
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], '',
+                                    (deets['device_timestamp'], deets['process_guid'],))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have.")
