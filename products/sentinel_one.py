@@ -480,8 +480,10 @@ class SentinelOne(Product):
                     elif query.full_query is not None:
                         query_text.append((tag, query.full_query))
                     elif query.operator == 'raw' and query.parameter == 'query':
-                        query.search_value = query.search_value.lstrip('\"')
-                        full_query = f'({query.search_value})'
+                        temp_search_value = query.search_value.lstrip('\"')
+                        if temp_search_value.endswith(')"'):
+                            temp_search_value = temp_search_value.rstrip('\"')
+                        full_query = f'({temp_search_value})'
                         query_text.append((tag, full_query))
                     else:
                         if re.findall(r'(?:\" AND)', query.search_value):
