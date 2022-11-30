@@ -431,10 +431,10 @@ class SentinelOne(Product):
                 if len(terms) > 1 and not re.findall(r'(?:\" AND)', search_value):
                     search_value = f'({all_terms})'
                     operator = 'in contains anycase'
-                elif not re.findall(r'\w+\.\w+', search_value):
-                    operator = 'regexp'
                 elif parameter == 'query':
                     operator = 'raw'
+                elif not re.findall(r'\w+\.\w+', search_value):
+                    operator = 'regexp'
                 else:
                     operator = 'containscis'
 
