@@ -155,8 +155,14 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
 
 # CbC options
 @cli.command('cbc', help="Query VMware Cb Enterprise EDR")
+@click.option("--device-group", help="Name of device group to query", multiple=True, default=None)
+@click.option("--device-policy", help="Name of device policy to query", multiple=True, default=None)
 @click.pass_context
-def cbth(ctx):
+def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]):
+    ctx.obj.product_args = {
+        'device_group': list(device_group),
+        'device_policy': list(device_policy)
+    }
     survey(ctx, 'cbc')
 
 # CbR Options
