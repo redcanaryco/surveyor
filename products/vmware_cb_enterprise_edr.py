@@ -132,8 +132,6 @@ class CbEnterpriseEdr(Product):
                     ts = proc.device_timestamp if hasattr(proc, 'device_timestamp') else 'UNKNOWN'
                     result = Result(hostname, user, proc_name, cmdline, (ts,))
                     results.add(result)
-                    if len(results) > 2000:
-                        break
             except cbapi.errors.ApiError as e:
                 self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
