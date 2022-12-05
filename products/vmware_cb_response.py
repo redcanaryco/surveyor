@@ -39,8 +39,10 @@ class CbResponse(Product):
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
         if self._sensor_group:
+            sensor_group = []
             for name in self._sensor_group:
-                query_base += ' group:"%s"' % name
+                sensor_group.append('group:"%s"' % name)            
+            query_base += '(' + ' OR '.join(sensor_group) + ')'
         
         return query_base
 
