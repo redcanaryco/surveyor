@@ -27,6 +27,9 @@ class CbEnterpriseEdr(Product):
     _conn: CbThreatHunterAPI  # CB Response API
 
     def __init__(self, profile: str, **kwargs):
+        self._device_group = kwargs['device_group']
+        self._device_policy = kwargs['device_policy']
+
         super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
@@ -57,6 +60,18 @@ class CbEnterpriseEdr(Product):
                 query_base.and_(user_name)
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
+
+        if self._device_group:
+            device_group = []
+            for name in self._device_group:
+                device_group.append(f'device_group:"{name}"')
+            query_base.and_('(' + ' OR '.join(device_group) + ')')
+
+        if self._device_policy:
+            device_policy = []
+            for name in self._device_policy:
+                device_policy.append(f'device_policy:"{name}"')
+            query_base.and_('(' + ' OR '.join(device_policy) + ')')
 
         return query_base
 
@@ -110,9 +125,15 @@ class CbEnterpriseEdr(Product):
 
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
-                    result = Result(proc.device_name, proc.process_username[0], proc.process_name,
-                                    proc.process_cmdline[0], (proc.device_timestamp,))
+                    hostname = proc.device_name if hasattr(proc, 'device_name') else 'UNKNOWN'
+                    user = proc.process_username[0] if hasattr(proc, 'process_username') else 'UNKNOWN'
+                    proc_name = proc.process_name if hasattr(proc, 'process_name') else 'UNKNOWN'
+                    cmdline = proc.process_cmdline[0] if hasattr(proc, 'process_cmdline') else 'UNKNOWN'
+                    ts = proc.device_timestamp if hasattr(proc, 'device_timestamp') else 'UNKNOWN'
+                    result = Result(hostname, user, proc_name, cmdline, (ts,))
                     results.add(result)
+                    if len(results) > 2000:
+                        break
             except cbapi.errors.ApiError as e:
                 self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
