@@ -163,6 +163,7 @@ def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]):
         'device_group': list(device_group),
         'device_policy': list(device_policy)
     }
+
     survey(ctx, 'cbc')
 
 # CbR Options
