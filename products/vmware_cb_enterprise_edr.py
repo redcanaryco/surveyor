@@ -1,12 +1,21 @@
 import datetime
 import logging
 
-import cbapi.errors
-from cbapi.psc.threathunter import CbThreatHunterAPI, Process
-from cbapi.psc.threathunter import QueryBuilder
+import cbc_sdk.errors
+from cbc_sdk.rest_api import CBCloudAPI
+from cbc_sdk.platform import Process
+from cbc_sdk.base import QueryBuilder
 
 from common import Product, Result, Tag
 
+PARAMETER_MAPPING: dict[str, str] = {
+    'process_name': 'process_name',
+    'ipaddr': 'netconn_ipv4',
+    'cmdline': 'process_cmdline',
+    'digsig_publisher': 'process_publisher',
+    'domain': 'netconn_domain',
+    'internal_name': 'process_internal_name',
+}
 
 def _convert_relative_time(relative_time):
     """
@@ -24,16 +33,16 @@ def _convert_relative_time(relative_time):
 
 class CbEnterpriseEdr(Product):
     product: str = 'cbc'
-    _conn: CbThreatHunterAPI  # CB Response API
+    _conn: CBCloudAPI  # CB Cloud API
 
     def __init__(self, profile: str, **kwargs):
         super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
         if self.profile:
-            cb_conn = CbThreatHunterAPI(profile=self.profile)
+            cb_conn = CBCloudAPI(profile=self.profile)
         else:
-            cb_conn = CbThreatHunterAPI()
+            cb_conn = CBCloudAPI()
 
         self._conn = cb_conn
 
@@ -74,8 +83,13 @@ class CbEnterpriseEdr(Product):
 
             # noinspection PyUnresolvedReferences
             for proc in query.where(string_query):
-                result = Result(proc.device_name, proc.process_username[0], proc.process_name, proc.process_cmdline[0],
-                                (proc.device_timestamp,))
+                deets = proc.get_details()
+                if 'process_cmdline' in deets:
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], deets['process_cmdline'][0],
+                                    (deets['device_timestamp'], deets['process_guid'],))
+                else:
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], '',
+                                    (deets['device_timestamp'], deets['process_guid'],))
                 results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have.")
@@ -91,16 +105,14 @@ class CbEnterpriseEdr(Product):
                 # quote terms with spaces in them
                 terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
 
-                # translate search fields not handled by convert_query
-                if search_field == 'username':
-                    search_field = 'process_username'
+                if search_field not in PARAMETER_MAPPING:
+                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                               logging.WARNING)
+                    continue
 
-                def_query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+                query = '(' + ' OR '.join('%s:%s' % (PARAMETER_MAPPING[search_field], term) for term in terms) + ')'
 
-                self.log.debug(f'Query {tag}: {def_query}')
-
-                # convert the legacy from CbR to CbTh
-                query = self._conn.convert_query(def_query)
+                self.log.debug(f'Query {tag}: {query}')
 
                 process = self._conn.select(Process)
 
@@ -110,11 +122,12 @@ class CbEnterpriseEdr(Product):
 
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
-                    result = Result(proc.device_name, proc.process_username[0], proc.process_name,
-                                    proc.process_cmdline[0], (proc.device_timestamp,))
+                    deets = proc.get_details()
+                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'],
+                                    deets['process_cmdline'][0], (deets['device_timestamp'], deets['process_guid'],))
                     results.add(result)
-            except cbapi.errors.ApiError as e:
-                self._echo(f'Cb API Error (see log for details): {e}', logging.ERROR)
+            except cbc_sdk.errors.ApiError as e:
+                self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
                 self.log.exception(e)
             except KeyboardInterrupt:
                 self._echo("Caught CTRL-C. Returning what we have . . .")
@@ -123,4 +136,4 @@ class CbEnterpriseEdr(Product):
         self._add_results(list(results), tag)
 
     def get_other_row_headers(self) -> list[str]:
-        return ['Device Timestamp']
+        return ['Device Timestamp', 'Process GUID']
