@@ -146,7 +146,7 @@ class CbEnterpriseEdr(Product):
                     ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
                     proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
                     
-                    result = Result(hostname, user, proc_name, cmdline, (ts, guid,))
+                    result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
                     
                     results.add(result)
             except cbc_sdk.errors.ApiError as e:
