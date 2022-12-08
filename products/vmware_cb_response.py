@@ -68,7 +68,9 @@ class CbResponse(Product):
 
         try:
             for search_field, terms in criteria.items():
-                query = '(' + ' OR '.join('%s:"%s"' % (search_field, term) for term in terms) + ')'
+                terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+
+                query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
                 query += self.build_query(base_query)
                 
                 self.log.debug(f'Query: {query}')
