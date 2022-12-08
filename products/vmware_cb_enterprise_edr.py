@@ -36,6 +36,9 @@ class CbEnterpriseEdr(Product):
     _conn: CBCloudAPI  # CB Cloud API
 
     def __init__(self, profile: str, **kwargs):
+        self._device_group = kwargs['device_group']
+        self._device_policy = kwargs['device_policy']
+
         super().__init__(self.product, profile, **kwargs)
 
     def _authenticate(self):
@@ -66,6 +69,18 @@ class CbEnterpriseEdr(Product):
                 query_base.and_(user_name)
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
+
+        if self._device_group:
+            device_group = []
+            for name in self._device_group:
+                device_group.append(f'device_group:"{name}"')
+            query_base.and_('(' + ' OR '.join(device_group) + ')')
+
+        if self._device_policy:
+            device_policy = []
+            for name in self._device_policy:
+                device_policy.append(f'device_policy:"{name}"')
+            query_base.and_('(' + ' OR '.join(device_policy) + ')')
 
         return query_base
 
@@ -123,8 +138,16 @@ class CbEnterpriseEdr(Product):
                 # noinspection PyUnresolvedReferences
                 for proc in process.where(full_query):
                     deets = proc.get_details()
-                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'],
-                                    deets['process_cmdline'][0], (deets['device_timestamp'], deets['process_guid'],))
+                    
+                    hostname = deets['device_name'] if 'device_name' in deets else 'None'
+                    user = deets['process_username'][0] if 'process_username' in deets else 'None'
+                    proc_name = deets['process_name'] if 'process_name' in deets else 'None'
+                    cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
+                    ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
+                    proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
+                    
+                    result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
+                    
                     results.add(result)
             except cbc_sdk.errors.ApiError as e:
                 self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
