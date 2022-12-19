@@ -24,7 +24,6 @@ class Query:
   search_value: Optional[str]
   full_query: Optional[str] = None
 
-# TODO: Update for XQL
 PARAMETER_MAPPING: dict[str, str] = {
   'process_name': 'action_process_image_name',
   'ipaddr': 'action_remote_ip',
@@ -155,7 +154,6 @@ class CortexXDR(Product):
 
     query_base = ''
 
-    # TODO: Need to figure out field mappings
     for key, value in filters.items():
       if key == 'days':
         relative_time_ms = value * 24 * 60 * 60 * 1000
@@ -174,7 +172,6 @@ class CortexXDR(Product):
     return query_base, relative_time_ms
 
   def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-    print("hello process_search")
     self._base_query, relative_time_ms = self.build_query(base_query)
 
     if tag not in self._queries:
@@ -184,7 +181,6 @@ class CortexXDR(Product):
     self._queries[tag].append(query)
 
   def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
-    print("hello nested_process_search")
     self._base_query, relative_time_ms = self.build_query(base_query)
 
     try:
@@ -213,7 +209,6 @@ class CortexXDR(Product):
       self._echo("Caught CTRL-C. Returning what we have...")
  
   def _get_xql_results(self, query_id: str):
-    print("hello get_xql_results")
     params = {
       'request_data':{
         'query_id': query_id,
@@ -241,7 +236,6 @@ class CortexXDR(Product):
       raise e
 
   def _process_queries(self):
-    print("hello process_queries")
     for tag, queries in self._queries.items():
       for query in queries:
         if query.full_query is not None:
