@@ -137,6 +137,17 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 
 
 # S1 options
+@cli.command('cortex', help="Query Cortex XDR")
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.pass_context
+def cortex(ctx, creds: Optional[str]):
+    ctx.obj.product_args = {
+        'creds_file': creds
+    }
+
+    survey(ctx, 'cortex')
+
+# S1 options
 @cli.command('s1', help="Query SentinelOne")
 @click.option("--site-id", help="ID of SentinelOne site to query", multiple=True, default=None)
 @click.option("--account-id", help="ID of SentinelOne account to query", multiple=True, default=None)
