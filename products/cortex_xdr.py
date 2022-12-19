@@ -3,14 +3,12 @@ import json
 import logging
 import os
 import time
-from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import secrets
 import hashlib
 import string
-from typing import Optional, Tuple, Callable
-import sys
+from typing import Optional, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
