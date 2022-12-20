@@ -153,22 +153,27 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
 
     survey(ctx, 's1')
 
-
+# CbC options
 @cli.command('cbc', help="Query VMware Cb Enterprise EDR")
+@click.option("--device-group", help="Name of device group to query", multiple=True, default=None)
+@click.option("--device-policy", help="Name of device policy to query", multiple=True, default=None)
 @click.pass_context
-def cbc(ctx):
+def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]):
+    ctx.obj.product_args = {
+        'device_group': list(device_group),
+        'device_policy': list(device_policy)
+    }
+
     survey(ctx, 'cbc')
 
-
+# CbR Options
 @cli.command('cbr', help="Query VMware Cb Response")
+@click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
 @click.pass_context
-def cbr(ctx):
-    survey(ctx, 'cbr')
-
-
-@cli.command('cbr', help="Query Cb Response")
-@click.pass_context
-def response_alternate(ctx):
+def cbr(ctx, sensor_group: Optional[Tuple]):
+    ctx.obj.product_args = {
+        'sensor_group': list(sensor_group)
+    }
     survey(ctx, 'cbr')
 
 
