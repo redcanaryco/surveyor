@@ -208,13 +208,13 @@ class CortexXDR(Product):
     except KeyboardInterrupt:
       self._echo("Caught CTRL-C. Returning what we have...")
  
-  def _get_xql_results(self, query_id: str):
+  def _get_xql_results(self, query_id: str, limit: int = 1000):
+    actual_limit = limit if limit < 1000 else 1000 # Max is 1000 results otherwise have to get the results via stream
     params = {
       'request_data':{
         'query_id': query_id,
         'pending_flag': True,
-        'limit':10,
-        #'limit':1000, # Max is 1000 results otherwise have to get the results via stream
+        'limit': actual_limit,
         'format':'json'
       }
     }
