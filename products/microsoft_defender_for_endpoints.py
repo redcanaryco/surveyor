@@ -7,6 +7,15 @@ import requests
 
 from common import Product, Tag, Result
 
+PARAMETER_MAPPING: dict[str, str] = {
+    'process_name': 'FileName',
+    'filemod': 'FileName',
+    'ipaddr': 'RemoteIP',
+    'cmdline': 'ProcessCommandLine',
+    'digsig_publisher': 'Signer',
+    'domain': 'RemoteUrl',
+    'internal_name': 'ProcessVersionInfoInternalFileName'
+}
 
 class DefenderForEndpoints(Product):
     """
@@ -91,8 +100,8 @@ class DefenderForEndpoints(Product):
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query + self.build_query(base_query)
 
-        query = "DeviceEvents " + query + \
-                " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
+        query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents " \
+                + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
         query = query.rstrip()
 
         self.log.debug(f'Query: {query}')
@@ -108,28 +117,24 @@ class DefenderForEndpoints(Product):
 
         try:
             for search_field, terms in criteria.items():
-                all_terms = ', '.join(f"'{term}'" for term in terms)
-                if search_field == 'process_name':
-                    query = f" | where FileName has_any ({all_terms})"
-                elif search_field == "filemod":
-                    query = f" | where FileName has_any ({all_terms})"
-                elif search_field == "ipaddr":
-                    query = f" | where RemoteIP has_any ({all_terms})"
-                elif search_field == "cmdline":
-                    query = f" | where ProcessCommandLine has_any ({all_terms})"
-                elif search_field == "digsig_publisher":
-                    query = f" | where Signer has_any ({all_terms})"
-                elif search_field == "domain":
-                    query = f" | where RemoteUrl has_any ({all_terms})"
-                elif search_field == "internal_name":
-                    query = f" | where ProcessVersionInfoInternalFileName has_any ({all_terms})"
+                if search_field == 'query':
+                    if isinstance(terms, list):
+                        if len(terms) > 1:
+                            self.log.warning(f'The "query" field only supports a single term. Will use the first time during processing')
+                        query = terms[0]
+                    else:
+                        query = terms
                 else:
-                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
-                               logging.WARNING)
-                    continue
+                    all_terms = ', '.join(f"'{term}'" for term in terms)
+                    if search_field in PARAMETER_MAPPING:
+                        query = f" | where {PARAMETER_MAPPING[search_field]} has_any ({all_terms})"
+                    else:
+                        self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                                   logging.WARNING)
+                        continue
 
-                query = "union DeviceEvents, DeviceFileCertificateInfo, DeviceProcessEvents" + query_base + query \
-                        + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
+                query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents" \
+                        + query_base + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
                 query = query.rstrip()
 
                 self.log.debug(f'Query: {query}')
