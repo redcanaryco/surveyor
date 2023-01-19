@@ -185,21 +185,30 @@ class CortexXDR(Product):
 
     try:
       for search_field, terms in criteria.items():
-        all_terms = ', '.join((f'"*{term}*"').replace("**","*") for term in terms)
-
-        if search_field not in PARAMETER_MAPPING:
-          self._echo(f'Query filter {search_field} is not supported by product {self.product}', logging.WARNING)
-          continue
-      
-        parameter = PARAMETER_MAPPING[search_field]
-        search_value = all_terms
-
-
-        if len(terms) > 1:
-          search_value = f'({all_terms})'
-          operator = 'in'
+        if search_field == 'query':
+          operator = 'raw'
+          parameter = 'query'
+          if isinstance(terms, list):
+            if len(terms) > 1:
+              self.log.warning(f'The "query" field only supports a single term. Will use the first term during processing')
+            search_value = terms[0]
+          else:
+            search_value = terms
         else:
-          operator = 'contains'
+          all_terms = ', '.join((f'"*{term}*"').replace("**","*") for term in terms)
+
+          if search_field not in PARAMETER_MAPPING:
+            self._echo(f'Query filter {search_field} is not supported by product {self.product}', logging.WARNING)
+            continue
+        
+          parameter = PARAMETER_MAPPING[search_field]
+          search_value = all_terms
+
+          if len(terms) > 1:
+            search_value = f'({all_terms})'
+            operator = 'in'
+          else:
+            operator = 'contains'
         
         if tag not in self._queries:
           self._queries[tag] = list()
@@ -246,6 +255,8 @@ class CortexXDR(Product):
           if query.operator in ('contains', 'in'):
             # Fix the query to be case-insensitive if using `contains`
             query_string += f' | lower({query.parameter}) {query.operator} {(query.search_value).lower()}'
+          elif query.operator == 'raw':
+            query_string += f' | filter {query.search_value}'
           else:
             query_string += f' | {query.parameter} {query.operator} {query.search_value}'
 
