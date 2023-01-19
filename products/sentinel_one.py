@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+
 from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -10,8 +11,9 @@ from typing import Optional, Tuple, Callable
 
 import requests
 from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError
 
-from common import Product, Tag, Result
+from common import Product, Tag, Result, AuthenticationError
 from help import datetime_to_epoch_millis
 
 
@@ -49,6 +51,7 @@ class SentinelOne(Product):
     _queries: dict[Tag, list[Query]]
     _last_request: float
     _site_ids: list[str]
+    _query_base: Optional[str]
 
     def __init__(self, profile: str, creds_file: str, account_id: Optional[list[str]] = None,
                  site_id: Optional[list[str]] = None, account_name: Optional[list[str]] = None, **kwargs):
@@ -57,6 +60,7 @@ class SentinelOne(Product):
 
         self.creds_file = creds_file
         self._queries = dict()
+        self._query_base = None
 
         self._last_request = 0.0
 
@@ -66,7 +70,7 @@ class SentinelOne(Product):
         self.account_name = account_name
 
         super().__init__(self.product, profile, **kwargs)
-    
+
     def _authenticate(self):
         config = configparser.ConfigParser()
         config.read(self.creds_file)
@@ -110,21 +114,21 @@ class SentinelOne(Product):
         config.read(self.creds_file)
 
         # check if any cmdline stuff was input - that will take precedence over config file stuff
-        site_ids = (site_id) if site_id else list()
-        account_ids = (account_id) if account_id else list()
-        account_names = (account_name) if account_name else list()
+        site_ids = site_id if site_id else list()
+        account_ids = account_id if account_id else list()
+        account_names = account_name if account_name else list()
 
         if not site_ids and not account_ids and not account_names:
             # extract account/site ID from configuration if set
             if 'account_id' in config[self.profile]:
-                for id in config[self.profile]['account_id'].split(','):
-                    if id not in account_ids:
-                        account_ids.append(id.strip())
+                for scope_id in config[self.profile]['account_id'].split(','):
+                    if scope_id not in account_ids:
+                        account_ids.append(scope_id.strip())
 
             if 'site_id' in config[self.profile]:
-                for id in config[self.profile]['site_id'].split(','):
-                    if id not in site_ids:
-                        site_ids.append(id.strip())
+                for scope_id in config[self.profile]['site_id'].split(','):
+                    if scope_id not in site_ids:
+                        site_ids.append(scope_id.strip())
 
             if 'account_name' in config[self.profile]:
                 for name in config[self.profile]['account_name'].split(','):
@@ -135,7 +139,7 @@ class SentinelOne(Product):
         self._site_ids = list()
         self._account_ids = list()
 
-        if account_ids: # verify provided account IDs are valid
+        if account_ids:  # verify provided account IDs are valid
             # create batch of 10 account IDs per call
             counter = 0
             temp_list = []
@@ -144,15 +148,14 @@ class SentinelOne(Product):
                 temp_list.append(account_ids[i])
                 counter += 1
                 if counter == 10 or i == len(account_ids) - 1:
-                    response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
-                                                            params={'states': "active", 'ids': ','.join(temp_list)},
-                                                            add_default_params=False)
-
-                    if 'errors' in response:
-                        if response['errors'][0]['code'] == 4010010:
-                            raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                        else:
-                            raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                    try:
+                        response = self._get_all_paginated_data(self._build_url(f'/web/api/v2.1/accounts'),
+                                                                params={'states': "active", 'ids': ','.join(temp_list)},
+                                                                add_default_params=False)
+                    except HTTPError as e:
+                        if e.response.status_code == 401:
+                            raise AuthenticationError('Failed to authenticate to SentinelOne API') from e
+                        raise
 
                     for account in response:
                         if account['id'] not in self._account_ids:
@@ -166,29 +169,28 @@ class SentinelOne(Product):
             if len(diff) > 0:
                 self.log.warning(f'Account IDs {",".join(diff)} not found.')
 
-        if account_names: # verify provided account names are valid
+        if account_names:  # verify provided account names are valid
             temp_account_name = list()
             for name in account_names:
-                response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
-                                                        params={'states': "active", 'name': name},
-                                                        add_default_params=False)
-
-                if 'errors' in response:
-                    if response['errors'][0]['code'] == 4010010:
-                        raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                    else:
-                        raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                try:
+                    response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/accounts'),
+                                                            params={'states': "active", 'name': name},
+                                                            add_default_params=False)
+                except HTTPError as e:
+                    if e.response.status_code == 401:
+                        raise AuthenticationError('Failed to authenticate to SentinelOne API') from e
+                    raise
 
                 for account in response:
                     temp_account_name.append(account['name'])
                     if account['id'] not in self._account_ids:
                         self._account_ids.append(account['id'])
-            
+
             diff = list(set(account_names) - set(temp_account_name))
             if len(diff) > 0:
                 self.log.warning(f'Account names {",".join(diff)} not found')
-        
-        if site_ids: # ensure specified site IDs are valid and not already covered by the account_ids listed above
+
+        if site_ids:  # ensure specified site IDs are valid and not already covered by the account_ids listed above
             temp_site_ids = list()
             # create batches of 10 site_ids
             counter = 0
@@ -198,15 +200,15 @@ class SentinelOne(Product):
                 temp_list.append(site_ids[i])
                 counter += 1
                 if counter == 10 or i == len(site_ids) - 1:
-                    response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
-                                                            params={'state': "active", 'siteIds': ','.join(site_ids)},
-                                                            add_default_params=False)
-
-                    if 'errors' in response:
-                        if response['errors'][0]['code'] == 4010010:
-                            raise ValueError(f'Failed to authenticate to SentinelOne: {response}')
-                        else:
-                            raise ValueError(f'Error when authenticating to SentinelOne: {response}')
+                    try:
+                        response = self._get_all_paginated_data(self._build_url('/web/api/v2.1/sites'),
+                                                                params={'state': "active",
+                                                                        'siteIds': ','.join(site_ids)},
+                                                                add_default_params=False)
+                    except HTTPError as e:
+                        if e.response.status_code == 401:
+                            raise AuthenticationError('Failed to authenticate to SentinelOne API') from e
+                        raise
 
                     for item in response:
                         for site in item['sites']:
@@ -221,10 +223,10 @@ class SentinelOne(Product):
             if len(diff) > 0:
                 self.log.warning(f'Site IDs {",".join(diff)} not found')
 
-        # remove unncessary variables from self
-        self.__dict__.pop('site_id',None)
-        self.__dict__.pop('account_id',None)
-        self.__dict__.pop('account_name',None)
+        # remove unnecessary variables from self
+        self.__dict__.pop('site_id', None)
+        self.__dict__.pop('account_id', None)
+        self.__dict__.pop('account_name', None)
 
         self.log.debug(f'Site IDs: {self._site_ids}')
         self.log.debug(f'Account IDs: {self._account_ids}')
@@ -369,7 +371,8 @@ class SentinelOne(Product):
             last_progress_status = 0
             while True:
                 query_status_response = self._session.get(self._build_url('/web/api/v2.1/dv/query-status'),
-                                                          params={'queryId': query_id}, headers=self._get_default_header())
+                                                          params={'queryId': query_id},
+                                                          headers=self._get_default_header())
                 query_status_response.raise_for_status()
                 data = query_status_response.json()['data']
 
@@ -404,8 +407,8 @@ class SentinelOne(Product):
         if tag not in self._queries:
             self._queries[tag] = list()
 
-        query = Query(from_date, to_date, None, None, None, query)
-        self._queries[tag].append(query)
+        built_query = Query(from_date, to_date, None, None, None, query)
+        self._queries[tag].append(built_query)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
@@ -504,12 +507,13 @@ class SentinelOne(Product):
                     merged_tags.add(tag)
 
                 # merge all query tags into a single string
-                merged_tag = Tag(','.join(tag.tag for tag in merged_tags), ','.join(str(tag.data) for tag in merged_tags))
+                merged_tag = Tag(','.join(tag.tag for tag in merged_tags),
+                                 ','.join(str(tag.data) for tag in merged_tags))
 
                 if len(self._query_base):
                     # add base_query filter to merged query string
                     merged_query = f'{self._query_base} AND ({merged_query})'
-                
+
                 # build request body for DV API call
                 params = self._get_default_body()
                 params.update({
