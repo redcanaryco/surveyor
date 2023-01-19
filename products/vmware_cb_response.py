@@ -68,13 +68,21 @@ class CbResponse(Product):
 
         try:
             for search_field, terms in criteria.items():
-                terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+                if search_field == 'query':
+                    if isinstance(terms, list):
+                        if len(terms) > 1:
+                            self.log.warning(f'The "query" field only supports a single term. Will use the first term during processing')
+                        query = terms[0]
+                    else:
+                        query = terms
+                else:
+                    terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
 
-                query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+                    query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+
                 query += self.build_query(base_query)
                 
                 self.log.debug(f'Query: {query}')
-
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
                     result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
