@@ -1,5 +1,6 @@
 import datetime
 import logging
+import sys
 
 import cbc_sdk.errors
 from cbc_sdk.rest_api import CBCloudAPI
@@ -14,7 +15,7 @@ PARAMETER_MAPPING: dict[str, str] = {
     'cmdline': 'process_cmdline',
     'digsig_publisher': 'process_publisher',
     'domain': 'netconn_domain',
-    'internal_name': 'process_internal_name',
+    'internal_name': 'process_internal_name'
 }
 
 def _convert_relative_time(relative_time):
@@ -117,15 +118,23 @@ class CbEnterpriseEdr(Product):
 
         for search_field, terms in criteria.items():
             try:
-                # quote terms with spaces in them
-                terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+                if search_field == 'query':
+                    if isinstance(terms, list):
+                        if len(terms) > 1:
+                            self.log.warning(f'The "query" field only supports a single term. Will use the first time during processing')
+                        query = terms[0]
+                    else:
+                        query = terms
+                else:
+                    # quote terms with spaces in them
+                    terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
 
-                if search_field not in PARAMETER_MAPPING:
-                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
-                               logging.WARNING)
-                    continue
+                    if search_field not in PARAMETER_MAPPING:
+                        self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                                logging.WARNING)
+                        continue
 
-                query = '(' + ' OR '.join('%s:%s' % (PARAMETER_MAPPING[search_field], term) for term in terms) + ')'
+                    query = '(' + ' OR '.join('%s:%s' % (PARAMETER_MAPPING[search_field], term) for term in terms) + ')'
 
                 self.log.debug(f'Query {tag}: {query}')
 
