@@ -142,13 +142,16 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 @click.option("--account-id", help="ID of SentinelOne account to query", multiple=True, default=None)
 @click.option("--account-name", help="Name of SentinelOne account to query", multiple=True, default=None)
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.option("--pq", 'pq', help="Use PowerQuery for queries", is_flag=True, required=False)
 @click.pass_context
-def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str]):
+def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str],
+       pq: bool):
     ctx.obj.product_args = {
         'creds_file': creds,
         'site_id': list(site_id),
         'account_id': list(account_id),
-        'account_name': list(account_name)
+        'account_name': list(account_name),
+        'pq': pq
     }
 
     survey(ctx, 's1')
