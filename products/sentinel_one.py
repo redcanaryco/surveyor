@@ -534,8 +534,8 @@ class SentinelOne(Product):
 
         return query_text
 
-    def _run_query(self, merged_query: str, start_date: datetime, end_date: datetime, merged_tags: set[Tag],
-                   merged_tag: Tag, cancel_event: Event, p_bar: bool = True) -> None:
+    def _run_query(self, merged_query: str, start_date: datetime, end_date: datetime, merged_tag: Tag,
+                   cancel_event: Event, p_bar: bool = True) -> None:
         try:
             if cancel_event.is_set():
                 return
@@ -586,43 +586,14 @@ class SentinelOne(Product):
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
-            search_keys = set(self.parameter_mapping.values())
 
             for event in events:
-                event = {
-                    'endpoint.name': event[0],
-                    'src.process.user': event[1],
-                    'src.process.image.path': event[2],
-                    'src.process.cmdline': event[3],
-                    'src.process.name': event[4],
-                    'src.process.publisher': event[5],
-                    'url.address': event[6],
-                    'tgt.file.internalName': event[7],
-                    'event.time': event[8],
-                    'site.id': event[9],
-                    'site.name': event[10]
-                }
-
-                # attempt to match a tag to the event
-                matched_tag: Optional[Tag] = None
-                for tag in merged_tags:
-                    for key in search_keys:
-                        if event[key] == tag.tag:
-                            matched_tag = tag
-                            break
-
-                    if matched_tag:
-                        break
-
-                if not matched_tag:
-                    matched_tag = merged_tag
-
                 if self._pq:
-                    hostname = event['endpoint.name']
-                    username = event['src.process.user']
-                    path = event['src.process.image.path']
-                    command_line = event['src.process.cmdline']
-                    additional_data = (event['event.time'], event['site.id'], event['site.name'])
+                    hostname = event[0]
+                    username = event[1]
+                    path = event[2]
+                    command_line = event[3]
+                    additional_data = (event[8], event[9], event[10])
                 else:
                     hostname = event['endpointName']
                     username = event['srcProcUser']
@@ -632,10 +603,7 @@ class SentinelOne(Product):
 
                 result = Result(hostname, username, path, command_line, additional_data)
 
-                if matched_tag not in self._results:
-                    self._results[matched_tag] = list()
-
-                self._results[matched_tag].append(result)
+                self._results[merged_tag].append(result)
         except Exception as e:
             self.log.error(e)
             click.secho(f'Error in query thread: {e}', fg='red')
@@ -708,8 +676,8 @@ class SentinelOne(Product):
                                     'src.process.publisher, url.address, tgt.file.internalName, event.time, ' \
                                     'site.id, site.name'
 
-                futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tags,
-                                               merged_tag, cancel_event, not self._pq))
+                futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
+                                               cancel_event, not self._pq))
 
             p_bar = tqdm(desc='Running queries',
                          disable=not self._tqdm_echo,
