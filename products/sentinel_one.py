@@ -1,13 +1,18 @@
+import concurrent.futures
 import configparser
 import json
 import logging
 import os
 import time
+from concurrent.futures import Future
+from math import ceil
+from threading import Event
 
+import click
 from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Any, cast
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -27,13 +32,21 @@ class Query:
     full_query: Optional[str] = None
 
 
-PARAMETER_MAPPING: dict[str, str] = {
+PARAMETER_MAPPING_DV: dict[str, str] = {
     'process_name': 'ProcessName',
     'ipaddr': 'IP',
     'cmdline': 'CmdLine',
     'digsig_publisher': 'SrcProcPublisher',
     'domain': 'Url',
     'internal_name': 'TgtFileInternalName'
+}
+
+PARAMETER_MAPPING_PQ: dict[str, str] = {
+    'process_name': 'src.process.name',
+    'cmdline': 'src.process.cmdline',
+    'digsig_publisher': 'src.process.publisher',
+    'domain': 'url.address',
+    'internal_name': 'tgt.file.internalName'
 }
 
 
@@ -52,15 +65,18 @@ class SentinelOne(Product):
     _last_request: float
     _site_ids: list[str]
     _query_base: Optional[str]
+    _pq: bool  # Run queries using PowerQuery instead of DeepVisibility
 
     def __init__(self, profile: str, creds_file: str, account_id: Optional[list[str]] = None,
-                 site_id: Optional[list[str]] = None, account_name: Optional[list[str]] = None, **kwargs):
+                 site_id: Optional[list[str]] = None, account_name: Optional[list[str]] = None, pq: bool = False,
+                 **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
         self.creds_file = creds_file
         self._queries = dict()
         self._query_base = None
+        self._pq = pq
 
         self._last_request = 0.0
 
@@ -213,7 +229,15 @@ class SentinelOne(Product):
                     for item in response:
                         for site in item['sites']:
                             temp_site_ids.append(site['id'])
-                            if site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
+
+                            if self._pq and site['id'] not in self._site_ids:
+                                self._site_ids.append(site['id'])
+
+                                if site['accountId'] not in self._account_ids:
+                                    # PowerQuery won't honor Site ID filters unless the parent account ID is also
+                                    # included in the request body
+                                    self._account_ids.append(site['accountId'])
+                            elif site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
                                 self._site_ids.append(site['id'])
                     counter = 0
                     temp_list = []
@@ -361,40 +385,59 @@ class SentinelOne(Product):
 
             return data
 
-    def _get_dv_events(self, query_id: str) -> list[dict]:
+    def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar: bool = True) -> list[dict]:
         """
         Retrieve events associated with a SentinelOne Deep Visibility query ID.
         """
-        p_bar = tqdm(desc='Running query', disable=not self._tqdm_echo, total=100)
+        p_bar = tqdm(desc='Running query',
+                     disable=not self._tqdm_echo or not p_bar,
+                     total=100)
+
+        def errors(_response_data: dict[str, Any]):
+            return _response_data['errors'] if self._pq else _response_data['data']['responseError']
+
+        def current_progress(_response_data: dict[str, Any]) -> int:
+            return _response_data['data']['progress'] if self._pq else _response_data['data']['progressStatus']
+
+        def current_status(_response_data: dict[str, Any]) -> int:
+            return _response_data['data']['status'] if self._pq else _response_data['data']['responseState']
 
         try:
             last_progress_status = 0
-            while True:
-                query_status_response = self._session.get(self._build_url('/web/api/v2.1/dv/query-status'),
+            while not cancel_event.is_set():
+                url = '/web/api/v2.1/dv/events/pq-ping' if self._pq else '/web/api/v2.1/dv/query-status'
+                query_status_response = self._session.get(self._build_url(url),
                                                           params={'queryId': query_id},
                                                           headers=self._get_default_header())
                 query_status_response.raise_for_status()
-                data = query_status_response.json()['data']
+                response_data = query_status_response.json()
 
-                self.log.debug(str(data))
+                p_bar.update((progress := current_progress(response_data)) - last_progress_status)
+                last_progress_status = progress
 
-                p_bar.update(data['progressStatus'] - last_progress_status)
-                last_progress_status = data['progressStatus']
+                status = current_status(response_data)
 
-                if data['progressStatus'] == 100 or data['responseState'] == 'FAILED':
-                    if data['responseState'] == 'FAILED':
-                        raise ValueError(f'S1QL query failed with message "{data["responseError"]}"')
+                if progress == 100 or status == 'FAILED':
+                    if status == 'FAILED':
+                        raise ValueError(f'S1 query failed with message "{errors(response_data)}"')
 
                     p_bar.close()
 
-                    return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
-                                                        params={'queryId': query_id},
-                                                        no_progress=False,
-                                                        add_default_params=False,
-                                                        progress_desc='Retrieving query results')
+                    if self._pq:
+                        # PQ returns results in ping response when query is complete
+                        return response_data['data']['data']
+                    else:
+                        # DV requires fetching results when query is complete
+                        return self._get_all_paginated_data(self._build_url('/web/api/v2.1/dv/events'),
+                                                            params={'queryId': query_id},
+                                                            no_progress=False,
+                                                            add_default_params=False,
+                                                            progress_desc='Retrieving query results')
                 else:
                     # query-status endpoint has a one request per second rate limit
                     time.sleep(1)
+
+            return list()
         except Exception as e:
             p_bar.close()
             raise e
@@ -410,6 +453,10 @@ class SentinelOne(Product):
         built_query = Query(from_date, to_date, None, None, None, query)
         self._queries[tag].append(built_query)
 
+    @property
+    def parameter_mapping(self) -> dict[str, str]:
+        return PARAMETER_MAPPING_PQ if self._pq else PARAMETER_MAPPING_DV
+
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
         query_base, from_date, to_date = self.build_query(base_query)
         self._query_base = query_base
@@ -417,26 +464,181 @@ class SentinelOne(Product):
             for search_field, terms in criteria.items():
                 all_terms = ', '.join(f'"{term}"' for term in terms)
 
-                if search_field not in PARAMETER_MAPPING:
+                if search_field not in self.parameter_mapping:
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
 
-                parameter = PARAMETER_MAPPING[search_field]
+                parameter = self.parameter_mapping[search_field]
                 search_value = all_terms
-
-                if len(terms) > 1:
-                    search_value = f'({all_terms})'
-                    operator = 'in contains anycase'
-                else:
-                    operator = 'containscis'
 
                 if tag not in self._queries:
                     self._queries[tag] = list()
 
-                self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
+                if self._pq:
+                    for term in terms:
+                        self._queries[tag].append(Query(from_date, to_date, parameter, 'contains', f"'{term}'"))
+                else:
+                    if len(terms) > 1:
+                        search_value = f'({all_terms})'
+                        operator = 'in contains anycase'
+                    else:
+                        operator = 'containscis'
+
+                    self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
+
+    def _get_query_text(self) -> list[Tuple[Tag, str]]:
+        # tuple contains tag and full query
+        # these chunks will be combined with OR statements and executed
+        query_text = list[Tuple[Tag, str]]()
+
+        if self._pq:
+            query_text = list[Tuple[Tag, str]]()
+
+            for tag, queries in self._queries.items():
+                for query in queries:
+                    full_query = f'{query.parameter} {query.operator} {query.search_value}'
+                    query_text.append((tag, full_query))
+        else:
+            # key is a tuple of the query operator and parameter
+            # value is a list of Tuples where each tuple contains the query tag and search value
+            combined_queries = dict[Tuple[str, str], list[Tuple[Tag, str]]]()
+
+            for tag, queries in self._queries.items():
+                for query in queries:
+                    if query.operator in ('contains', 'containscis', 'contains anycase'):
+                        key = (cast(str, query.operator), cast(str, query.parameter))
+                        if key not in combined_queries:
+                            combined_queries[key] = list()
+
+                        combined_queries[key].append((tag, cast(str, query.search_value)))
+                    elif query.full_query is not None:
+                        query_text.append((tag, query.full_query))
+                    else:
+                        full_query = f'{query.parameter} {query.operator} {query.search_value}'
+                        query_text.append((tag, full_query))
+
+            # merge combined queries and add them to query_text
+            data: list[Tuple[Tag, str]]
+            for (operator, parameter), data in combined_queries.items():
+                if operator in ('contains', 'containscis', 'contains anycase'):
+                    full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
+
+                    tag = Tag(','.join(tag[0].tag for tag in data),
+                              ','.join(tag[0].data if tag[0].data else '' for tag in data))
+                    query_text.append((tag, full_query))
+                else:
+                    raise NotImplementedError(f'Combining operator "{operator}" queries is not support')
+
+        return query_text
+
+    def _run_query(self, merged_query: str, start_date: datetime, end_date: datetime, merged_tags: set[Tag],
+                   merged_tag: Tag, cancel_event: Event, p_bar: bool = True) -> None:
+        try:
+            if cancel_event.is_set():
+                return
+
+            # build request body for DV API call
+            params = self._get_default_body()
+            params.update({
+                "fromDate": datetime_to_epoch_millis(start_date),
+                "toDate": datetime_to_epoch_millis(end_date),
+                "limit": 20000,
+                "query": merged_query
+            })
+
+            if not self._pq:
+                params.update({
+                    "isVerbose": False,
+                    "queryType": ['events'],  # options: 'events', 'procesState'
+                })
+
+            self.log.debug(f'Query params: {params}')
+
+            if not self._pq:
+                # ensure we do not submit more than one request every 60 seconds to comply with rate limit
+                seconds_sice_last_request = time.time() - self._last_request
+                if seconds_sice_last_request < 60:
+                    sleep_seconds = 60 - seconds_sice_last_request
+                    self.log.debug(f'Sleeping for {sleep_seconds}')
+
+                    cancel_event.wait(ceil(sleep_seconds))
+
+            # start deep visibility API call
+            url = '/web/api/v2.1/dv/events/pq' if self._pq else '/web/api/v2.1/dv/init-query'
+            query_response = self._session.post(self._build_url(url),
+                                                headers=self._get_default_header(), data=json.dumps(params))
+            self._last_request = time.time()
+
+            body = query_response.json()
+            if 'errors' in body and any(('could not parse query' in x['detail'] for x in body['errors'])):
+                raise ValueError(f'S1 could not parse query "{merged_query}"')
+
+            self.log.debug(query_response.json())
+            query_response.raise_for_status()
+
+            query_id = body['data']['queryId']
+            self.log.info(f'Query ID is {query_id}')
+
+            events = self._get_dv_events(query_id, p_bar=p_bar, cancel_event=cancel_event)
+            self.log.debug(f'Got {len(events)} events')
+
+            self._results[merged_tag] = list()
+            search_keys = set(self.parameter_mapping.values())
+
+            for event in events:
+                event = {
+                    'endpoint.name': event[0],
+                    'src.process.user': event[1],
+                    'src.process.image.path': event[2],
+                    'src.process.cmdline': event[3],
+                    'src.process.name': event[4],
+                    'src.process.publisher': event[5],
+                    'url.address': event[6],
+                    'tgt.file.internalName': event[7],
+                    'event.time': event[8],
+                    'site.id': event[9],
+                    'site.name': event[10]
+                }
+
+                # attempt to match a tag to the event
+                matched_tag: Optional[Tag] = None
+                for tag in merged_tags:
+                    for key in search_keys:
+                        if event[key] == tag.tag:
+                            matched_tag = tag
+                            break
+
+                    if matched_tag:
+                        break
+
+                if not matched_tag:
+                    matched_tag = merged_tag
+
+                if self._pq:
+                    hostname = event['endpoint.name']
+                    username = event['src.process.user']
+                    path = event['src.process.image.path']
+                    command_line = event['src.process.cmdline']
+                    additional_data = (event['event.time'], event['site.id'], event['site.name'])
+                else:
+                    hostname = event['endpointName']
+                    username = event['srcProcUser']
+                    path = event['processImagePath']
+                    command_line = event['srcProcCmdLine']
+                    additional_data = (event['eventTime'], event['siteId'], event['siteName'])
+
+                result = Result(hostname, username, path, command_line, additional_data)
+
+                if matched_tag not in self._results:
+                    self._results[matched_tag] = list()
+
+                self._results[matched_tag].append(result)
+        except Exception as e:
+            self.log.error(e)
+            click.secho(f'Error in query thread: {e}', fg='red')
 
     def _process_queries(self):
         """
@@ -451,45 +653,17 @@ class SentinelOne(Product):
                 if query.start_date < start_date:
                     start_date = query.start_date
 
-        try:
-            # queries with certain operators can be combined into a more compact query format
+        cancel_event = Event()
 
-            # key is a tuple of the query operator and parameter
-            # value is a list of Tuples where each tupe contains the query tag and search value
-            combined_queries = dict[Tuple[str, str], list[Tuple[Tag, str]]]()
+        # queries with certain operators can be combined into a more compact query format
+        query_text = self._get_query_text()
 
-            # tuple contains tag and full query
-            # these chunks will be combined with OR statements and executed
-            query_text = list[Tuple[Tag, str]]()
+        # all queries that need to be executed are now in query_text
+        # execute queries in chunks
+        chunk_size = 1 if self._pq else 10
 
-            for tag, queries in self._queries.items():
-                for query in queries:
-                    if query.operator in ('contains', 'containscis', 'contains anycase'):
-                        key = (query.operator, query.parameter)
-                        if key not in combined_queries:
-                            combined_queries[key] = list()
-
-                        combined_queries[key].append((tag, query.search_value))
-                    elif query.full_query is not None:
-                        query_text.append((tag, query.full_query))
-                    else:
-                        full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
-                        query_text.append((tag, full_query))
-
-            # merge combined queries and add them to query_text
-            data: list[Tuple[Tag, str]]
-            for (operator, parameter), data in combined_queries.items():
-                if operator in ('contains', 'containscis', 'contains anycase'):
-                    full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
-
-                    tag = Tag(','.join(tag[0].tag for tag in data), ','.join(tag[0].data for tag in data))
-                    query_text.append((tag, full_query))
-                else:
-                    raise NotImplementedError(f'Combining operator "{operator}" queries is not support')
-
-            # all queries that need to be executed are now in query_text
-            # execute queries in chunks
-            chunk_size = 10
+        with concurrent.futures.ThreadPoolExecutor(max_workers=25 if self._pq else 1) as executor:
+            futures = list[Future]()
 
             # merge queries into one large query and execute it
             for i in range(0, len(query_text), chunk_size):
@@ -514,58 +688,49 @@ class SentinelOne(Product):
                     # add base_query filter to merged query string
                     merged_query = f'{self._query_base} AND ({merged_query})'
 
-                # build request body for DV API call
-                params = self._get_default_body()
-                params.update({
-                    "fromDate": datetime_to_epoch_millis(start_date),
-                    "isVerbose": False,
-                    "queryType": ['events'],  # options: 'events', 'procesState'
-                    "limit": 20000,
-                    "toDate": datetime_to_epoch_millis(end_date),
-                    "query": merged_query
-                })
+                if self._pq:
+                    # PQ seems to not honor site IDs provided in POST request body
+                    if len(self._site_ids):
+                        # restrict query to specified sites
+                        merged_query = f'({merged_query}) AND ('
+                        first = True
+                        for site_id in self._site_ids:
+                            if not first:
+                                merged_query += ' OR '
+                            else:
+                                first = False
 
-                self.log.debug(f'Query params: {params}')
+                            merged_query += f'site.id = {site_id}'
+                        merged_query += ')'
 
-                # ensure we do not submit more than one request every 60 seconds to comply with rate limit
-                seconds_sice_last_request = time.time() - self._last_request
-                if seconds_sice_last_request < 60:
-                    sleep_seconds = 60 - seconds_sice_last_request
-                    self.log.debug(f'Sleeping for {sleep_seconds}')
-                    time.sleep(sleep_seconds)
+                    merged_query += ' | group count() by endpoint.name, src.process.user, ' \
+                                    'src.process.image.path, src.process.cmdline, src.process.name, ' \
+                                    'src.process.publisher, url.address, tgt.file.internalName, event.time, ' \
+                                    'site.id, site.name'
 
-                # start deep visibility API call
-                query_response = self._session.post(self._build_url('/web/api/v2.1/dv/init-query'),
-                                                    headers=self._get_default_header(), data=json.dumps(params))
-                self._last_request = time.time()
+                futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tags,
+                                               merged_tag, cancel_event, not self._pq))
 
-                body = query_response.json()
-                if 'errors' in body and any(('could not parse query' in x['detail'] for x in body['errors'])):
-                    raise ValueError(f'S1 could not parse query "{merged_query}"')
+            p_bar = tqdm(desc='Running queries',
+                         disable=not self._tqdm_echo,
+                         total=len(futures))
 
-                self.log.debug(query_response.json())
-                query_response.raise_for_status()
+            try:
+                completed_futures = set[Future]()
+                while not cancel_event.is_set() and len(completed_futures) != len(futures):
+                    for future in futures:
+                        if future not in completed_futures and future.done():
+                            completed_futures.add(future)
+                            p_bar.update()
 
-                query_id = body['data']['queryId']
-                self.log.info(f'Query ID is {query_id}')
+                    cancel_event.wait(1)
+            except KeyboardInterrupt:
+                self._echo("Caught CTRL-C. Returning what we have . . .")
+                cancel_event.set()
 
-                events = self._get_dv_events(query_id)
-                self.log.debug(f'Got {len(events)} events')
+            p_bar.close()
 
-                self._results[merged_tag] = list()
-                for event in events:
-                    hostname = event['endpointName']
-                    username = event['srcProcUser']
-                    path = event['processImagePath']
-                    command_line = event['srcProcCmdLine']
-                    additional_data = (event['eventTime'], event['siteId'], event['siteName'])
-
-                    result = Result(hostname, username, path, command_line, additional_data)
-                    self._results[merged_tag].append(result)
-
-            self._queries.clear()
-        except KeyboardInterrupt:
-            self._echo("Caught CTRL-C. Returning what we have . . .")
+        self._queries.clear()
 
     def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:
         self.log.debug('Entered get_results')
