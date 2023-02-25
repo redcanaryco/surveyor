@@ -430,7 +430,10 @@ class SentinelOne(Product):
 
                 if parameter == 'query':
                     # Formats queries as (a) OR (b) OR (c) OR (d)
-                    search_value = '(' + ') OR ('.join(terms) + ')'
+                    if len(terms) > 1:
+                        search_value = ') OR ('.join(terms)
+                    else:
+                        search_value = terms[0]
                     operator = 'raw'
                 elif len(terms) > 1:
                     search_value = f'({all_terms})'
@@ -482,10 +485,7 @@ class SentinelOne(Product):
                     elif query.full_query is not None:
                         query_text.append((tag, query.full_query))
                     elif query.operator == 'raw':
-                        temp_search_value = query.search_value.lstrip('\"')
-                        if temp_search_value.endswith(')"'):
-                            temp_search_value = temp_search_value.rstrip('\"')
-                        full_query = f'({temp_search_value})'
+                        full_query = f'({query.search_value})'
                         query_text.append((tag, full_query))
                     else:
                         full_query = query.parameter + ' ' + query.operator + ' ' + query.search_value
