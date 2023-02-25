@@ -576,7 +576,7 @@ class SentinelOne(Product):
                     tgtprocdisplayname = event['tgtProcDisplayName'] if 'tgtProcDisplayName' in event else 'None'
                     tgtfilepath = event['tgtFilePath'] if 'tgtFilePath' in event else 'None'
                     tgtfilesha1 = event['fileSha1'] if 'fileSha1' in event else 'None'
-                    tgtfilesha256 = event['fileSha2256'] if 'fileSha256' in event else 'None'
+                    tgtfilesha256 = event['fileSha256'] if 'fileSha256' in event else 'None'
                     scrprocparentimagepath = event['srcProcParentImagePath'] if 'srcProcParentImagePath' in event else 'None'
                     tgtprocimagepath = event['tgtProcImagePath'] if 'tgtProcImagePath' in event else 'None'
                     url = event['networkUrl'] if 'networkUrl' in event else 'None'
