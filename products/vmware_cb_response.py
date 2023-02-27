@@ -71,8 +71,9 @@ class CbResponse(Product):
                 if search_field == 'query':
                     if isinstance(terms, list):
                         if len(terms) > 1:
-                            self.log.warning(f'The "query" field only supports a single term. Will use the first term during processing')
-                        query = terms[0]
+                            query = '(' + ') OR ('.join(terms) + ')'
+                        else:
+                            query = terms[0]
                     else:
                         query = terms
                 else:

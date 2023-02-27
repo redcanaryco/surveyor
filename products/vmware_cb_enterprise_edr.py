@@ -37,8 +37,8 @@ class CbEnterpriseEdr(Product):
     _conn: CBCloudAPI  # CB Cloud API
 
     def __init__(self, profile: str, **kwargs):
-        self._device_group = kwargs['device_group']
-        self._device_policy = kwargs['device_policy']
+        self._device_group = kwargs['device_group'] if 'device_group' in kwargs else None
+        self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -121,8 +121,9 @@ class CbEnterpriseEdr(Product):
                 if search_field == 'query':
                     if isinstance(terms, list):
                         if len(terms) > 1:
-                            self.log.warning(f'The "query" field only supports a single term. Will use the first time during processing')
-                        query = terms[0]
+                            query = '('+ ') OR ('.join(terms) + ')'
+                        else:
+                            query = terms[0]
                     else:
                         query = terms
                 else:
