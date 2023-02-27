@@ -11,7 +11,7 @@ class CbResponse(Product):
     _conn: CbEnterpriseResponseAPI  # CB Response API
 
     def __init__(self, profile: str, **kwargs):
-        self._sensor_group = kwargs['sensor_group']
+        self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
 
         super().__init__(self.product, profile, **kwargs)
 
