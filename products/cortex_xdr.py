@@ -177,7 +177,7 @@ class CortexXDR(Product):
     if tag not in self._queries:
       self._queries[tag] = list()
     
-    query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data | filter {query}')
+    query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data {query}')
     self._queries[tag].append(query)
 
   def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
@@ -190,8 +190,9 @@ class CortexXDR(Product):
           parameter = 'query'
           if isinstance(terms, list):
             if len(terms) > 1:
-              self.log.warning(f'The "query" field only supports a single term. Will use the first term during processing')
-            search_value = terms[0]
+              search_value = ' '.join(terms)
+            else:
+              search_value = terms[0]
           else:
             search_value = terms
         else:
@@ -256,7 +257,7 @@ class CortexXDR(Product):
             # Fix the query to be case-insensitive if using `contains`
             query_string += f' | lower({query.parameter}) {query.operator} {(query.search_value).lower()}'
           elif query.operator == 'raw':
-            query_string += f' | filter {query.search_value}'
+            query_string += f' {query.search_value}'
           else:
             query_string += f' | {query.parameter} {query.operator} {query.search_value}'
 
