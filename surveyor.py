@@ -329,9 +329,7 @@ def survey(ctx, product: str = 'cbr'):
 
                 for ioc in data:
                     ioc = ioc.strip()
-                    base_query.update({opt.ioc_type: ioc})
-                    product.process_search(Tag(ioc), base_query, opt.query)
-                    del base_query[opt.ioc_type]
+                    product.nested_process_search(Tag(ioc), {opt.ioc_type: [ioc]}, base_query)
 
                 for tag, results in product.get_results().items():
                     _write_results(writer, results, ioc, 'ioc', tag, log)
