@@ -260,11 +260,11 @@ class CortexXDR(Product):
           
           if query.operator in ('contains', 'in'):
             # Fix the query to be case-insensitive if using `contains`
-            query_string += f' | lower({query.parameter}) {query.operator} {(query.search_value).lower()}'
+            query_string += f' | filter lowercase({query.parameter}) {query.operator} {(query.search_value).lower()}'
           elif query.operator == 'raw':
             query_string += f' {query.search_value}'
           else:
-            query_string += f' | {query.parameter} {query.operator} {query.search_value}'
+            query_string += f' | filter {query.parameter} {query.operator} {query.search_value}'
 
         query_string += f' {self._base_query} | fields agent_hostname, action_process_image_path, action_process_username, action_process_image_command_line, actor_process_image_path, actor_primary_username, actor_process_command_line, event_id'
 
