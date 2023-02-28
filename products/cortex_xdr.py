@@ -31,7 +31,12 @@ PARAMETER_MAPPING: dict[str, str] = {
   'digsig_publisher': 'action_file_signature_vendor',
   'modload': 'action_module_path',
   'filemod': 'action_file_path',
-  'regmod': 'action_registry_key_name'
+  'regmod': 'action_registry_key_name',
+  'md5': 'action_process_image_md5',
+  'sha256': 'action_process_image_sha256',
+  'ipport': 'action_remote_port',
+  'filewrite_md5': 'action_file_md5',
+  'filewrite_sha256':'action_file_sha256'
 }
 
 
