@@ -14,7 +14,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'cmdline': 'ProcessCommandLine',
     'digsig_publisher': 'Signer',
     'domain': 'RemoteUrl',
-    'internal_name': 'ProcessVersionInfoInternalFileName'
+    'internal_name': 'ProcessVersionInfoInternalFileName',
+    'md5':'MD5'
 }
 
 class DefenderForEndpoints(Product):
