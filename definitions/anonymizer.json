@@ -1,7 +1,6 @@
 {
     "Tor": {
-        "process_name": ["tor.exe"],
-        "product_name":  ["Tor Browser"]
+        "process_name": ["tor.exe", "Tor Browser"]
     },
     "I2P": {
         "process_name": ["i2p.exe"]
