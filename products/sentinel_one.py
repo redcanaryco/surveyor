@@ -37,7 +37,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'url': 'Url',
     'filemod': 'FilePath',
     'modload': 'ModulePath',
-    'process_file_description': 'SrcProcDisplayName'
+    'process_file_description': 'SrcProcDisplayName',
+    "md5": "Md5"
 }
 
 
@@ -438,7 +439,7 @@ class SentinelOne(Product):
                 elif len(terms) > 1:
                     search_value = f'({all_terms})'
                     operator = 'in contains anycase'
-                elif not re.findall(r'\w+\.\w+', search_value):
+                elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
                     operator = 'regexp'
                 else:
                     operator = 'containscis'
