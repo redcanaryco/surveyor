@@ -11,7 +11,7 @@ class CbResponse(Product):
     _conn: CbEnterpriseResponseAPI  # CB Response API
 
     def __init__(self, profile: str, **kwargs):
-        self._sensor_group = kwargs['sensor_group']
+        self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -68,13 +68,22 @@ class CbResponse(Product):
 
         try:
             for search_field, terms in criteria.items():
-                terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+                if search_field == 'query':
+                    if isinstance(terms, list):
+                        if len(terms) > 1:
+                            query = '(' + ') OR ('.join(terms) + ')'
+                        else:
+                            query = terms[0]
+                    else:
+                        query = terms
+                else:
+                    terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
 
-                query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+                    query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
+
                 query += self.build_query(base_query)
                 
                 self.log.debug(f'Query: {query}')
-
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
                     result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
