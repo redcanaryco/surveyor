@@ -324,12 +324,13 @@ def survey(ctx, product: str = 'cbr'):
         # run search based on IOC file
         if opt.ioc_file:
             with open(opt.ioc_file) as ioc_file:
+                basename = os.path.basename(opt.ioc_file)
                 data = ioc_file.readlines()
                 log_echo(f"Processing IOC file: {opt.ioc_file}", log)
 
                 for ioc in data:
                     ioc = ioc.strip()
-                    product.nested_process_search(Tag(ioc, opt.ioc_file), {opt.ioc_type: [ioc]}, base_query)
+                    product.nested_process_search(Tag(f"IOC - {ioc}", data=basename), {opt.ioc_type: [ioc]}, base_query)
 
                 for tag, results in product.get_results().items():
                     _write_results(writer, results, ioc, 'ioc', tag, log)
