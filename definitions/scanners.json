@@ -1,7 +1,6 @@
 {
     "Nmap": {
-        "process_name": ["nmap.exe"],
-        "process_name": ["nmap"]
+        "process_name": ["nmap.exe", "nmap"]
     },
     "Zenmap": {
         "process_name": ["zenmap.exe"]
