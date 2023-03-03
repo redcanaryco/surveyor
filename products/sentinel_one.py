@@ -403,6 +403,10 @@ class SentinelOne(Product):
             p_bar.close()
             raise e
 
+    def divide_chunks(self, l: list, n: int):
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
         self._query_base = build_query
@@ -419,35 +423,39 @@ class SentinelOne(Product):
         self._query_base = query_base
         try:
             for search_field, terms in criteria.items():
-                all_terms = ', '.join(f'"{term}"' for term in terms)
+                # play nice with 100 item limit per search field
+                chunked_terms = list(self.divide_chunks(terms, 100))
 
-                if search_field not in PARAMETER_MAPPING:
-                    self._echo(f'Query filter {search_field} is not supported by product {self.product}',
-                               logging.WARNING)
-                    continue
+                for chunk in chunked_terms:
+                    all_terms = ', '.join(f'"{term}"' for term in chunk)
 
-                parameter = PARAMETER_MAPPING[search_field]
-                search_value = all_terms
+                    if search_field not in PARAMETER_MAPPING:
+                        self._echo(f'Query filter {search_field} is not supported by product {self.product}',
+                                logging.WARNING)
+                        continue
 
-                if parameter == 'query':
-                    # Formats queries as (a) OR (b) OR (c) OR (d)
-                    if len(terms) > 1:
-                        search_value = ') OR ('.join(terms)
+                    parameter = PARAMETER_MAPPING[search_field]
+                    search_value = all_terms
+
+                    if parameter == 'query':
+                        # Formats queries as (a) OR (b) OR (c) OR (d)
+                        if len(terms) > 1:
+                            search_value = ') OR ('.join(terms)
+                        else:
+                            search_value = terms[0]
+                        operator = 'raw'
+                    elif len(terms) > 1:
+                        search_value = f'({all_terms})'
+                        operator = 'in contains anycase'
+                    elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
+                        operator = 'regexp'
                     else:
-                        search_value = terms[0]
-                    operator = 'raw'
-                elif len(terms) > 1:
-                    search_value = f'({all_terms})'
-                    operator = 'in contains anycase'
-                elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
-                    operator = 'regexp'
-                else:
-                    operator = 'containscis'
+                        operator = 'containscis'
 
-                if tag not in self._queries:
-                    self._queries[tag] = list()
+                    if tag not in self._queries:
+                        self._queries[tag] = list()
 
-                self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
+                    self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
