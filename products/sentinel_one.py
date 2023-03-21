@@ -582,7 +582,10 @@ class SentinelOne(Product):
             query_id = body['data']['queryId']
             self.log.info(f'Query ID is {query_id}')
 
-            events = self._get_dv_events(query_id, p_bar=p_bar, cancel_event=cancel_event)
+            if self._pq and body['data']['status'] == 'FINISHED': # If using PQ, the results can be returned immediately
+                events = body['data']['data']
+            else:
+                events = self._get_dv_events(query_id, p_bar=p_bar, cancel_event=cancel_event)
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
