@@ -499,8 +499,11 @@ class SentinelOne(Product):
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    full_query = f'{query.parameter} {query.operator} {query.search_value}'
-                    query_text.append((tag, full_query))
+                    if query.full_query is not None:
+                        query_text.append((tag, query.full_query))
+                    else:
+                        full_query = f'{query.parameter} {query.operator} {query.search_value}'
+                        query_text.append((tag, full_query))
         else:
             # key is a tuple of the query operator and parameter
             # value is a list of Tuples where each tuple contains the query tag and search value
