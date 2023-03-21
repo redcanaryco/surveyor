@@ -24,7 +24,7 @@ from load import get_product_instance, get_products
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 
 # Application version
-current_version = "2.0"
+current_version = "2.1.0"
 
 
 def _list_products(ctx, _, value):
