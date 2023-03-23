@@ -54,7 +54,10 @@ PARAMETER_MAPPING_PQ: dict[str, str] = {
     'cmdline': 'src.process.cmdline',
     'digsig_publisher': 'src.process.publisher',
     'domain': 'url.address',
-    'internal_name': 'tgt.file.internalName'
+    'filemod':'tgt.file.path',
+    'internal_name': 'tgt.file.internalName',
+    'modload': 'module.path',
+    'process_file_description': 'src.process.displayName'
 }
 
 
