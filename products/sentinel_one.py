@@ -13,7 +13,7 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Any, cast
 import re
 
 import requests
@@ -34,7 +34,7 @@ class Query:
     full_query: Optional[str] = None
 
 
-PARAMETER_MAPPING: dict[str, str] = {
+PARAMETER_MAPPING_DV: dict[str, str] = {
     'query': 'query', # non-existent field to specify a fully defined query string in a definition file.
     'process_name': 'ProcessName',
     'ipaddr': 'IP',
@@ -49,6 +49,7 @@ PARAMETER_MAPPING: dict[str, str] = {
 }
 
 PARAMETER_MAPPING_PQ: dict[str, str] = {
+    'query': 'query',
     'process_name': 'src.process.name',
     'cmdline': 'src.process.cmdline',
     'digsig_publisher': 'src.process.publisher',
@@ -479,31 +480,28 @@ class SentinelOne(Product):
                 parameter = self.parameter_mapping[search_field]
                 search_value = all_terms
 
-                if parameter == 'query':
-                    # Formats queries as (a) OR (b) OR (c) OR (d)
-                    if len(terms) > 1:
-                        search_value = ') OR ('.join(terms)
-                    else:
-                        search_value = terms[0]
-                    operator = 'raw'
-                elif len(terms) > 1:
-                    search_value = f'({all_terms})'
-                    operator = 'in contains anycase'
-                elif not re.findall(r'\w+\.\w+', search_value):
-                    operator = 'regexp'
-                else:
-                    operator = 'containscis'
-
                 if tag not in self._queries:
                     self._queries[tag] = list()
 
                 if self._pq:
                     for term in terms:
-                        self._queries[tag].append(Query(from_date, to_date, parameter, 'contains', f"'{term}'"))
+                        if parameter == 'query':
+                            self._queries[tag].append(Query(from_date, to_date, None, None, None, term))
+                        else:
+                            self._queries[tag].append(Query(from_date, to_date, parameter, 'contains', f"'{term}'"))
                 else:
-                    if len(terms) > 1:
+                    if parameter == 'query':
+                        # Formats queries as (a) OR (b) OR (c) OR (d)
+                        if len(terms) > 1:
+                            search_value = '(' + ') OR ('.join(terms) + ')'
+                        else:
+                            search_value = terms[0]
+                        operator = 'raw'
+                    elif len(terms) > 1:
                         search_value = f'({all_terms})'
                         operator = 'in contains anycase'
+                    elif not re.findall(r'\w+\.\w+', search_value):
+                        operator = 'regexp'
                     else:
                         operator = 'containscis'
 
@@ -624,7 +622,7 @@ class SentinelOne(Product):
                     username = event[1]
                     path = event[2]
                     command_line = event[3]
-                    additional_data = (event[8], event[9], event[10])
+                    additional_data = (event[8], event[9], event[10], event[11],'None','None','None','None','None','None','None','None','None','None','None','None')
                 else:
                     hostname = event['endpointName']
                     username = event['srcProcUser']
@@ -642,7 +640,7 @@ class SentinelOne(Product):
                     dstip = event['dstIp'] if 'dstIp' in event else 'None'
                     dnsrequest = event['dnsRequest'] if 'dnsRequest' in event else 'None'
                     command_line = event['srcProcCmdLine']
-                    additional_data = (srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'], event['eventTime'], event['siteId'], event['siteName'])
+                    additional_data = (event['eventTime'], event['siteId'], event['siteName'], srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'])
 
                 result = Result(hostname, username, path, command_line, additional_data)
 
@@ -716,8 +714,8 @@ class SentinelOne(Product):
 
                     merged_query += ' | group count() by endpoint.name, src.process.user, ' \
                                     'src.process.image.path, src.process.cmdline, src.process.name, ' \
-                                    'src.process.publisher, url.address, tgt.file.internalName, event.time, ' \
-                                    'site.id, site.name'
+                                    'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
+                                    'site.id, site.name, src.process.storyline.id'
 
                 futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
                                                cancel_event, not self._pq))
@@ -754,4 +752,4 @@ class SentinelOne(Product):
         return self._results
 
     def get_other_row_headers(self) -> list[str]:
-        return ['SrcProcStorylineId', 'SrcProcDisplayName', 'SrcProcParentImagePath', 'TgtProcDisplayName', 'TgtProcPath', 'TgtFilePath', 'TgtFileSHA1', 'TgtFileSHA256', 'Network URL', 'Source IP', 'Dest IP', 'DNS Request', 'EventType', 'Event Time', 'Site ID', 'Site Name']
+        return ['Event Time', 'Site ID', 'Site Name', 'SrcProcStorylineId', 'SrcProcDisplayName', 'SrcProcParentImagePath', 'TgtProcDisplayName', 'TgtProcPath', 'TgtFilePath', 'TgtFileSHA1', 'TgtFileSHA256', 'Network URL', 'Source IP', 'Dest IP', 'DNS Request', 'EventType']
