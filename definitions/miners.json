@@ -24,8 +24,7 @@
         "process_name": ["Auroracoin-qt-2016.04.1.0.exe"]
     },
     "miner": {
-        "process_name": ["miner.exe"],
-        "process_name": ["miner.py"]
+        "process_name": ["miner.exe", "miner.py"]
     },
     "Win64mrocli3": {
         "process_name": ["Win64mrocli3.exe"]
@@ -46,44 +45,34 @@
         "process_name": ["bitmoose-gui.exe"]
     },
     "XMRig": {
-        "process_name": ["xmrig.exe"],
-        "process_name": ["xmrig"]
+        "process_name": ["xmrig.exe","xmrig"]
     },
     "XMRig-AMD": {
-        "process_name": ["xmrig-amd.exe"],
-        "process_name": ["xmrig-amd"]
+        "process_name": ["xmrig-amd.exe", "xmrig-amd"]
     },
     "XMRig-NVIDIA": {
-        "process_name": ["xmrig-nvidia.exe"],
-        "process_name": ["xmrig-nvidia"]
+        "process_name": ["xmrig-nvidia.exe", "xmrig-nvidia"]
     },
     "xmr-stak": {
-        "process_name": ["xmr-stak.exe"],
-        "process_name": ["xmr-stak"]
+        "process_name": ["xmr-stak.exe", "xmr-stak"]
     },
     "xmr-stak-AMD": {
-        "process_name": ["xmr-stak-amd.exe"],
-        "process_name": ["xmr-stak-amd"]
+        "process_name": ["xmr-stak-amd.exe", "xmr-stak-amd"]
     },
     "xmr-stak-NVIDIA": {
-        "process_name": ["xmr-stak-nvidia.exe"],
-        "process_name": ["xmr-stak-nvidia"]
+        "process_name": ["xmr-stak-nvidia.exe","xmr-stak-nvidia"]
     },
     "xmr-stak-CPU": {
-        "process_name": ["xmr-stak-cpu.exe"],
-        "process_name": ["xmr-stak-cpu"]
+        "process_name": ["xmr-stak-cpu.exe", "xmr-stak-cpu"]
     },
     "NsCpuCNMiner64": {
-        "process_name": ["NsCpuCNMiner64.exe"],
-        "process_name": ["NsCpuCNMiner64"]
+        "process_name": ["NsCpuCNMiner64.exe", "NsCpuCNMiner64"]
     },
     "NsGpuCNMiner": {
-        "process_name": ["NsGpuCNMiner.exe"],
-        "process_name": ["NsGpuCNMiner"]
+        "process_name": ["NsGpuCNMiner.exe", "NsGpuCNMiner"]
     },
     "CPUMiner": {
-        "process_name": ["cpuminer.exe"],
-        "process_name": ["cpuminer"]
+        "process_name": ["cpuminer.exe", "cpuminer"]
     },
     "YAM": {
         "process_name": ["yam"]

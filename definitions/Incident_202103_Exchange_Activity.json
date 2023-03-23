@@ -76,11 +76,11 @@
 			"Add-PSSnapin\\ Microsoft.Exchange.Powershell.Snapin"
 		], 
 
-		"process_name":[
-			"UMWorkerProcess.exe AND -(childproc_name:wermgr.exe OR childproc_name:WerFault.exe)", 
-			"UMWorkerProcess.exe AND -(filemod:.txt OR filemod:.cfg OR filemod:cleanup.bin OR filemod:.log)", 
-			"UMWorkerProcess.exe AND (filemod:.php OR filemod:.jsp OR filemod:.js OR filemod:.aspx OR filemod:.asp OR filemod:.asmx OR filemod:.asax OR filemod:.cfm OR filemod:.shtml)", 
-			"UMService.exe AND (filemod:.php OR filemod:.jsp OR filemod:.js OR filemod:.aspx OR filemod:.asp OR filemod:.asmx OR filemod:.asax OR filemod:.cfm OR filemod:.shtml)"
+		"query":[
+			"process_name:UMWorkerProcess.exe AND -(childproc_name:wermgr.exe OR childproc_name:WerFault.exe)", 
+			"process_name:UMWorkerProcess.exe AND -(filemod:.txt OR filemod:.cfg OR filemod:cleanup.bin OR filemod:.log)", 
+			"process_name:UMWorkerProcess.exe AND (filemod:.php OR filemod:.jsp OR filemod:.js OR filemod:.aspx OR filemod:.asp OR filemod:.asmx OR filemod:.asax OR filemod:.cfm OR filemod:.shtml)", 
+			"process_name:UMService.exe AND (filemod:.php OR filemod:.jsp OR filemod:.js OR filemod:.aspx OR filemod:.asp OR filemod:.asmx OR filemod:.asax OR filemod:.cfm OR filemod:.shtml)"
 		]
 
 	}
