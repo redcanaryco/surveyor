@@ -43,8 +43,8 @@ PARAMETER_MAPPING: dict[str, str] = {
 
 class CortexXDR(Product):
     """
-  Surveyor implementation for product "CortexXDR"
-  """
+    Surveyor implementation for product "CortexXDR"
+    """
     product: str = 'cortex'
     creds_file: str  # path to credential configuration file
     _api_key: str  # Required API key
@@ -122,8 +122,8 @@ class CortexXDR(Product):
 
     def _build_url(self, stem: str):
         """
-    Assemble URL for Cortex XDR API query using base URI and URI stem.
-    """
+        Assemble URL for Cortex XDR API query using base URI and URI stem.
+        """
         if not stem.startswith('/'):
             stem = '/' + stem
 
@@ -131,15 +131,15 @@ class CortexXDR(Product):
 
     def _get_default_body(self) -> dict:
         """
-    Get the default request body for a Cortex XDR API query.
-    """
+        Get the default request body for a Cortex XDR API query.
+        """
         body = {}
         return body
 
     def _get_default_header(self):
         """
-    Get the default header for a Cortex XDR API query.
-    """
+        Get the default header for a Cortex XDR API query.
+        """
         if self._auth_type == 'advanced':
             # Generate a 64 bytes random string
             nonce = "".join([secrets.choice(string.ascii_letters + string.digits) for _ in range(64)])
