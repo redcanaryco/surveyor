@@ -1,9 +1,13 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Tuple, Optional, Any, Union
+from dataclasses import dataclass
+from typing import Tuple, Optional, Any
 
 from help import log_echo
+
+
+class AuthenticationError(Exception):
+    pass
 
 
 @dataclass(eq=True, frozen=True)
@@ -27,7 +31,7 @@ class Product(ABC):
 
     Subclasses must implement all abstract methods and invoke this class's constructor.
     """
-    product: str = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
+    product: Optional[str] = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
     profile: str  # the profile is used to authenticate to the target platform
     _results: dict[Tag, list[Result]]
     log: logging.Logger
@@ -120,7 +124,7 @@ class Product(ABC):
         Add results to the result store.
         """
         if not tag:
-            tag = '_default'
+            tag = Tag('_default')
 
         if tag not in self._results:
             self._results[tag] = list()
