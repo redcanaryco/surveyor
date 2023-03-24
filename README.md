@@ -4,7 +4,7 @@ Surveyor is a Python utility that queries Endpoint Detection and Response (EDR)
 products and summarizes the results. Security and IT teams can use Surveyor to
 baseline their environments and identify abnormal activity.
 
-## Current Version: 2.1
+## Current Version: 2.3
 
 Version 2.0 introduced breaking changes to the command line interface and support for SentinelOne. 
 If you are looking for the prior version of Surveyor, see [past releases](https://github.com/redcanaryco/surveyor/releases).
@@ -20,10 +20,11 @@ within an enterprise, who is using them, and how.
 
 Surveyor currently supports the following EDR platforms:
 
-- VMware Carbon Black® (Cb) Enterprise Response
-- VMware Carbon Black Cloud Enterprise EDR (formerly Carbon Black ThreatHunter)
+- Cortex XDR
 - Microsoft Defender for Endpoint
 - SentinelOne
+- VMware Carbon Black® (Cb) Enterprise Response
+- VMware Carbon Black Cloud Enterprise EDR (formerly Carbon Black ThreatHunter)
 
 You can find out more about Surveyor from [this blog post](https://redcanary.com/blog/carbon-black-response-how-tos-surveyor/).
 
