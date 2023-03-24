@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     scripts=find_scripts(),
     description='Extracts summarized process data from EDR platforms',
-    version='2.1.0',
+    version='2.3.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
