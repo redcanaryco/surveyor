@@ -46,7 +46,9 @@ PARAMETER_MAPPING_DV: dict[str, str] = {
     'filemod': 'FilePath',
     'modload': 'ModulePath',
     'process_file_description': 'SrcProcDisplayName',
-    'md5': 'Md5'
+    'md5': 'Md5',
+    'sha1':'Sha1',
+    'sha256':'Sha256'
 }
 
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
@@ -59,7 +61,9 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'internal_name': ['tgt.file.internalName'],
     'modload': ['module.path'],
     'process_file_description': ['src.process.displayName'],
-    'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5']
+    'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5'],
+    'sha256':['src.process.image.sha256','tgt.file.sha256'],
+    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1']
 }
 
 

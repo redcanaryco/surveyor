@@ -15,7 +15,9 @@ PARAMETER_MAPPING: dict[str, str] = {
     'digsig_publisher': 'Signer',
     'domain': 'RemoteUrl',
     'internal_name': 'ProcessVersionInfoInternalFileName',
-    'md5':'MD5'
+    'md5':'MD5',
+    'sha1':'SHA1',
+    'sha256':'SHA256'
 }
 
 class DefenderForEndpoints(Product):

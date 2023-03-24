@@ -16,7 +16,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'digsig_publisher': 'process_publisher',
     'domain': 'netconn_domain',
     'internal_name': 'process_internal_name',
-    'md5':'hash'
+    'md5':'hash',
+    'sha256':'hash'
 }
 
 def _convert_relative_time(relative_time):
