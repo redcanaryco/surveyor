@@ -42,7 +42,7 @@
         "digsig_publisher": ["ConnectWise, LLC"]
     },
     "Chrome Remote Desktop": {
-        "cmdline": ["cmdline:efmjfjelnicpmdcmfikempdhlmainjcb*"],
+        "cmdline": ["efmjfjelnicpmdcmfikempdhlmainjcb*"],
         "domain": ["remotedesktop.google.com"]
     },
     "DameWare": { 
