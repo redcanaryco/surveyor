@@ -1,7 +1,7 @@
 import datetime
 import logging
-import sys
 
+from typing import Generator
 import cbc_sdk.errors
 from cbc_sdk.rest_api import CBCloudAPI
 from cbc_sdk.platform import Process
@@ -20,7 +20,7 @@ PARAMETER_MAPPING: dict[str, str] = {
     'sha256':'hash'
 }
 
-def _convert_relative_time(relative_time):
+def _convert_relative_time(relative_time) -> str:
     """
     Convert a Cb Response relative time boundary (i.e., start:-1440m) to a device_timestamp:
     device_timestamp:[2019-06-02T00:00:00Z TO 2019-06-03T23:59:00Z]
@@ -44,7 +44,7 @@ class CbEnterpriseEdr(Product):
 
         super().__init__(self.product, profile, **kwargs)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         if self.profile:
             cb_conn = CBCloudAPI(profile=self.profile)
         else:
@@ -52,7 +52,7 @@ class CbEnterpriseEdr(Product):
 
         self._conn = cb_conn
 
-    def build_query(self, filters: dict):
+    def build_query(self, filters: dict) -> QueryBuilder:
         query_base = QueryBuilder()
 
         for key, value in filters.items():
@@ -87,21 +87,21 @@ class CbEnterpriseEdr(Product):
 
         return query_base
 
-    def divide_chunks(self, l: list, n: int):
+    def divide_chunks(self, l: list, n: int) -> Generator:
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-    def perform_query(self, tag: Tag, base_query: dict, query: str):
-        results = ()
-        base_query = self.build_query(base_query)
+    def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
+        results = set()
+        parsed_base_query = self.build_query(base_query)
         try:
             self.log.debug(f'Query {tag}: {query}')
 
             process = self._conn.select(Process)
 
-            full_query = base_query.where(query)
+            full_query = parsed_base_query.where(query)
 
-            self.log.debug(f'Full Query: {base_query} AND {query}')
+            self.log.debug(f'Full Query: {full_query.__str__}')
 
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
@@ -131,7 +131,7 @@ class CbEnterpriseEdr(Product):
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = ()
+        results: list = []
 
         for search_field, terms in criteria.items():
             if search_field == 'query':

@@ -34,21 +34,21 @@ class Query:
     full_query: Optional[str] = None
 
 
-PARAMETER_MAPPING_DV: dict[str, str] = {
-    'query': 'query', # non-existent field to specify a fully defined query string in a definition file.
-    'process_name': 'ProcessName',
-    'ipaddr': 'IP',
-    'cmdline': 'CmdLine',
-    'digsig_publisher': 'Publisher',
-    'domain': 'DNS',
-    'internal_name': 'TgtFileInternalName',
-    'url': 'Url',
-    'filemod': 'FilePath',
-    'modload': 'ModulePath',
-    'process_file_description': 'SrcProcDisplayName',
-    'md5': 'Md5',
-    'sha1':'Sha1',
-    'sha256':'Sha256'
+PARAMETER_MAPPING_DV: dict[str, list[str]] = {
+    'query': ['query'], # non-existent field to specify a fully defined query string in a definition file.
+    'process_name': ['ProcessName'],
+    'ipaddr': ['IP'],
+    'cmdline': ['CmdLine'],
+    'digsig_publisher': ['Publisher'],
+    'domain': ['DNS'],
+    'internal_name': ['TgtFileInternalName'],
+    'url': ['Url'],
+    'filemod': ['FilePath'],
+    'modload': ['ModulePath'],
+    'process_file_description': ['SrcProcDisplayName'],
+    'md5': ['Md5'],
+    'sha1':['Sha1'],
+    'sha256':['Sha256']
 }
 
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
@@ -410,12 +410,12 @@ class SentinelOne(Product):
 
             return data
 
-    def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar: bool = True) -> list[dict]:
+    def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar_needed: bool = True) -> list[dict]:
         """
         Retrieve events associated with a SentinelOne Deep Visibility query ID.
         """
         p_bar = tqdm(desc='Running query',
-                     disable=not self._tqdm_echo or not p_bar,
+                     disable=not self._tqdm_echo or not p_bar_needed,
                      total=100)
 
         def errors(_response_data: dict[str, Any]):
@@ -483,10 +483,10 @@ class SentinelOne(Product):
         self._queries[tag].append(built_query)
 
     @property
-    def parameter_mapping(self) -> dict[str, Union[str,list]]:
+    def parameter_mapping(self) -> dict[str, list[str]]:
         return PARAMETER_MAPPING_PQ if self._pq else PARAMETER_MAPPING_DV
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         query_base, from_date, to_date = self.build_query(base_query)
         self._query_base = query_base
         try:
@@ -515,22 +515,23 @@ class SentinelOne(Product):
                         all_terms = ', '.join(f'"{term}"' for term in chunk)
                         search_value = all_terms
 
-                        if parameter == 'query':
-                            # Formats queries as (a) OR (b) OR (c) OR (d)
-                            if len(terms) > 1:
-                                search_value = '(' + ') OR ('.join(terms) + ')'
+                        for param in parameter:
+                            if param == 'query':
+                                # Formats queries as (a) OR (b) OR (c) OR (d)
+                                if len(terms) > 1:
+                                    search_value = '(' + ') OR ('.join(terms) + ')'
+                                else:
+                                    search_value = terms[0]
+                                operator = 'raw'
+                            elif len(terms) > 1:
+                                search_value = f'({all_terms})'
+                                operator = 'in contains anycase'
+                            elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
+                                operator = 'regexp'
                             else:
-                                search_value = terms[0]
-                            operator = 'raw'
-                        elif len(terms) > 1:
-                            search_value = f'({all_terms})'
-                            operator = 'in contains anycase'
-                        elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
-                            operator = 'regexp'
-                        else:
-                            operator = 'containscis'
+                                operator = 'containscis'
 
-                        self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
+                            self._queries[tag].append(Query(from_date, to_date, param, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
@@ -586,7 +587,7 @@ class SentinelOne(Product):
         return query_text
 
     def _run_query(self, merged_query: str, start_date: datetime, end_date: datetime, merged_tag: Tag,
-                   cancel_event: Event, p_bar: bool = True) -> None:
+                   cancel_event: Event, p_bar_needed: bool = True) -> None:
         try:
             if cancel_event.is_set():
                 return
@@ -636,7 +637,7 @@ class SentinelOne(Product):
             if self._pq and body['data']['status'] == 'FINISHED': # If using PQ, the results can be returned immediately
                 events = body['data']['data']
             else:
-                events = self._get_dv_events(query_id, p_bar=p_bar, cancel_event=cancel_event)
+                events = self._get_dv_events(query_id, p_bar_needed=p_bar_needed, cancel_event=cancel_event)
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
@@ -674,7 +675,7 @@ class SentinelOne(Product):
             self.log.error(e)
             click.secho(f'Error in query thread: {e}', fg='red')
 
-    def _process_queries(self):
+    def _process_queries(self) -> None:
         """
         Process all cached queries.
         """
@@ -704,12 +705,12 @@ class SentinelOne(Product):
                 # do not chain more than 10 ORs in a S1QL query
                 merged_tags = set[Tag]()
                 merged_query = ''
-                for tag, query in query_text[i:i + chunk_size]:
+                for tag, query_str in query_text[i:i + chunk_size]:
                     # combine queries with ORs
                     if merged_query:
                         merged_query += ' OR '
 
-                    merged_query += query
+                    merged_query += query_str
 
                     # add tags to set to de-duplicate
                     merged_tags.add(tag)
@@ -718,7 +719,7 @@ class SentinelOne(Product):
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags),
                                  ','.join(str(tag.data) for tag in merged_tags))
 
-                if len(self._query_base):
+                if self._query_base is not None and len(self._query_base):
                     # add base_query filter to merged query string
                     merged_query = f'{self._query_base} AND ({merged_query})'
 
