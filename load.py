@@ -1,5 +1,5 @@
 import os
-from typing import Type, Iterable
+from typing import Type, Iterable, Generator, Optional
 
 from common import Product
 
@@ -15,7 +15,7 @@ for module in os.listdir(os.path.join(os.path.dirname(__file__), 'products')):
     del module
 
 
-def _get_subclasses() -> list[Type[Product]]:
+def _get_subclasses() -> Generator[Type[Product], None, None]:
     """
     Retrieve all subclasses of the "Product" class.
     """
@@ -41,7 +41,7 @@ def get_product_instance(product: str, **kwargs) -> Product:
     raise ValueError(f'Product {product} is not implemented')
 
 
-def get_products() -> Iterable[str]:
+def get_products() -> Iterable[Optional[str]]:
     """
     Get a list of all implemented product strings.
     """
