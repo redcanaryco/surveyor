@@ -54,6 +54,8 @@ PARAMETER_MAPPING_DV: dict[str, list[str]] = {
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'query': ['query'],
     'process_name': ['src.process.name'],
+    'ipaddr': ['dst.ip.address'],
+    'url': ['url.address']
     'cmdline': ['src.process.cmdline'],
     'digsig_publisher': ['src.process.publisher'],
     'domain': ['url.address'],
