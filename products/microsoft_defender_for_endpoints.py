@@ -4,17 +4,31 @@ import logging
 import os
 
 import requests
-
+from typing import Union
 from common import Product, Tag, Result
 
-PARAMETER_MAPPING: dict[str, str] = {
-    'process_name': 'FileName',
-    'filemod': 'FileName',
-    'ipaddr': 'RemoteIP',
-    'cmdline': 'ProcessCommandLine',
-    'digsig_publisher': 'Signer',
-    'domain': 'RemoteUrl',
-    'internal_name': 'ProcessVersionInfoInternalFileName'
+PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
+    'process_name': {'table':'DeviceProcessEvents','field':'FolderPath',
+                     'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'filemod': {'table':'DeviceFileEvents','field':'FolderPath', 
+                'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+    'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+    'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
+                'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
+                         'additional':'| join kind=inner DeviceProcessEvents on $left.SHA1 == $right.SHA1',
+                         'projections':['DeviceName', 'AccountName','FolderPath','ProcessCommandLine']},
+    'domain': {'table':'DeviceNetworkEvents','field':'RemoteUrl', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+    'internal_name': {'table':'DeviceProcessEvents','field':'ProcessVersionInfoInternalFileName', 
+                      'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'md5': {'table':'DeviceProcessEvents','field':'MD5',
+            'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'sha1':{'table':'DeviceProcessEvents','field':'SHA1',
+            'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'sha256':{'table':'DeviceProcessEvents','field':'SHA256',
+              'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']}
 }
 
 class DefenderForEndpoints(Product):
@@ -33,7 +47,7 @@ class DefenderForEndpoints(Product):
 
         super().__init__(self.product, profile, **kwargs)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         config = configparser.ConfigParser()
         config.sections()
         config.read(self.creds_file)
@@ -46,9 +60,9 @@ class DefenderForEndpoints(Product):
         if 'tenantId' not in section or 'appId' not in section or 'appSecret' not in section:
             raise ValueError(f'Credential file must contain tenantId, appId, and appSecret values')
 
-        self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
+        #self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
 
-    def _get_aad_token(self, tenant_id: str, app_id: str, app_secret: str):
+    def _get_aad_token(self, tenant_id: str, app_id: str, app_secret: str) -> str:
         """
         Retrieve an authentication token from Azure Active Directory using app ID and secret.
         """
@@ -76,6 +90,7 @@ class DefenderForEndpoints(Product):
             response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
+                # TODO: Make this more dynamic since the column names for AccountName, ProcessCommandLine, and FolderPath aren't always consistent
                 for res in response.json()["Results"]:
                     result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"],
                                     (res["Timestamp"],))
@@ -90,7 +105,7 @@ class DefenderForEndpoints(Product):
 
         return list(results)
 
-    def _get_default_header(self):
+    def _get_default_header(self) -> dict[str, str]:
         return {
             "Authorization": 'Bearer ' + self._token,
             "Content-Type": 'application/json',
@@ -100,18 +115,16 @@ class DefenderForEndpoints(Product):
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query + self.build_query(base_query)
 
-        query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents " \
-                + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
         query = query.rstrip()
 
         self.log.debug(f'Query: {query}')
-        query = {'Query': query}
+        full_query = {'Query': query}
 
-        results = self._post_advanced_query(data=query, headers=self._get_default_header())
-        self._add_results(list(results), tag)
+        #results = self._post_advanced_query(data=full_query, headers=self._get_default_header())
+        #self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = set()
+        results : set = set()
 
         query_base = self.build_query(base_query)
 
@@ -119,30 +132,27 @@ class DefenderForEndpoints(Product):
             for search_field, terms in criteria.items():
                 if search_field == 'query':
                     if isinstance(terms, list):
-                        if len(terms) > 1:
-                            query = ' '.join(terms)
-                        else:
-                            query = terms[0]
+                        for query_entry in terms:
+                            query_entry += query_base
+                            self.process_search(tag, {}, query_entry)
                     else:
-                        query = terms
+                        self.process_search(tag, base_query, terms)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:
-                        query = f" | where {PARAMETER_MAPPING[search_field]} has_any ({all_terms})"
+                        query = f"| where {PARAMETER_MAPPING[search_field]['field']} has_any ({all_terms})"
                     else:
                         self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                    logging.WARNING)
                         continue
+                
+                    query = f"{PARAMETER_MAPPING[search_field]['table']} {query} "
 
-                query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents" \
-                        + query_base + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
-                query = query.rstrip()
+                    query += str(PARAMETER_MAPPING[search_field]['additional']) if 'additional' in PARAMETER_MAPPING[search_field] else ''
 
-                self.log.debug(f'Query: {query}')
-                data = {'Query': query}
+                    query += f" {query_base} | project {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
-                for entry in self._post_advanced_query(data=data, headers=self._get_default_header()):
-                    results.add(entry)
+                    self.process_search(tag, {}, query)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
