@@ -113,19 +113,17 @@ class DefenderForEndpoints(Product):
         }
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        query = query + self.build_query(base_query)
+        query += self.build_query(base_query) if base_query != {} else ''
 
         query = query.rstrip()
 
         self.log.debug(f'Query: {query}')
         full_query = {'Query': query}
 
-        #results = self._post_advanced_query(data=full_query, headers=self._get_default_header())
-        #self._add_results(list(results), tag)
+        results = self._post_advanced_query(data=full_query, headers=self._get_default_header())
+        self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results : set = set()
-
         query_base = self.build_query(base_query)
 
         try:
@@ -155,8 +153,6 @@ class DefenderForEndpoints(Product):
                     self.process_search(tag, {}, query)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
-
-        self._add_results(list(results), tag)
 
     def build_query(self, filters: dict) -> str:
         query_base = ''
