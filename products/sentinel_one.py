@@ -699,7 +699,9 @@ class SentinelOne(Product):
 
         # all queries that need to be executed are now in query_text
         # execute queries in chunks
-        chunk_size = 1 if self._pq else 10
+        # do not chunk if processing an IOC file
+        ioc_hunt = list(self._queries.keys())
+        chunk_size = 1 if self._pq or (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=25 if self._pq else 1) as executor:
             futures = list[Future]()
