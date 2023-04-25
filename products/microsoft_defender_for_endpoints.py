@@ -106,8 +106,10 @@ class DefenderForEndpoints(Product):
                     else:
                         proc_name = 'Unknown'
 
+                    timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+
                     result = Result(hostname, username, cmdline, proc_name,
-                                    (res["Timestamp"],))
+                                    (timestamp,))
                     results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
