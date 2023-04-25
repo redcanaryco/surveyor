@@ -13,7 +13,7 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from typing import Optional, Tuple, Callable, Any, Union, cast
+from typing import Optional, Tuple, Callable, Any, cast
 import re
 
 import requests
@@ -55,7 +55,7 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'query': ['query'],
     'process_name': ['src.process.name'],
     'ipaddr': ['dst.ip.address'],
-    'url': ['url.address']
+    'url': ['url.address'],
     'cmdline': ['src.process.cmdline'],
     'digsig_publisher': ['src.process.publisher'],
     'domain': ['url.address'],
@@ -67,7 +67,6 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'sha256':['src.process.image.sha256','tgt.file.sha256'],
     'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1']
 }
-
 
 class SentinelOne(Product):
     """
@@ -504,31 +503,34 @@ class SentinelOne(Product):
                     self._queries[tag] = list()
 
                 if self._pq:
-                    for term in terms:
-                        for param in parameter:
-                            if param == 'query':
-                                self._queries[tag].append(Query(from_date, to_date, None, None, None, term))
+                    for param in parameter:
+                        if param == 'query':
+                            if len(terms) > 1:
+                                search_value = '(' + ') or ('.join(terms) + ')'
                             else:
-                                self._queries[tag].append(Query(from_date, to_date, param, 'contains', f"'{term}'"))
+                                search_value = terms[0]
+                            self._queries[tag].append(Query(from_date, to_date, None, None, None, search_value))
+                        else:
+                            search_value = '(' + ', '.join(f'"{x}"' for x in terms) + ')'
+                            self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
                 else:
                     # play nice with 100 item limit per search field
                     chunked_terms = list(self.divide_chunks(terms, 100))
                     for chunk in chunked_terms:
-                        all_terms = ', '.join(f'"{term}"' for term in chunk)
-                        search_value = all_terms
+                        search_value = ', '.join(f'"{x}"' for x in chunk)
 
                         for param in parameter:
                             if param == 'query':
                                 # Formats queries as (a) OR (b) OR (c) OR (d)
-                                if len(terms) > 1:
-                                    search_value = '(' + ') OR ('.join(terms) + ')'
+                                if len(chunk) > 1:
+                                    search_value = '(' + ') OR ('.join(chunk) + ')'
                                 else:
                                     search_value = terms[0]
                                 operator = 'raw'
                             elif len(terms) > 1:
-                                search_value = f'({all_terms})'
+                                search_value = f'({search_value})'
                                 operator = 'in contains anycase'
-                            elif not re.findall(r'\w+\.\w+', search_value) and tag.tag != "IOC - {0}".format(search_value.replace('"','')):
+                            elif not re.findall(r'\w+\.\w+', search_value) and tag.tag.startswith("IOC - "):
                                 operator = 'regexp'
                             else:
                                 operator = 'containscis'
