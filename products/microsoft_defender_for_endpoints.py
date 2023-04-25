@@ -90,9 +90,23 @@ class DefenderForEndpoints(Product):
             response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
-                # TODO: Make this more dynamic since the column names for AccountName, ProcessCommandLine, and FolderPath aren't always consistent
                 for res in response.json()["Results"]:
-                    result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"],
+                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
+                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                        username = 'Unknown'
+                    
+                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
+                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
+                    else:
+                        cmdline = 'Unknown'
+                    
+                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
+                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
+                    else:
+                        proc_name = 'Unknown'
+
+                    result = Result(hostname, username, cmdline, proc_name,
                                     (res["Timestamp"],))
                     results.add(result)
             else:
@@ -148,7 +162,7 @@ class DefenderForEndpoints(Product):
 
                     query += str(PARAMETER_MAPPING[search_field]['additional']) if 'additional' in PARAMETER_MAPPING[search_field] else ''
 
-                    query += f" {query_base} | project {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
+                    query += f" {query_base} | project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
                     self.process_search(tag, {}, query)
         except KeyboardInterrupt:
