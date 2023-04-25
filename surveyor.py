@@ -344,12 +344,12 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 data = ioc_file.readlines()
                 log_echo(f"Processing IOC file: {opt.ioc_file}", log)
 
-                for ioc in data:
-                    ioc = ioc.strip()
-                    product.nested_process_search(Tag(f"IOC - {ioc}", data=basename), {opt.ioc_type: [ioc]}, base_query)
+                ioc_list = [x.strip() for x in data]
+
+                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query)
 
                 for tag, results in product.get_results().items():
-                    _write_results(writer, results, ioc, 'ioc', tag, log)
+                    _write_results(writer, results, opt.ioc_file, 'ioc', tag, log)
 
         # run search against definition files and write to csv
         if opt.def_file is not None or opt.def_dir is not None:
