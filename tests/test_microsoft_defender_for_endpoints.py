@@ -3,7 +3,7 @@ import sys
 import os
 import logging
 import json
-from mock import patch, call
+from unittest.mock import patch, call
 sys.path.append(os.getcwd())
 from products.microsoft_defender_for_endpoints import DefenderForEndpoints
 from common import Tag
