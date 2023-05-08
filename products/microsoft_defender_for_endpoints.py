@@ -152,7 +152,7 @@ class DefenderForEndpoints(Product):
                             query_entry += query_base
                             self.process_search(tag, {}, query_entry)
                     else:
-                        self.process_search(tag, base_query, terms)
+                        self.process_search(tag, {}, terms + query_base)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:

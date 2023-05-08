@@ -68,7 +68,11 @@ def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
             call(Tag('field_translation', data=None), {}, "DeviceProcessEvents | where SHA1 has_any ('qwerqwerqwerqwer') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
             call(Tag('field_translation', data=None), {}, "DeviceProcessEvents | where SHA256 has_any ('zxcvzxcvzxcv') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
             call(Tag('field_translation', data=None), {}, "DeviceImageLoadEvents | where FolderPath has_any ('pcwutl.dll') | project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFolderPath, InitiatingProcessCommandLine"),
-            call(Tag('multiple_values', data=None), {}, "DeviceProcessEvents | where FolderPath has_any ('svchost.exe', 'cmd.exe') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine")
+            call(Tag('multiple_values', data=None), {}, "DeviceProcessEvents | where FolderPath has_any ('svchost.exe', 'cmd.exe') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
+            call(Tag('single_query', data=None), {}, "DeviceProcessEvents | where FileName contains \"rundll.exe\""),
+            call(Tag('multiple_query', data=None), {}, "DeviceProcessEvents | where ProcessCommandLine contains \"-enc\""),
+            call(Tag('multiple_query', data=None), {}, "DeviceImageLoadEvents | where FileName contains \"malware.dll\"")
+
         ]
     )
 
@@ -81,3 +85,21 @@ def test_nested_process_search_unsupported_field(dfe_product : DefenderForEndpoi
 
     dfe_product.nested_process_search(Tag('unsupported_field'), criteria, {})
     mocked_process_search.assert_not_called()
+
+def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
+    query = 'DeviceFileEvents | where FileName="bar foo"'
+    filters = {
+        'days':1,
+        'minutes':2,
+        'hostname':'server1',
+        'username':'guest'
+    }
+
+    mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
+    mocked_add_results = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
+    mocked_get_default_headers = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
+
+    dfe_product.log = logging.getLogger('pytest_surveyor')
+    dfe_product._token = 'test_token_value'
+    dfe_product.process_search(Tag('test123'), filters, query)
+    mocked_post_advanced_query.assert_called_once_with(data={'Query': 'DeviceFileEvents | where FileName="bar foo"| where Timestamp > ago(1d)| where Timestamp > ago(2m)| where DeviceName contains "server1"| where AccountName contains "guest"'}, headers=None)
