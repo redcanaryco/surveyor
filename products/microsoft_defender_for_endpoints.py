@@ -11,16 +11,16 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
     'process_name': {'table':'DeviceProcessEvents','field':'FolderPath',
                      'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'filemod': {'table':'DeviceFileEvents','field':'FolderPath', 
-                'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
-               'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
                 'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
                          'additional':'| join kind=inner DeviceProcessEvents on $left.SHA1 == $right.SHA1',
                          'projections':['DeviceName', 'AccountName','FolderPath','ProcessCommandLine']},
     'domain': {'table':'DeviceNetworkEvents','field':'RemoteUrl', 
-               'projections':['DeviceName', 'InitiatingProcessAccountName','InitatingProcessFolderPath','ProcessCommandLine']},
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'internal_name': {'table':'DeviceProcessEvents','field':'ProcessVersionInfoInternalFileName', 
                       'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'md5': {'table':'DeviceProcessEvents','field':'MD5',
@@ -28,7 +28,9 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
     'sha1':{'table':'DeviceProcessEvents','field':'SHA1',
             'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'sha256':{'table':'DeviceProcessEvents','field':'SHA256',
-              'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']}
+              'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'modload':{'table': 'DeviceImageLoadEvents', 'field':'FolderPath',
+               'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine']}
 }
 
 class DefenderForEndpoints(Product):
@@ -162,9 +164,11 @@ class DefenderForEndpoints(Product):
                 
                     query = f"{PARAMETER_MAPPING[search_field]['table']} {query} "
 
-                    query += str(PARAMETER_MAPPING[search_field]['additional']) if 'additional' in PARAMETER_MAPPING[search_field] else ''
+                    query += f"{(PARAMETER_MAPPING[search_field]['additional'])} " if 'additional' in PARAMETER_MAPPING[search_field] else ''
 
-                    query += f" {query_base} | project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
+                    query += f" {query_base} " if query_base != '' else ''
+
+                    query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
                     self.process_search(tag, {}, query)
         except KeyboardInterrupt:
