@@ -131,9 +131,9 @@ class DefenderForEndpoints(Product):
         }
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        query += self.build_query(base_query) if base_query != {} else ''
-
-        query = query.rstrip()
+        query = query.rstrip() 
+        
+        query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
         self.log.debug(f'Query: {query}')
         full_query = {'Query': query}
@@ -149,10 +149,12 @@ class DefenderForEndpoints(Product):
                 if search_field == 'query':
                     if isinstance(terms, list):
                         for query_entry in terms:
-                            query_entry += query_base
+                            query_entry += f" {query_base}" if query_base != '' else ''
                             self.process_search(tag, {}, query_entry)
                     else:
-                        self.process_search(tag, {}, terms + query_base)
+                        query_entry = terms
+                        query_entry += f" {query_base}" if query_base != '' else ''
+                        self.process_search(tag, {}, query_entry)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:
@@ -175,21 +177,21 @@ class DefenderForEndpoints(Product):
             self._echo("Caught CTRL-C. Returning what we have...")
 
     def build_query(self, filters: dict) -> str:
-        query_base = ''
+        query_base = []
 
         for key, value in filters.items():
             if key == 'days':
-                query_base += f'| where Timestamp > ago({value}d)'
+                query_base.append(f'| where Timestamp > ago({value}d)')
             elif key == 'minutes':
-                query_base += f'| where Timestamp > ago({value}m)'
+                query_base.append(f'| where Timestamp > ago({value}m)')
             elif key == 'hostname':
-                query_base += f'| where DeviceName contains "{value}"'
+                query_base.append(f'| where DeviceName contains "{value}"')
             elif key == 'username':
-                query_base += f'| where AccountName contains "{value}"'
+                query_base.append(f'| where AccountName contains "{value}"')
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
-        return query_base
+        return ' '.join(query_base)
 
     def get_other_row_headers(self) -> list[str]:
         return ['Timestamp']

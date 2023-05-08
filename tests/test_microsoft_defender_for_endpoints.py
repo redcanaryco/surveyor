@@ -21,8 +21,8 @@ def test_build_query_with_supported_fields(dfe_product : DefenderForEndpoints):
         'username':'admin'
     }
 
-    assert dfe_product.build_query(filters) == '| where Timestamp > ago(7d)| where Timestamp > ago(10m)' + \
-                      '| where DeviceName contains "workstation1"| where AccountName contains "admin"'
+    assert dfe_product.build_query(filters) == '| where Timestamp > ago(7d) | where Timestamp > ago(10m) ' + \
+                      '| where DeviceName contains "workstation1" | where AccountName contains "admin"'
     
 def test_build_query_with_unsupported_field(dfe_product: DefenderForEndpoints, mocker):
     filters = {
@@ -102,4 +102,4 @@ def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
     dfe_product.log = logging.getLogger('pytest_surveyor')
     dfe_product._token = 'test_token_value'
     dfe_product.process_search(Tag('test123'), filters, query)
-    mocked_post_advanced_query.assert_called_once_with(data={'Query': 'DeviceFileEvents | where FileName="bar foo"| where Timestamp > ago(1d)| where Timestamp > ago(2m)| where DeviceName contains "server1"| where AccountName contains "guest"'}, headers=None)
+    mocked_post_advanced_query.assert_called_once_with(data={'Query': 'DeviceFileEvents | where FileName="bar foo" | where Timestamp > ago(1d) | where Timestamp > ago(2m) | where DeviceName contains "server1" | where AccountName contains "guest"'}, headers=None)
