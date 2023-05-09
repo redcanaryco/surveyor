@@ -15,7 +15,7 @@ class CbResponse(Product):
 
         super().__init__(self.product, profile, **kwargs)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         if self.profile:
             cb_conn = CbEnterpriseResponseAPI(profile=self.profile)
         else:

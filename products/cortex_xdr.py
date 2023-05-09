@@ -67,7 +67,7 @@ class CortexXDR(Product):
 
         super().__init__(self.product, profile, **kwargs)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         config = configparser.ConfigParser()
         config.read(self.creds_file)
 
@@ -120,7 +120,7 @@ class CortexXDR(Product):
         else:
             self.log.debug(f"Query quota: {resp}")
 
-    def _build_url(self, stem: str):
+    def _build_url(self, stem: str) -> str:
         """
         Assemble URL for Cortex XDR API query using base URI and URI stem.
         """
@@ -133,10 +133,10 @@ class CortexXDR(Product):
         """
         Get the default request body for a Cortex XDR API query.
         """
-        body = {}
+        body: dict = {}
         return body
 
-    def _get_default_header(self):
+    def _get_default_header(self) -> dict:
         """
         Get the default header for a Cortex XDR API query.
         """
@@ -145,10 +145,8 @@ class CortexXDR(Product):
             nonce = "".join([secrets.choice(string.ascii_letters + string.digits) for _ in range(64)])
             # Get the current timestamp as milliseconds.
             timestamp = int(datetime.now(timezone.utc).timestamp()) * 1000
-            # Generate the auth key:
-            auth_key = "%s%s%s" % (self._api_key, nonce, timestamp)
-            # Convert to bytes object
-            auth_key = auth_key.encode("utf-8")
+            # Generate the auth key and convert to bytes object:
+            auth_key = ("%s%s%s" % (self._api_key, nonce, timestamp)).encode("utf-8")
             # Calculate sha256:
             api_key_hash = hashlib.sha256(auth_key).hexdigest()
             # Generate HTTP call headers
@@ -187,10 +185,10 @@ class CortexXDR(Product):
         if tag not in self._queries:
             self._queries[tag] = list()
 
-        query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data {query}')
-        self._queries[tag].append(query)
+        full_query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data {query}')
+        self._queries[tag].append(full_query)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         self._base_query, relative_time_ms = self.build_query(base_query)
 
         try:
@@ -229,7 +227,7 @@ class CortexXDR(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-    def _get_xql_results(self, query_id: str, limit: int = 1000):
+    def _get_xql_results(self, query_id: str, limit: int = 1000) -> Tuple[dict, int]:
         actual_limit = limit if limit < 1000 else 1000  # Max is 1000 results otherwise have to get the results via stream
         params = {
             'request_data': {
@@ -257,7 +255,7 @@ class CortexXDR(Product):
         except Exception as e:
             raise e
 
-    def _process_queries(self):
+    def _process_queries(self) -> None:
         for tag, queries in self._queries.items():
             for query in queries:
                 if query.full_query is not None:
@@ -267,7 +265,7 @@ class CortexXDR(Product):
 
                     if query.operator in ('contains', 'in'):
                         # Fix the query to be case-insensitive if using `contains`
-                        query_string += f' | filter lowercase({query.parameter}) {query.operator} {(query.search_value).lower()}'
+                        query_string += f' | filter lowercase({query.parameter}) {query.operator} {str(query.search_value).lower()}'
                     elif query.operator == 'raw':
                         query_string += f' {query.search_value}'
                     else:
