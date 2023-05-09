@@ -136,3 +136,47 @@ class Product(ABC):
         Write a message to STDOUT and the debug log stream.
         """
         log_echo(message, self.log, level, use_tqdm=self._tqdm_echo)
+
+def sigma_translation(product: str, sigma_rules: list) -> dict:
+    supports_json_ouput = True
+
+    try:
+        from sigma.collection import SigmaCollection
+        from sigma.plugins import SigmaPluginDirectory
+        plugins = SigmaPluginDirectory.default_plugin_directory()
+    except Exception as e:
+        raise e
+
+    if product in ('cbr','cbc'):
+        plugins.get_plugin_by_id('carbonblack').install()
+        from sigma.backends.carbonblack import CarbonBlackBackend
+
+        if product == 'cbr':
+            from sigma.pipelines.carbonblack import CarbonBlackResponse_pipeline as cb_pipeline
+        else:
+            from sigma.pipelines.carbonblack import CarbonBlack_pipeline as cb_pipeline
+
+        backend = CarbonBlackBackend(cb_pipeline())
+    elif product == 's1':
+        plugins.get_plugin_by_id('sentinelone').install()
+        from sigma.backends.sentinel_one import SentinelOneBackend
+        backend = SentinelOneBackend()
+    elif product == 'dfe':
+        supports_json_ouput = False
+        plugins.get_plugin_by_id('microsoft365defender').install()
+        from sigma.backends.microsoft365defender import Microsoft365DefenderBackend
+        backend = Microsoft365DefenderBackend()
+
+    rule_collection = SigmaCollection.load_ruleset(sigma_rules)
+    if supports_json_ouput:
+        return backend.convert(rule_collection, "json")
+    else:
+        results = {"queries":[]}
+        for r in rule_collection:
+            results['queries'].append({
+                'query': backend.convert_rule(r)[0],
+                'id': r.id,
+                'title': r.title,
+                'description': r.description
+            })
+        return results
