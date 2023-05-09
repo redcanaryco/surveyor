@@ -34,8 +34,13 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        ],
+    ],
     install_requires=[
         'cbapi==1.7.0', 'click', 'requests', 'tqdm', 'carbon-black-cloud-sdk'
+    ],
+    extras_require={
+        "sigma": [
+            "pysigma>=0.9.5"
         ]
-    )
+    }
+)
