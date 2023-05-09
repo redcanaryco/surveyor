@@ -14,6 +14,9 @@ def dfe_product():
         return DefenderForEndpoints(None)
 
 def test_build_query_with_supported_fields(dfe_product : DefenderForEndpoints):
+    """
+    Verify build_query() can handle all filter options
+    """
     filters = {
         'days':7,
         'minutes':10,
@@ -25,6 +28,9 @@ def test_build_query_with_supported_fields(dfe_product : DefenderForEndpoints):
                       '| where DeviceName contains "workstation1" | where AccountName contains "admin"'
     
 def test_build_query_with_unsupported_field(dfe_product: DefenderForEndpoints, mocker):
+    """
+    Verify build_query() gracefully handles unsupported filter options
+    """
     filters = {
         'foo': 'bar'
     }
@@ -35,6 +41,9 @@ def test_build_query_with_unsupported_field(dfe_product: DefenderForEndpoints, m
     assert dfe_product.build_query(filters) == ''
 
 def test_process_search(dfe_product : DefenderForEndpoints, mocker):
+    """
+    Verify process_search() does not alter a given query
+    """
     query = 'DeviceFileEvents | where FileName="foo bar"'
 
     mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
@@ -47,6 +56,9 @@ def test_process_search(dfe_product : DefenderForEndpoints, mocker):
     mocked_post_advanced_query.assert_called_once_with(data={'Query': query}, headers=None)
 
 def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
+    """
+    Verify nested_process_search() translates the given definition file correctly
+    """
     mocked_process_search = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints.process_search')
 
     with open(os.path.join(os.getcwd(), 'tests','data','dfe_surveyor_testing.json')) as f:
@@ -72,11 +84,13 @@ def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
             call(Tag('single_query', data=None), {}, "DeviceProcessEvents | where FileName contains \"rundll.exe\""),
             call(Tag('multiple_query', data=None), {}, "DeviceProcessEvents | where ProcessCommandLine contains \"-enc\""),
             call(Tag('multiple_query', data=None), {}, "DeviceImageLoadEvents | where FileName contains \"malware.dll\"")
-
         ]
     )
 
 def test_nested_process_search_unsupported_field(dfe_product : DefenderForEndpoints, mocker):
+    """
+    Verify nested_process_search() gracefully handles an unsupported field in a definition file
+    """
     mocked_process_search = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints.process_search')
 
     criteria = {'foo': 'bar'}
@@ -87,6 +101,9 @@ def test_nested_process_search_unsupported_field(dfe_product : DefenderForEndpoi
     mocked_process_search.assert_not_called()
 
 def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
+    """
+    Verify process_search() correctly merges a given query with filter options
+    """
     query = 'DeviceFileEvents | where FileName="bar foo"'
     filters = {
         'days':1,
@@ -103,3 +120,20 @@ def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
     dfe_product._token = 'test_token_value'
     dfe_product.process_search(Tag('test123'), filters, query)
     mocked_post_advanced_query.assert_called_once_with(data={'Query': 'DeviceFileEvents | where FileName="bar foo" | where Timestamp > ago(1d) | where Timestamp > ago(2m) | where DeviceName contains "server1" | where AccountName contains "guest"'}, headers=None)
+
+def test_nested_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
+    """
+    Verify nested_process_search() correctly merges a given query with filter options
+    """
+    criteria = {'query': 'DeviceFileEvents | where FileName="bar foo"'}
+    filters = {
+        'days':1,
+        'minutes':2,
+        'hostname':'server1',
+        'username':'guest'
+    }
+
+    mocked_process_search = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints.process_search')
+
+    dfe_product.nested_process_search(Tag('test123'), criteria, filters)
+    mocked_process_search.assert_called_once_with(Tag('test123', data=None), {}, 'DeviceFileEvents | where FileName="bar foo" | where Timestamp > ago(1d) | where Timestamp > ago(2m) | where DeviceName contains "server1" | where AccountName contains "guest"')
