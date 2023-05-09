@@ -16,7 +16,7 @@ from typing import Optional, Tuple, Callable
 import click
 from tqdm import tqdm
 
-from common import Tag, Result
+from common import Tag, Result, sigma_translation
 from help import log_echo
 from load import get_product_instance, get_products
 
@@ -91,6 +91,8 @@ class ExecutionOptions:
     output: Optional[str]
     def_dir: Optional[str]
     def_file: Optional[str]
+    sigma_rule: Optional[str]
+    sigma_dir: Optional[str]
     no_file: bool
     no_progress: bool
     log_dir: str
@@ -112,6 +114,8 @@ class ExecutionOptions:
 @click.option("--query", help="A single query to execute.")
 @click.option("--iocfile", 'ioc_file', help="IOC file to process. One IOC per line. REQUIRES --ioctype")
 @click.option("--ioctype", 'ioc_type', help="One of: ipaddr, domain, md5")
+@click.option("--sigmarule", 'sigma_rule', help="Sigma rule file to process (must be in YAML format).", type=click.STRING)
+@click.option("--sigmadir", 'sigma_dir', help='Directory containing multiple sigma rule files (individual files must end in .yml).', type=click.STRING)
 # optional output
 @click.option("--output", "--o", help="Specify the output file for the results. "
                                       "The default is create survey.csv in the current directory.")
@@ -126,11 +130,12 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         username: Optional[str],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
         def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
+        sigma_rule: Optional[str], sigma_dir: Optional[str],
         log_dir: str) -> None:
 
     ctx.ensure_object(dict)
     ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
-                               def_dir, def_file, no_file, no_progress, log_dir, dict())
+                               def_dir, def_file, sigma_rule, sigma_dir, no_file, no_progress, log_dir, dict())
 
     if ctx.invoked_subcommand is None:
         survey(ctx, 'cbr')
@@ -146,6 +151,7 @@ def cortex(ctx, creds: Optional[str]) -> None:
     }
 
     survey(ctx, 'cortex')
+
 
 # S1 options
 @cli.command('s1', help="Query SentinelOne")
@@ -217,6 +223,15 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     if opt.days and opt.minutes:
         ctx.fail('--days and --minutes are mutually exclusive')
 
+    if (opt.sigma_rule or opt.sigma_dir) and product_str == 'cortex':
+        ctx.fail('Neither --sigmarule nor --sigmadir are supported by product "cortex"')
+    
+    if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
+        ctx.fail(f'Supplied --sigmarule is not a file')
+    
+    if opt.sigma_dir and not os.path.isdir(opt.sigma_dir):
+        ctx.fail(f'Supplied --sigmadir is not a directory')
+
     # instantiate a logger
     log = logging.getLogger('surveyor')
     logging.debug(f'Product: {product_str}')
@@ -261,6 +276,9 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     # base_query stores the filters applied to the product query
     # initial query is retrieved from product instance
     base_query = product.base_query()
+
+    # placeholder for sigma rules if --sigmarule or --sigmadir is selected
+    sigma_rules = list()
 
     # add filters specified by user
     if opt.username is not None:
@@ -327,6 +345,10 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                     ctx.fail("The deffile doesn't exist. Please try again.")
             definition_files.append(opt.def_file)
 
+        # add sigma_rule to list
+        if opt.sigma_rule:
+            sigma_rules.append(opt.sigma_rule)
+
         # if --defdir add all files to list
         if opt.def_dir:
             if not os.path.exists(opt.def_dir):
@@ -336,6 +358,13 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                     for filename in files:
                         if os.path.splitext(filename)[1] == '.json':
                             definition_files.append(os.path.join(root_dir, filename))
+
+        # if --sigma_dir, add all files to sigma_rules list
+        if opt.sigma_dir:
+            for root_dir, dirs, files in os.walk(opt.sigma_dir):
+                for filename in files:
+                    if os.path.splitext(filename)[1] == '.yml':
+                        sigma_rules.append(os.path.join(root_dir, filename))
 
         # run search based on IOC file
         if opt.ioc_file:
@@ -370,6 +399,28 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
                             # ensure results are only written once
                             product.clear_results()
+
+            # write any remaining results
+            for tag, nested_results in product.get_results().items():
+                _write_results(writer, nested_results, tag.tag, str(tag.data), tag, log)
+
+        # if there's sigma rules to be processed
+        if len(sigma_rules) > 0:
+            translated_rules = sigma_translation(product_str, sigma_rules)
+            for rule in tqdm(translated_rules['queries'], desc="Processing sigma rules", disable=opt.no_progress):
+                program = f"{rule['title']} - {rule['id']}"
+                source = 'Sigma Rule'
+
+                product.nested_process_search(Tag(program, data=source), {'query':[rule['query']]}, base_query)
+
+                if product.has_results():
+                    # write results as they become available
+                    for tag, nested_results in product.get_results(final_call=False).items():
+                        _write_results(writer, nested_results, program, str(tag.data), tag, log,
+                                        use_tqdm=True)
+
+                    # ensure results are only written once
+                    product.clear_results()
 
             # write any remaining results
             for tag, nested_results in product.get_results().items():
