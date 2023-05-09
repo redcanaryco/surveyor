@@ -225,6 +225,9 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
     if (opt.sigma_rule or opt.sigma_dir) and product_str == 'cortex':
         ctx.fail('Neither --sigmarule nor --sigmadir are supported by product "cortex"')
+
+    if (opt.sigma_rule or opt.sigma_dir) and product_str == 's1' and opt.product_args['pq']:
+        ctx.fail('Neither --sigmarule nor --sigmadir are supported by S1 PowerQuery')
     
     if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
         ctx.fail(f'Supplied --sigmarule is not a file')
