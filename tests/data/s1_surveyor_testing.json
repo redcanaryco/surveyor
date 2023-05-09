@@ -1,0 +1,26 @@
+{
+  "field_translation":{
+    "process_name":["notepad.exe"],
+    "ipaddr":["127.0.0.1"],
+    "cmdline":["MiniDump"],
+    "digsig_publisher":["Microsoft Publisher"],
+    "domain":["raw.githubusercontent.com"],
+    "internal_name":["powershell"],
+    "url": ["https://google.com"],
+    "filemod":["current_date.txt"],
+    "modload":["pcwutl.dll"],
+    "process_file_description": ["Evil Stuff Here"],
+    "md5":["asdfasdfasdfasdf"],
+    "sha1":["qwerqwerqwerqwer"],
+    "sha256":["zxcvzxcvzxcv"]
+  }, 
+  "multiple_values":{
+    "process_name":["svchost.exe", "cmd.exe"]
+  },
+  "single_query":{
+    "query":["FileName containscis \"rundll.exe\""]
+  },
+  "multiple_query":{
+    "query":["ProcessCmdLine contains \"-enc\"", "ModulePath contains \"malware.dll\""]
+  }
+}

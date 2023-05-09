@@ -1,7 +1,7 @@
 import datetime
 import logging
-import sys
 
+from typing import Generator
 import cbc_sdk.errors
 from cbc_sdk.rest_api import CBCloudAPI
 from cbc_sdk.platform import Process
@@ -15,10 +15,12 @@ PARAMETER_MAPPING: dict[str, str] = {
     'cmdline': 'process_cmdline',
     'digsig_publisher': 'process_publisher',
     'domain': 'netconn_domain',
-    'internal_name': 'process_internal_name'
+    'internal_name': 'process_internal_name',
+    'md5':'hash',
+    'sha256':'hash'
 }
 
-def _convert_relative_time(relative_time):
+def _convert_relative_time(relative_time) -> str:
     """
     Convert a Cb Response relative time boundary (i.e., start:-1440m) to a device_timestamp:
     device_timestamp:[2019-06-02T00:00:00Z TO 2019-06-03T23:59:00Z]
@@ -42,7 +44,7 @@ class CbEnterpriseEdr(Product):
 
         super().__init__(self.product, profile, **kwargs)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         if self.profile:
             cb_conn = CBCloudAPI(profile=self.profile)
         else:
@@ -50,7 +52,7 @@ class CbEnterpriseEdr(Product):
 
         self._conn = cb_conn
 
-    def build_query(self, filters: dict):
+    def build_query(self, filters: dict) -> QueryBuilder:
         query_base = QueryBuilder()
 
         for key, value in filters.items():
@@ -85,50 +87,68 @@ class CbEnterpriseEdr(Product):
 
         return query_base
 
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+    def divide_chunks(self, l: list, n: int) -> Generator:
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+
+    def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
         results = set()
-
-        if len(base_query) >= 1:
-            base_query = self.build_query(base_query)
-            string_query = base_query.where(query)
-        else:
-            string_query = query
-
+        parsed_base_query = self.build_query(base_query)
         try:
-            query = self._conn.select(Process)
+            self.log.debug(f'Query {tag}: {query}')
+
+            process = self._conn.select(Process)
+
+            full_query = parsed_base_query.where(query)
+
+            self.log.debug(f'Full Query: {full_query.__str__}')
 
             # noinspection PyUnresolvedReferences
-            for proc in query.where(string_query):
+            for proc in process.where(full_query):
                 deets = proc.get_details()
-                if 'process_cmdline' in deets:
-                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], deets['process_cmdline'][0],
-                                    (deets['device_timestamp'], deets['process_guid'],))
-                else:
-                    result = Result(deets['device_name'], deets['process_username'][0], deets['process_name'], '',
-                                    (deets['device_timestamp'], deets['process_guid'],))
+                
+                hostname = deets['device_name'] if 'device_name' in deets else 'None'
+                user = deets['process_username'][0] if 'process_username' in deets else 'None'
+                proc_name = deets['process_name'] if 'process_name' in deets else 'None'
+                cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
+                ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
+                proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
+                
+                result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
+                
                 results.add(result)
+        except cbc_sdk.errors.ApiError as e:
+            self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
+            self.log.exception(e)
         except KeyboardInterrupt:
-            self._echo("Caught CTRL-C. Returning what we have.")
+            self._echo("Caught CTRL-C. Returning what we have . . .")
+
+        return results
+
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
+        results = self.perform_query(tag, base_query, query)
 
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = set()
-        base_query = self.build_query(base_query)
+        results: list = []
 
         for search_field, terms in criteria.items():
-            try:
-                if search_field == 'query':
-                    if isinstance(terms, list):
-                        if len(terms) > 1:
-                            query = '('+ ') OR ('.join(terms) + ')'
-                        else:
-                            query = terms[0]
+            if search_field == 'query':
+                if isinstance(terms, list):
+                    if len(terms) > 1:
+                        query = '('+ ') OR ('.join(terms) + ')'
                     else:
-                        query = terms
+                        query = terms[0]
                 else:
+                    query = terms
+                results += self.perform_query(tag, base_query, query)
+            else:
+                chunked_terms = list(self.divide_chunks(terms, 100))
+
+                for chunk in chunked_terms:
                     # quote terms with spaces in them
-                    terms = [(f'"{term}"' if ' ' in term else term) for term in terms]
+                    terms = [(f'"{term}"' if ' ' in term else term) for term in chunk]
 
                     if search_field not in PARAMETER_MAPPING:
                         self._echo(f'Query filter {search_field} is not supported by product {self.product}',
@@ -136,34 +156,7 @@ class CbEnterpriseEdr(Product):
                         continue
 
                     query = '(' + ' OR '.join('%s:%s' % (PARAMETER_MAPPING[search_field], term) for term in terms) + ')'
-
-                self.log.debug(f'Query {tag}: {query}')
-
-                process = self._conn.select(Process)
-
-                full_query = base_query.where(query)
-
-                self.log.debug(f'Full Query: {full_query}')
-
-                # noinspection PyUnresolvedReferences
-                for proc in process.where(full_query):
-                    deets = proc.get_details()
-                    
-                    hostname = deets['device_name'] if 'device_name' in deets else 'None'
-                    user = deets['process_username'][0] if 'process_username' in deets else 'None'
-                    proc_name = deets['process_name'] if 'process_name' in deets else 'None'
-                    cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
-                    ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
-                    proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
-                    
-                    result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
-                    
-                    results.add(result)
-            except cbc_sdk.errors.ApiError as e:
-                self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
-                self.log.exception(e)
-            except KeyboardInterrupt:
-                self._echo("Caught CTRL-C. Returning what we have . . .")
+                    results += self.perform_query(tag, base_query, query)
 
         self.log.debug(f'Nested search results: {len(results)}')
         self._add_results(list(results), tag)

@@ -34,32 +34,39 @@ class Query:
     full_query: Optional[str] = None
 
 
-PARAMETER_MAPPING_DV: dict[str, str] = {
-    'query': 'query', # non-existent field to specify a fully defined query string in a definition file.
-    'process_name': 'ProcessName',
-    'ipaddr': 'IP',
-    'cmdline': 'CmdLine',
-    'digsig_publisher': 'Publisher',
-    'domain': 'DNS',
-    'internal_name': 'TgtFileInternalName',
-    'url': 'Url',
-    'filemod': 'FilePath',
-    'modload': 'ModulePath',
-    'process_file_description': 'SrcProcDisplayName'
+PARAMETER_MAPPING_DV: dict[str, list[str]] = {
+    'query': ['query'], # non-existent field to specify a fully defined query string in a definition file.
+    'process_name': ['ProcessName'],
+    'ipaddr': ['IP'],
+    'cmdline': ['CmdLine'],
+    'digsig_publisher': ['Publisher'],
+    'domain': ['DNS'],
+    'internal_name': ['TgtFileInternalName'],
+    'url': ['Url'],
+    'filemod': ['FilePath'],
+    'modload': ['ModulePath'],
+    'process_file_description': ['SrcProcDisplayName'],
+    'md5': ['Md5'],
+    'sha1':['Sha1'],
+    'sha256':['Sha256']
 }
 
-PARAMETER_MAPPING_PQ: dict[str, str] = {
-    'query': 'query',
-    'process_name': 'src.process.name',
-    'cmdline': 'src.process.cmdline',
-    'digsig_publisher': 'src.process.publisher',
-    'domain': 'url.address',
-    'filemod':'tgt.file.path',
-    'internal_name': 'tgt.file.internalName',
-    'modload': 'module.path',
-    'process_file_description': 'src.process.displayName'
+PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
+    'query': ['query'],
+    'process_name': ['src.process.name'],
+    'ipaddr': ['dst.ip.address'],
+    'url': ['url.address'],
+    'cmdline': ['src.process.cmdline'],
+    'digsig_publisher': ['src.process.publisher'],
+    'domain': ['url.address'],
+    'filemod': ['tgt.file.path'],
+    'internal_name': ['tgt.file.internalName'],
+    'modload': ['module.path'],
+    'process_file_description': ['src.process.displayName'],
+    'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5'],
+    'sha256':['src.process.image.sha256','tgt.file.sha256'],
+    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1']
 }
-
 
 class SentinelOne(Product):
     """
@@ -304,15 +311,23 @@ class SentinelOne(Product):
             elif key == 'minutes':
                 from_date = to_date - timedelta(minutes=value)
             elif key == 'hostname':
-                if query_base:
-                    query_base += ' AND '
-
-                query_base += f' EndpointName containscis "{value}"'
+                if self._pq:
+                    if query_base: 
+                        query_base += ' and '
+                    query_base += f'endpoint.name contains "{value}"'
+                else:
+                    if query_base:
+                        query_base += ' AND '
+                    query_base += f'EndpointName containscis "{value}"'
             elif key == 'username':
-                if query_base:
-                    query_base += ' AND '
-
-                query_base += f' UserName containscis "{value}"'
+                if self._pq:
+                    if query_base:
+                        query_base += ' and '
+                    query_base += f'src.process.user contains "{value}"'
+                else:
+                    if query_base:
+                        query_base += ' AND '
+                    query_base += f'UserName containscis "{value}"'
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
@@ -396,12 +411,12 @@ class SentinelOne(Product):
 
             return data
 
-    def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar: bool = True) -> list[dict]:
+    def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar_needed: bool = True) -> list[dict]:
         """
         Retrieve events associated with a SentinelOne Deep Visibility query ID.
         """
         p_bar = tqdm(desc='Running query',
-                     disable=not self._tqdm_echo or not p_bar,
+                     disable=not self._tqdm_echo or not p_bar_needed,
                      total=100)
 
         def errors(_response_data: dict[str, Any]):
@@ -453,6 +468,10 @@ class SentinelOne(Product):
             p_bar.close()
             raise e
 
+    def divide_chunks(self, l: list, n: int):
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
         self._query_base = build_query
@@ -465,50 +484,58 @@ class SentinelOne(Product):
         self._queries[tag].append(built_query)
 
     @property
-    def parameter_mapping(self) -> dict[str, str]:
+    def parameter_mapping(self) -> dict[str, list[str]]:
         return PARAMETER_MAPPING_PQ if self._pq else PARAMETER_MAPPING_DV
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict):
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         query_base, from_date, to_date = self.build_query(base_query)
         self._query_base = query_base
         try:
             for search_field, terms in criteria.items():
-                all_terms = ', '.join(f'"{term}"' for term in terms)
-
                 if search_field not in self.parameter_mapping:
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
 
                 parameter = self.parameter_mapping[search_field]
-                search_value = all_terms
 
                 if tag not in self._queries:
                     self._queries[tag] = list()
 
                 if self._pq:
-                    for term in terms:
-                        if parameter == 'query':
-                            self._queries[tag].append(Query(from_date, to_date, None, None, None, term))
+                    for param in parameter:
+                        if param == 'query':
+                            if len(terms) > 1:
+                                search_value = '(' + ') or ('.join(terms) + ')'
+                            else:
+                                search_value = terms[0]
+                            self._queries[tag].append(Query(from_date, to_date, None, None, None, search_value))
                         else:
-                            self._queries[tag].append(Query(from_date, to_date, parameter, 'contains', f"'{term}'"))
+                            search_value = '(' + ', '.join(f'"{x}"' for x in terms) + ')'
+                            self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
                 else:
-                    if parameter == 'query':
-                        # Formats queries as (a) OR (b) OR (c) OR (d)
-                        if len(terms) > 1:
-                            search_value = '(' + ') OR ('.join(terms) + ')'
-                        else:
-                            search_value = terms[0]
-                        operator = 'raw'
-                    elif len(terms) > 1:
-                        search_value = f'({all_terms})'
-                        operator = 'in contains anycase'
-                    elif not re.findall(r'\w+\.\w+', search_value):
-                        operator = 'regexp'
-                    else:
-                        operator = 'containscis'
+                    # play nice with 100 item limit per search field
+                    chunked_terms = list(self.divide_chunks(terms, 100))
+                    for chunk in chunked_terms:
+                        search_value = ', '.join(f'"{x}"' for x in chunk)
 
-                    self._queries[tag].append(Query(from_date, to_date, parameter, operator, search_value))
+                        for param in parameter:
+                            if param == 'query':
+                                # Formats queries as (a) OR (b) OR (c) OR (d)
+                                if len(chunk) > 1:
+                                    search_value = '(' + ') OR ('.join(chunk) + ')'
+                                else:
+                                    search_value = terms[0]
+                                operator = 'raw'
+                            elif len(terms) > 1:
+                                search_value = f'({search_value})'
+                                operator = 'in contains anycase'
+                            elif not re.findall(r'\w+\.\w+', search_value) and tag.tag.startswith("IOC - "):
+                                operator = 'regexp'
+                            else:
+                                operator = 'containscis'
+
+                            self._queries[tag].append(Query(from_date, to_date, param, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
@@ -564,7 +591,7 @@ class SentinelOne(Product):
         return query_text
 
     def _run_query(self, merged_query: str, start_date: datetime, end_date: datetime, merged_tag: Tag,
-                   cancel_event: Event, p_bar: bool = True) -> None:
+                   cancel_event: Event, p_bar_needed: bool = True) -> None:
         try:
             if cancel_event.is_set():
                 return
@@ -614,7 +641,7 @@ class SentinelOne(Product):
             if self._pq and body['data']['status'] == 'FINISHED': # If using PQ, the results can be returned immediately
                 events = body['data']['data']
             else:
-                events = self._get_dv_events(query_id, p_bar=p_bar, cancel_event=cancel_event)
+                events = self._get_dv_events(query_id, p_bar_needed=p_bar_needed, cancel_event=cancel_event)
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
@@ -652,7 +679,7 @@ class SentinelOne(Product):
             self.log.error(e)
             click.secho(f'Error in query thread: {e}', fg='red')
 
-    def _process_queries(self):
+    def _process_queries(self) -> None:
         """
         Process all cached queries.
         """
@@ -672,7 +699,9 @@ class SentinelOne(Product):
 
         # all queries that need to be executed are now in query_text
         # execute queries in chunks
-        chunk_size = 1 if self._pq else 10
+        # do not chunk if processing an IOC file
+        ioc_hunt = list(self._queries.keys())
+        chunk_size = 1 if self._pq or (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=25 if self._pq else 1) as executor:
             futures = list[Future]()
@@ -682,12 +711,12 @@ class SentinelOne(Product):
                 # do not chain more than 10 ORs in a S1QL query
                 merged_tags = set[Tag]()
                 merged_query = ''
-                for tag, query in query_text[i:i + chunk_size]:
+                for tag, query_str in query_text[i:i + chunk_size]:
                     # combine queries with ORs
                     if merged_query:
                         merged_query += ' OR '
 
-                    merged_query += query
+                    merged_query += query_str
 
                     # add tags to set to de-duplicate
                     merged_tags.add(tag)
@@ -696,7 +725,7 @@ class SentinelOne(Product):
                 merged_tag = Tag(','.join(tag.tag for tag in merged_tags),
                                  ','.join(str(tag.data) for tag in merged_tags))
 
-                if len(self._query_base):
+                if self._query_base is not None and len(self._query_base):
                     # add base_query filter to merged query string
                     merged_query = f'{self._query_base} AND ({merged_query})'
 

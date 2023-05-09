@@ -27,7 +27,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 current_version = "2.1.0"
 
 
-def _list_products(ctx, _, value):
+def _list_products(ctx, _, value) -> None:
     """
     Print all implemented products to STDOUT.
     """
@@ -47,7 +47,7 @@ table_template_str = f'{{:<{table_template[0]}}} ' \
 
 
 def _write_results(output: Optional[csv.writer], results: list[Result], program: str, source: str,
-                   tag: Tag, log: logging.Logger, use_tqdm: bool = False):
+                   tag: Tag, log: logging.Logger, use_tqdm: bool = False) -> None:
     """
     Helper function for writing search results to CSV or STDOUT.
     """
@@ -126,7 +126,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         username: Optional[str],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
         def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
-        log_dir: str):
+        log_dir: str) -> None:
 
     ctx.ensure_object(dict)
     ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
@@ -140,7 +140,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 @cli.command('cortex', help="Query Cortex XDR")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
-def cortex(ctx, creds: Optional[str]):
+def cortex(ctx, creds: Optional[str]) -> None:
     ctx.obj.product_args = {
         'creds_file': creds
     }
@@ -156,12 +156,12 @@ def cortex(ctx, creds: Optional[str]):
 @click.option("--dv", 'dv', help="Use Deep Visibility for queries", is_flag=True, required=False)
 @click.pass_context
 def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str],
-       dv: bool):
+       dv: bool) -> None:
     ctx.obj.product_args = {
         'creds_file': creds,
-        'site_id': list(site_id),
-        'account_id': list(account_id),
-        'account_name': list(account_name),
+        'site_id': list(site_id) if site_id else None,
+        'account_id': list(account_id) if account_id else None,
+        'account_name': list(account_name) if account_name else None,
         'pq': not dv
     }
 
@@ -173,10 +173,10 @@ def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name:
 @click.option("--device-group", help="Name of device group to query", multiple=True, default=None)
 @click.option("--device-policy", help="Name of device policy to query", multiple=True, default=None)
 @click.pass_context
-def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]):
+def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]) -> None:
     ctx.obj.product_args = {
-        'device_group': list(device_group),
-        'device_policy': list(device_policy)
+        'device_group': list(device_group) if device_group else None,
+        'device_policy': list(device_policy) if device_policy else None
     }
 
     survey(ctx, 'cbc')
@@ -186,9 +186,9 @@ def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]):
 @cli.command('cbr', help="Query VMware Cb Response")
 @click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
 @click.pass_context
-def cbr(ctx, sensor_group: Optional[Tuple]):
+def cbr(ctx, sensor_group: Optional[Tuple]) -> None:
     ctx.obj.product_args = {
-        'sensor_group': list(sensor_group)
+        'sensor_group': list(sensor_group) if sensor_group else None
     }
     survey(ctx, 'cbr')
 
@@ -196,12 +196,12 @@ def cbr(ctx, sensor_group: Optional[Tuple]):
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
-def dfe(ctx, creds: Optional[str]):
+def dfe(ctx, creds: Optional[str]) -> None:
     ctx.obj.product_args = {'creds_file': creds}
     survey(ctx, 'dfe')
 
 
-def survey(ctx, product: str = 'cbr'):
+def survey(ctx, product_str: str = 'cbr') -> None:
     ctx.ensure_object(ExecutionOptions)
     opt: ExecutionOptions = ctx.obj
 
@@ -219,7 +219,7 @@ def survey(ctx, product: str = 'cbr'):
 
     # instantiate a logger
     log = logging.getLogger('surveyor')
-    logging.debug(f'Product: {product}')
+    logging.debug(f'Product: {product_str}')
 
     # configure logging
     root = logging.getLogger()
@@ -231,7 +231,7 @@ def survey(ctx, product: str = 'cbr'):
     os.makedirs(opt.log_dir, exist_ok=True)
 
     # create logging file handler
-    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product}.log'
+    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product_str}.log'
     handler = logging.FileHandler(os.path.join(opt.log_dir, log_file_name))
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(log_format))
@@ -246,11 +246,11 @@ def survey(ctx, product: str = 'cbr'):
     if len(opt.product_args) > 0:
         kwargs.update(opt.product_args)
 
-    kwargs['tqdm_echo'] = not opt.no_progress
+    kwargs['tqdm_echo'] = str(not opt.no_progress)
 
     # instantiate a product class instance based on the product string
     try:
-        product = get_product_instance(product, **kwargs)
+        product = get_product_instance(product_str, **kwargs)
     except ValueError as e:
         log.exception(e)
         ctx.fail(str(e))
@@ -332,25 +332,24 @@ def survey(ctx, product: str = 'cbr'):
             if not os.path.exists(opt.def_dir):
                 ctx.fail("The defdir doesn't exist. Please try again.")
             else:
-                for root, dirs, files in os.walk(opt.def_dir):
+                for root_dir, dirs, files in os.walk(opt.def_dir):
                     for filename in files:
                         if os.path.splitext(filename)[1] == '.json':
-                            definition_files.append(os.path.join(root, filename))
+                            definition_files.append(os.path.join(root_dir, filename))
 
         # run search based on IOC file
         if opt.ioc_file:
             with open(opt.ioc_file) as ioc_file:
+                basename = os.path.basename(opt.ioc_file)
                 data = ioc_file.readlines()
-                log_echo(f"Processing IOC file: {ioc_file}", log)
+                log_echo(f"Processing IOC file: {opt.ioc_file}", log)
 
-                for ioc in data:
-                    ioc = ioc.strip()
-                    base_query.update({opt.ioc_type: ioc})
-                    product.process_search(Tag(ioc), base_query, opt.query)
-                    del base_query[opt.ioc_type]
+                ioc_list = [x.strip() for x in data]
+
+                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query)
 
                 for tag, results in product.get_results().items():
-                    _write_results(writer, results, ioc, 'ioc', tag, log)
+                    _write_results(writer, results, opt.ioc_file, 'ioc', tag, log)
 
         # run search against definition files and write to csv
         if opt.def_file is not None or opt.def_dir is not None:
@@ -366,7 +365,7 @@ def survey(ctx, product: str = 'cbr'):
                         if product.has_results():
                             # write results as they become available
                             for tag, nested_results in product.get_results(final_call=False).items():
-                                _write_results(writer, nested_results, program, tag.data, tag, log,
+                                _write_results(writer, nested_results, program, str(tag.data), tag, log,
                                                use_tqdm=True)
 
                             # ensure results are only written once
@@ -374,7 +373,7 @@ def survey(ctx, product: str = 'cbr'):
 
             # write any remaining results
             for tag, nested_results in product.get_results().items():
-                _write_results(writer, nested_results, tag.tag, tag.data, tag, log)
+                _write_results(writer, nested_results, tag.tag, str(tag.data), tag, log)
 
         if output_file:
             log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", log)
@@ -401,7 +400,7 @@ def create_generic_product_command(name: str) -> Callable:
 for product_name in get_products():
     dir_res = dir()
     if product_name not in dir_res:
-        cli.command(name=product_name, help=f'Query {product_name}')(create_generic_product_command(product_name))
+        cli.command(name=product_name, help=f'Query {product_name}')(create_generic_product_command(str(product_name)))
 
 if __name__ == "__main__":
     cli()
