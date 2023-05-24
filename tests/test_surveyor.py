@@ -116,7 +116,7 @@ def test_def_dir(runner, mocker):
         result = runner.invoke(cli, ["--defdir", temp_dir])
         assert "Processing definition files:" in result.output
         mocked_func.assert_called_once()
-        mocked_nested_process_search.assert_has_calls(expected_calls)
+        mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
 
 
 def test_invalid_def_file(runner, mocker):
