@@ -304,6 +304,8 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
     if not opt.no_file:
         # determine output file name
+        if opt.output and opt.prefix:
+            log_echo(f"Output arg takes precendence so prefix arg will be ignored", log)
         if opt.output:
             file_name = opt.output
         elif opt.prefix:
