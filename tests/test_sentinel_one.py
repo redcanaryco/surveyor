@@ -3,9 +3,8 @@ import sys
 import os
 import logging
 import json
-import concurrent.futures
 from datetime import datetime, timedelta
-from unittest.mock import patch, call
+from unittest.mock import patch
 sys.path.append(os.getcwd())
 from products.sentinel_one import SentinelOne, Query
 from common import Tag
@@ -34,7 +33,7 @@ def test_build_query_time_filter_min(s1_product : SentinelOne):
 
     assert to_date - timedelta(minutes=10) == from_date
 
-def test_build_query_time_filter_min(s1_product : SentinelOne):
+def test_build_query_time_filter_day(s1_product : SentinelOne):
     filters = {
         'days': 7
     }
@@ -54,7 +53,7 @@ def test_build_query_with_supported_field_pq(s1_product : SentinelOne):
 
     assert base == 'endpoint.name contains "workstation2" and src.process.user contains "admin1"'
 
-def test_build_query_unsupported_keys(s1_product : SentinelOne, mocker):
+def test_build_query_unsupported_keys(s1_product : SentinelOne):
     filters = {
         "useless key": "asdfasdfasdf"
     }

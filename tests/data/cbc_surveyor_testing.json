@@ -1,0 +1,21 @@
+{
+  "field_translation":{
+    "process_name":["notepad.exe"],
+    "ipaddr":["127.0.0.1"],
+    "cmdline":["MiniDump"],
+    "digsig_publisher":["Microsoft"],
+    "domain":["raw.githubusercontent.com"],
+    "internal_name":["powershell"],
+    "md5":["asdfasdfasdfasdf"],
+    "sha256":["zxcvzxcvzxcv"]
+  },
+  "multiple_values":{
+    "process_name":["svchost.exe", "cmd.exe"]
+  },
+  "single_query":{
+    "query":["process_name:rundll.exe"]
+  },
+  "multiple_query":{
+    "query":["process_cmdline:-enc", "modload_name:malware.dll"]
+  }
+}
