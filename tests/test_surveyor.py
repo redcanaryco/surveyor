@@ -95,6 +95,22 @@ def test_def_file(runner, mocker):
         mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {})
 
 
+def test_def_file_with_base_query(runner, mocker):
+    """
+    Verify when a definition file is passed, it is logged and an EDR product is called
+    """
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    with runner.isolated_filesystem() as temp_dir:
+        def_file_path = os.path.join(temp_dir, "test_deffile.json")
+        with open(def_file_path, 'w') as deffile:
+            deffile.write("""{"ProgramA":{"process_name":["test.exe"]}}""")
+        result = runner.invoke(cli, ["--deffile", def_file_path] + filter_args)
+        assert "Processing definition files:" in result.output
+        mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'})
+
+
 def test_def_dir(runner, mocker):
     """
     Verify when a definition directory is passed, it is logged and an EDR product is called
@@ -112,6 +128,28 @@ def test_def_dir(runner, mocker):
         expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {}), 
                           mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {})]
         result = runner.invoke(cli, ["--defdir", temp_dir])
+        assert "Processing definition files:" in result.output
+        mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_def_dir_with_base_query(runner, mocker):
+    """
+    Verify when a definition directory is passed, it is logged and an EDR product is called
+    """
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    with runner.isolated_filesystem() as temp_dir:
+        def_file_path1 = os.path.join(temp_dir, "test_deffile1.json")
+        def_file_path2 = os.path.join(temp_dir, "test_deffile2.json")
+        with open(def_file_path1, 'w') as deffile:
+            deffile.write("""{"ProgramA":{"process_name":["test1.exe"]}}""")
+        with open(def_file_path2, 'w') as deffile:
+            deffile.write("""{"ProgramB":{"process_name":["test2.exe"]}}""")
+
+        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}), 
+                          mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'})]
+        result = runner.invoke(cli, ["--defdir", temp_dir] + filter_args)
         assert "Processing definition files:" in result.output
         mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
 
@@ -141,6 +179,23 @@ def test_ioc_file(runner, mocker):
         assert "Processing IOC file" in result.output
         mocked_func.assert_called_once()
         mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {})
+
+
+def test_ioc_file_with_base_query(runner, mocker):
+    """
+    Verify if an IOC file is passed, it is logged and an EDR product is called
+    """
+    mocked_func = mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    with runner.isolated_filesystem() as temp_dir:
+        ioc_file_path = os.path.join(temp_dir, "ioc_list.txt")
+        with open(ioc_file_path, 'w') as deffile:
+            deffile.write("127.0.0.1")
+        result = runner.invoke(cli, ["--iocfile", ioc_file_path, "--ioctype", "ipaddr"] + filter_args)
+        assert "Processing IOC file" in result.output
+        mocked_func.assert_called_once()
+        mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {'days':5, 'hostname':'workstation1', 'username':'admin'})
 
 
 def test_no_argument_provided(runner):
@@ -209,3 +264,17 @@ def test_mutually_exclusive_output_prefix(runner, mocker):
     mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
     result = runner.invoke(cli, ['--prefix', 'test_prefix', '--output', 'test_output.csv'])
     assert "Output arg takes precendence so prefix arg will be ignored" in result.output
+
+def test_no_file_output(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    default_output = 'surveyor.csv'
+    runner.invoke(cli, ['--no_file'])
+    assert not os.path.exists(default_output)
+
+def test_base_query_filters_with_query(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_process_search = mocker.patch('products.vmware_cb_response.CbResponse.process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    result = runner.invoke(cli, ["--query", "SELECT * FROM processes"] + filter_args)
+    assert "Running Custom Query: SELECT * FROM processes" in result.output
+    mocked_process_search.assert_called_once_with(Tag('query'), {'days':5, 'hostname':'workstation1','username':'admin'}, 'SELECT * FROM processes')
