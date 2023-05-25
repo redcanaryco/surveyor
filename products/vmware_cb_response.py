@@ -42,7 +42,7 @@ class CbResponse(Product):
             sensor_group = []
             for name in self._sensor_group:
                 sensor_group.append('group:"%s"' % name)            
-            query_base += '(' + ' OR '.join(sensor_group) + ')'
+            query_base += ' (' + ' OR '.join(sensor_group) + ')'
         
         return query_base
 
@@ -71,9 +71,9 @@ class CbResponse(Product):
                 if search_field == 'query':
                     if isinstance(terms, list):
                         if len(terms) > 1:
-                            query = '(' + ') OR ('.join(terms) + ')'
+                            query = '((' + ') OR ('.join(terms) + '))'
                         else:
-                            query = terms[0]
+                            query = '(' + terms[0] + ')'
                     else:
                         query = terms
                 else:
