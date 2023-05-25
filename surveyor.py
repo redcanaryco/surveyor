@@ -141,7 +141,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
         survey(ctx, 'cbr')
 
 
-# S1 options
+# Cortex options
 @cli.command('cortex', help="Query Cortex XDR")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
@@ -199,6 +199,7 @@ def cbr(ctx, sensor_group: Optional[Tuple]) -> None:
     survey(ctx, 'cbr')
 
 
+# DFE options
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
@@ -227,7 +228,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         ctx.fail('Neither --sigmarule nor --sigmadir are supported by product "cortex"')
 
     if (opt.sigma_rule or opt.sigma_dir) and product_str == 's1' and opt.product_args['pq']:
-        ctx.fail('Neither --sigmarule nor --sigmadir are supported by S1 PowerQuery')
+        ctx.fail('Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery')
     
     if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
         ctx.fail(f'Supplied --sigmarule is not a file')
