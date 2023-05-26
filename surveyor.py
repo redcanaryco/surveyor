@@ -6,13 +6,12 @@ if sys.version_info.major == 3 and sys.version_info.minor < 9:
     exit(1)
 
 import csv
-import _csv
 import dataclasses
 import datetime
 import json
 import logging
 import os
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Any
 
 import click
 from tqdm import tqdm
@@ -47,7 +46,7 @@ table_template_str = f'{{:<{table_template[0]}}} ' \
                      f'{{:<{table_template[3]}}}'
 
 
-def _write_results(output: Optional[_csv._writer], results: list[Result], program: str, source: str,
+def _write_results(output: Optional[Any], results: list[Result], program: str, source: str,
                    tag: Tag, log: logging.Logger, use_tqdm: bool = False) -> None:
     """
     Helper function for writing search results to CSV or STDOUT.
