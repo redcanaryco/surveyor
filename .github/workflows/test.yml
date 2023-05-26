@@ -28,6 +28,7 @@ jobs:
         python -m pip install flake8 pytest pytest-mock mock mypy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements_sigma.txt ]; then pip install -r requirements_sigma.txt; fi
+        mypy --install-types
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
