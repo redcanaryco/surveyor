@@ -6,6 +6,7 @@ if sys.version_info.major == 3 and sys.version_info.minor < 9:
     exit(1)
 
 import csv
+import _csv
 import dataclasses
 import datetime
 import json
@@ -46,13 +47,13 @@ table_template_str = f'{{:<{table_template[0]}}} ' \
                      f'{{:<{table_template[3]}}}'
 
 
-def _write_results(output: Optional[csv.writer], results: list[Result], program: str, source: str,
+def _write_results(output: Optional[_csv._writer], results: list[Result], program: str, source: str,
                    tag: Tag, log: logging.Logger, use_tqdm: bool = False) -> None:
     """
     Helper function for writing search results to CSV or STDOUT.
     """
     if output:
-        if isinstance(tag, Tuple):
+        if isinstance(tag, tuple):
             tag = tag[0]
 
         if len(results) > 0:
@@ -115,7 +116,7 @@ class ExecutionOptions:
 @click.option("--iocfile", 'ioc_file', help="IOC file to process. One IOC per line. REQUIRES --ioctype")
 @click.option("--ioctype", 'ioc_type', help="One of: ipaddr, domain, md5")
 @click.option("--sigmarule", 'sigma_rule', help="Sigma rule file to process (must be in YAML format).", type=click.STRING)
-@click.option("--sigmadir", 'sigma_dir', help='Directory containing multiple sigma rule files (individual files must end in .yml).', type=click.STRING)
+@click.option("--sigmadir", 'sigma_dir', help='Directory containing multiple sigma rule files.', type=click.STRING)
 # optional output
 @click.option("--output", "--o", help="Specify the output file for the results. "
                                       "The default is create survey.csv in the current directory.")
@@ -216,7 +217,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         ctx.fail("--iocfile requires --ioctype")
 
     if opt.ioc_file and not os.path.isfile(opt.ioc_file):
-        ctx.fail(f'Supplied --iocfile is not a file')
+        ctx.fail('Supplied --iocfile is not a file')
 
     if (opt.output or opt.prefix) and opt.no_file:
         ctx.fail('--output and --prefix cannot be used with --no-file')
@@ -229,12 +230,12 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
     if (opt.sigma_rule or opt.sigma_dir) and product_str == 's1' and opt.product_args['pq']:
         ctx.fail('Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery')
-    
+
     if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
-        ctx.fail(f'Supplied --sigmarule is not a file')
-    
+        ctx.fail('Supplied --sigmarule is not a file')
+
     if opt.sigma_dir and not os.path.isdir(opt.sigma_dir):
-        ctx.fail(f'Supplied --sigmadir is not a directory')
+        ctx.fail('Supplied --sigmadir is not a directory')
 
     # instantiate a logger
     log = logging.getLogger('surveyor')
@@ -306,7 +307,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     if not opt.no_file:
         # determine output file name
         if opt.output and opt.prefix:
-            log_echo(f"Output arg takes precendence so prefix arg will be ignored", log)
+            log_echo("Output arg takes precendence so prefix arg will be ignored", log)
         if opt.output:
             file_name = opt.output
         elif opt.prefix:
@@ -417,13 +418,13 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 program = f"{rule['title']} - {rule['id']}"
                 source = 'Sigma Rule'
 
-                product.nested_process_search(Tag(program, data=source), {'query':[rule['query']]}, base_query)
+                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query)
 
                 if product.has_results():
                     # write results as they become available
                     for tag, nested_results in product.get_results(final_call=False).items():
                         _write_results(writer, nested_results, program, str(tag.data), tag, log,
-                                        use_tqdm=True)
+                                       use_tqdm=True)
 
                     # ensure results are only written once
                     product.clear_results()
