@@ -62,7 +62,7 @@ class DefenderForEndpoints(Product):
         if 'tenantId' not in section or 'appId' not in section or 'appSecret' not in section:
             raise ValueError(f'Credential file must contain tenantId, appId, and appSecret values')
 
-        #self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
+        self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
 
     def _get_aad_token(self, tenant_id: str, app_id: str, app_secret: str) -> str:
         """
