@@ -112,7 +112,7 @@ class DefenderForEndpoints(Product):
 
                     timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
 
-                    result = Result(hostname, username, cmdline, proc_name,
+                    result = Result(hostname, username, proc_name, cmdline,
                                     (timestamp,))
                     results.add(result)
             else:
