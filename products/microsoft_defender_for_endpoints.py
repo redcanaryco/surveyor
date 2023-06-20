@@ -4,20 +4,33 @@ import logging
 import os
 
 import requests
-
+from typing import Union
 from common import Product, Tag, Result
 
-PARAMETER_MAPPING: dict[str, str] = {
-    'process_name': 'FileName',
-    'filemod': 'FileName',
-    'ipaddr': 'RemoteIP',
-    'cmdline': 'ProcessCommandLine',
-    'digsig_publisher': 'Signer',
-    'domain': 'RemoteUrl',
-    'internal_name': 'ProcessVersionInfoInternalFileName',
-    'md5':'MD5',
-    'sha1':'SHA1',
-    'sha256':'SHA256'
+PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
+    'process_name': {'table':'DeviceProcessEvents','field':'FolderPath',
+                     'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'filemod': {'table':'DeviceFileEvents','field':'FolderPath', 
+                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
+    'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
+    'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
+                'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
+                         'additional':'| join kind=inner DeviceProcessEvents on $left.SHA1 == $right.SHA1',
+                         'projections':['DeviceName', 'AccountName','FolderPath','ProcessCommandLine']},
+    'domain': {'table':'DeviceNetworkEvents','field':'RemoteUrl', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
+    'internal_name': {'table':'DeviceProcessEvents','field':'ProcessVersionInfoInternalFileName', 
+                      'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'md5': {'table':'DeviceProcessEvents','field':'MD5',
+            'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'sha1':{'table':'DeviceProcessEvents','field':'SHA1',
+            'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'sha256':{'table':'DeviceProcessEvents','field':'SHA256',
+              'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
+    'modload':{'table': 'DeviceImageLoadEvents', 'field':'FolderPath',
+               'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine']}
 }
 
 class DefenderForEndpoints(Product):
@@ -46,10 +59,12 @@ class DefenderForEndpoints(Product):
 
         section = config[self.profile]
 
-        if 'tenantId' not in section or 'appId' not in section or 'appSecret' not in section:
-            raise ValueError(f'Credential file must contain tenantId, appId, and appSecret values')
-
-        self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
+        if 'token' in section:
+            self._token = section['token']
+        elif 'tenantId' not in section or 'appId' not in section or 'appSecret' not in section:
+            raise ValueError(f'Credential file must contain a token or the fields tenantId, appId, and appSecret values')
+        else:
+            self._token = self._get_aad_token(section['tenantId'], section['appId'], section['appSecret'])
 
     def _get_aad_token(self, tenant_id: str, app_id: str, app_secret: str) -> str:
         """
@@ -80,8 +95,25 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    result = Result(res["DeviceName"], res["AccountName"], res["ProcessCommandLine"], res["FolderPath"],
-                                    (res["Timestamp"],))
+                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
+                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                        username = 'Unknown'
+                    
+                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
+                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
+                    else:
+                        cmdline = 'Unknown'
+                    
+                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
+                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
+                    else:
+                        proc_name = 'Unknown'
+
+                    timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+
+                    result = Result(hostname, username, proc_name, cmdline,
+                                    (timestamp,))
                     results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
@@ -101,11 +133,9 @@ class DefenderForEndpoints(Product):
         }
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        query = query + self.build_query(base_query)
-
-        query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents " \
-                + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
-        query = query.rstrip()
+        query = query.rstrip() 
+        
+        query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
         self.log.debug(f'Query: {query}')
         full_query = {'Query': query}
@@ -114,59 +144,56 @@ class DefenderForEndpoints(Product):
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = set()
-
         query_base = self.build_query(base_query)
 
         try:
             for search_field, terms in criteria.items():
                 if search_field == 'query':
                     if isinstance(terms, list):
-                        if len(terms) > 1:
-                            query = ' '.join(terms)
-                        else:
-                            query = terms[0]
+                        for query_entry in terms:
+                            query_entry += f" {query_base}" if query_base != '' else ''
+                            self.process_search(tag, {}, query_entry)
                     else:
-                        query = terms
+                        query_entry = terms
+                        query_entry += f" {query_base}" if query_base != '' else ''
+                        self.process_search(tag, {}, query_entry)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:
-                        query = f" | where {PARAMETER_MAPPING[search_field]} has_any ({all_terms})"
+                        query = f"| where {PARAMETER_MAPPING[search_field]['field']} has_any ({all_terms})"
                     else:
                         self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                    logging.WARNING)
                         continue
+                
+                    query = f"{PARAMETER_MAPPING[search_field]['table']} {query} "
 
-                query = "union DeviceProcessEvents, DeviceFileEvents, DeviceRegistryEvents, DeviceNetworkEvents, DeviceImageLoadEvents, DeviceFileCertificateInfo, DeviceEvents" \
-                        + query_base + query + " | project DeviceName, AccountName, ProcessCommandLine, FolderPath, Timestamp "
-                query = query.rstrip()
+                    query += f"{(PARAMETER_MAPPING[search_field]['additional'])} " if 'additional' in PARAMETER_MAPPING[search_field] else ''
 
-                self.log.debug(f'Query: {query}')
-                data = {'Query': query}
+                    query += f" {query_base} " if query_base != '' else ''
 
-                for entry in self._post_advanced_query(data=data, headers=self._get_default_header()):
-                    results.add(entry)
+                    query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
+
+                    self.process_search(tag, {}, query)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-        self._add_results(list(results), tag)
-
     def build_query(self, filters: dict) -> str:
-        query_base = ''
+        query_base = []
 
         for key, value in filters.items():
             if key == 'days':
-                query_base += f'| where Timestamp > ago({value}d)'
+                query_base.append(f'| where Timestamp > ago({value}d)')
             elif key == 'minutes':
-                query_base += f'| where Timestamp > ago({value}m)'
+                query_base.append(f'| where Timestamp > ago({value}m)')
             elif key == 'hostname':
-                query_base += f'| where DeviceName contains "{value}"'
+                query_base.append(f'| where DeviceName contains "{value}"')
             elif key == 'username':
-                query_base += f'| where AccountName contains "{value}"'
+                query_base.append(f'| where AccountName contains "{value}"')
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
-        return query_base
+        return ' '.join(query_base)
 
     def get_other_row_headers(self) -> list[str]:
         return ['Timestamp']

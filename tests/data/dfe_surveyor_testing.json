@@ -1,0 +1,24 @@
+{
+  "field_translation":{
+    "process_name":["notepad.exe"],
+    "filemod":["current_date.txt"],
+    "ipaddr":["127.0.0.1"],
+    "cmdline":["MiniDump"],
+    "digsig_publisher":["Microsoft Publisher"],
+    "domain":["raw.githubusercontent.com"],
+    "internal_name":["powershell"],
+    "md5":["asdfasdfasdfasdf"],
+    "sha1":["qwerqwerqwerqwer"],
+    "sha256":["zxcvzxcvzxcv"],
+    "modload":["pcwutl.dll"]
+  }, 
+  "multiple_values":{
+    "process_name":["svchost.exe", "cmd.exe"]
+  },
+  "single_query":{
+    "query":["DeviceProcessEvents | where FileName contains \"rundll.exe\""]
+  },
+  "multiple_query":{
+    "query":["DeviceProcessEvents | where ProcessCommandLine contains \"-enc\"", "DeviceImageLoadEvents | where FileName contains \"malware.dll\""]
+  }
+}
