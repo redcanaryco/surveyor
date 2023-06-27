@@ -25,8 +25,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest pytest-mock mock
+        python -m pip install flake8 pytest pytest-mock mock mypy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements_sigma.txt ]; then pip install -r requirements_sigma.txt; fi
+        if [ -f requirements.types.txt ]; then pip install -r requirements.types.txt; fi
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -35,4 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest -vv
+    - name: Type check with mypy
+      run: |
+        mypy ./ --exclude 'setup\.py' --exclude 'tests/'

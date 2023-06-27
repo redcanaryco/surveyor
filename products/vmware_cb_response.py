@@ -1,7 +1,7 @@
 import logging
 
-from cbapi.response import CbEnterpriseResponseAPI
-from cbapi.response.models import Process
+from cbapi.response import CbEnterpriseResponseAPI # type: ignore
+from cbapi.response.models import Process # type: ignore
 
 from common import Product, Tag, Result
 
