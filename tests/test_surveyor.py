@@ -165,6 +165,22 @@ def test_invalid_def_file(runner, mocker):
     mocked_nested_process_search.assert_not_called()
 
 
+def test_invalid_sigma_rule(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    result = runner.invoke(cli, ["--sigmarule", "nonexistent.yml"])
+    assert "Supplied --sigmarule is not a file" in result.output
+    mocked_nested_process_search.assert_not_called()
+
+
+def test_invalid_sigma_dir(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    result = runner.invoke(cli, ["--sigmadir", "./nonexistent_dir"])
+    assert "Supplied --sigmadir is not a directory" in result.output
+    mocked_nested_process_search.assert_not_called()
+
+
 def test_ioc_file(runner, mocker):
     """
     Verify if an IOC file is passed, it is logged and an EDR product is called
@@ -265,11 +281,13 @@ def test_mutually_exclusive_output_prefix(runner, mocker):
     result = runner.invoke(cli, ['--prefix', 'test_prefix', '--output', 'test_output.csv'])
     assert "Output arg takes precendence so prefix arg will be ignored" in result.output
 
+
 def test_no_file_output(runner, mocker):
     mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
     default_output = 'surveyor.csv'
     runner.invoke(cli, ['--no_file'])
     assert not os.path.exists(default_output)
+
 
 def test_base_query_filters_with_query(runner, mocker):
     mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
@@ -278,3 +296,181 @@ def test_base_query_filters_with_query(runner, mocker):
     result = runner.invoke(cli, ["--query", "SELECT * FROM processes"] + filter_args)
     assert "Running Custom Query: SELECT * FROM processes" in result.output
     mocked_process_search.assert_called_once_with(Tag('query'), {'days':5, 'hostname':'workstation1','username':'admin'}, 'SELECT * FROM processes')
+
+
+def test_sigma_rule(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    with runner.isolated_filesystem() as temp_dir:
+        sigma_file_path = os.path.join(temp_dir, "test_sigma_rule.yml")
+        with open(sigma_file_path, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule
+id: 5fd18e43-749c-4bae-93b6-d46e1f27062e
+description: Test sigma rule
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'curl.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+        result = runner.invoke(cli, ["--sigmarule", sigma_file_path])
+        assert "Processing sigma rules" in result.output
+        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {})
+
+
+def test_sigma_rule_with_base_query(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    with runner.isolated_filesystem() as temp_dir:
+        sigma_file_path = os.path.join(temp_dir, "test_sigma_rule.yml")
+        with open(sigma_file_path, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule
+id: 5fd18e43-749c-4bae-93b6-d46e1f27062e
+description: Test sigma rule
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'curl.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+        result = runner.invoke(cli, ["--sigmarule", sigma_file_path] + filter_args)
+        assert "Processing sigma rules" in result.output
+        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 })
+
+
+def test_sigma_dir(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    with runner.isolated_filesystem() as temp_dir:
+        sigma_file_path1 = os.path.join(temp_dir, "test_sigma_rule1.yml")
+        with open(sigma_file_path1, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule
+id: 5fd18e43-749c-4bae-93b6-d46e1f27062e
+description: Test sigma rule
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'curl.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+            
+        sigma_file_path2 = os.path.join(temp_dir, "test_sigma_rule2.yml")
+        with open(sigma_file_path2, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule 2
+id: 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c
+description: Test sigma rule 2
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'powershell.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+        result = runner.invoke(cli, ["--sigmadir", temp_dir])
+        
+        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {}),
+                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {})]
+        assert "Processing sigma rules" in result.output
+        mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_sigma_dir_with_base_query(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    mocked_nested_process_search = mocker.patch('products.vmware_cb_response.CbResponse.nested_process_search')
+    filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
+    with runner.isolated_filesystem() as temp_dir:
+        sigma_file_path1 = os.path.join(temp_dir, "test_sigma_rule1.yml")
+        with open(sigma_file_path1, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule
+id: 5fd18e43-749c-4bae-93b6-d46e1f27062e
+description: Test sigma rule
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'curl.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+            
+        sigma_file_path2 = os.path.join(temp_dir, "test_sigma_rule2.yml")
+        with open(sigma_file_path2, 'w') as sigmafile:
+            sigmafile.write("""title: Test sigma rule 2
+id: 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c
+description: Test sigma rule 2
+logsource:
+    category: process_creation
+detection:
+    selection:
+        - Image: 'powershell.exe'
+    condition: selection
+fields:
+    - CommandLine
+    - ParentCommandLine""")
+        result = runner.invoke(cli, ["--sigmadir", temp_dir] + filter_args)
+        
+        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }),
+                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 })]
+        assert "Processing sigma rules" in result.output
+        mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_sigma_rule_with_cortex(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    with runner.isolated_filesystem() as temp_dir:
+        cred_file = os.path.join(temp_dir, "test.ini")
+        with open(cred_file, 'w') as cred_file_output:
+            cred_file_output.write("testing123")
+
+        result = runner.invoke(cli, ['--sigmarule', 'test.yml', 'cortex', '--creds', cred_file])
+        assert 'Neither --sigmarule nor --sigmadir are supported by product "cortex"' in result.output
+        assert result.exit_code != 0
+
+
+def test_sigma_dir_with_cortex(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    with runner.isolated_filesystem() as temp_dir:
+        cred_file = os.path.join(temp_dir, "test.ini")
+        with open(cred_file, 'w') as cred_file_output:
+            cred_file_output.write("testing123")
+
+        result = runner.invoke(cli, ['--sigmadir', './sigma_dir', 'cortex', '--creds', cred_file])
+        assert 'Neither --sigmarule nor --sigmadir are supported by product "cortex"' in result.output
+        assert result.exit_code != 0
+
+
+def test_sigma_rule_with_s1_pq(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    with runner.isolated_filesystem() as temp_dir:
+        cred_file = os.path.join(temp_dir, "test.ini")
+        with open(cred_file, 'w') as cred_file_output:
+            cred_file_output.write("testing123")
+
+        result = runner.invoke(cli, ['--sigmarule', 'test.yml', 's1', '--creds', cred_file])
+        assert 'Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery' in result.output
+        assert result.exit_code != 0
+
+
+def test_sigma_dir_with_s1_pq(runner, mocker):
+    mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
+    with runner.isolated_filesystem() as temp_dir:
+        cred_file = os.path.join(temp_dir, "test.ini")
+        with open(cred_file, 'w') as cred_file_output:
+            cred_file_output.write("testing123")
+
+        result = runner.invoke(cli, ['--sigmadir', './sigma_dir', 's1', '--creds', cred_file])
+        assert 'Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery' in result.output
+        assert result.exit_code != 0
