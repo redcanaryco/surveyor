@@ -220,7 +220,7 @@ class CortexXDR(Product):
                         operator = 'in'
                     else:
                         operator = 'contains'
-                        search_value = terms[0]
+                        search_value = f'"{terms[0]}"'
 
                     self._queries[tag].append(Query(relative_time_ms, parameter, operator, search_value))
         except KeyboardInterrupt:
@@ -262,7 +262,8 @@ class CortexXDR(Product):
                 else:
                     query_string = f'dataset=xdr_data | filter {query.parameter} {query.operator} {str(query.search_value)}'
 
-                query_string += f' {self._base_query} | fields agent_hostname, action_process_image_path, action_process_username, action_process_image_command_line, actor_process_image_path, actor_primary_username, actor_process_command_line, event_id'
+                query_string += f' {self._base_query}' if self._base_query != '' else ''
+                query_string += f' | fields agent_hostname, action_process_image_path, action_process_username, action_process_image_command_line, actor_process_image_path, actor_primary_username, actor_process_command_line, event_id'
 
                 # Run that query!
                 params = self._get_default_body()
@@ -283,14 +284,18 @@ class CortexXDR(Product):
                 if 'reply' not in body:
                     raise ValueError(f'Cortex encountered an error and could not process query "{query_string}"')
 
-                self.log.debug(query_response.json())
+                self.log.debug(body)
                 query_response.raise_for_status()
 
                 query_id = body['reply']
                 self.log.info(f'Query ID is {query_id}')
 
                 events, count = self._get_xql_results(query_id)
-                self.log.debug(f'Got {count} events')
+                if count == 1000:
+                    self.log.info(f'Maximum limit of results (1000) was reached')
+                else:
+                    self.log.debug(f'Got {count} event(s)')
+
                 self._results[tag] = list()
                 for event in events:
                     hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
