@@ -561,19 +561,10 @@ class SentinelOne(Product):
                         full_query = f'{query.parameter} {query.operator} {query.search_value}'
                         query_text.append((tag, full_query))
         else:
-            # key is a tuple of the query operator and parameter
-            # value is a list of Tuples where each tuple contains the query tag and search value
-            combined_queries = dict[Tuple[str, str], list[Tuple[Tag, str]]]()
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    if query.operator in ('contains', 'containscis', 'contains anycase'):
-                        key = (cast(str, query.operator), cast(str, query.parameter))
-                        if key not in combined_queries:
-                            combined_queries[key] = list()
-
-                        combined_queries[key].append((tag, cast(str, query.search_value)))
-                    elif query.full_query is not None:
+                    if query.full_query is not None:
                         query_text.append((tag, query.full_query))
                     elif query.operator == 'raw':
                         full_query = f'({query.search_value})'
@@ -581,18 +572,6 @@ class SentinelOne(Product):
                     else:
                         full_query = f'{query.parameter} {query.operator} {query.search_value}'
                         query_text.append((tag, full_query))
-
-            # merge combined queries and add them to query_text
-            data: list[Tuple[Tag, str]]
-            for (operator, parameter), data in combined_queries.items():
-                if operator in ('contains', 'containscis', 'contains anycase'):
-                    full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
-
-                    tag = Tag(','.join(tag[0].tag for tag in data),
-                              ','.join(tag[0].data if tag[0].data else '' for tag in data))
-                    query_text.append((tag, full_query))
-                else:
-                    raise NotImplementedError(f'Combining operator "{operator}" queries is not support')
 
         return query_text
 
@@ -617,8 +596,6 @@ class SentinelOne(Product):
                     "queryType": ['events'],  # options: 'events', 'procesState' (deprecated)
                 })
 
-            self.log.debug(f'Query params: {params}')
-
             if not self._pq:
                 # ensure we do not submit more than one request every 60 seconds to comply with rate limit
                 seconds_sice_last_request = time.time() - self._last_request
@@ -627,6 +604,8 @@ class SentinelOne(Product):
                     self.log.debug(f'Sleeping for {sleep_seconds}')
 
                     cancel_event.wait(ceil(sleep_seconds))
+
+            self.log.debug(f'Query params: {params}')
 
             # start deep visibility API call
             url = '/web/api/v2.1/dv/events/pq' if self._pq else '/web/api/v2.1/dv/init-query'
@@ -707,60 +686,69 @@ class SentinelOne(Product):
         # execute queries in chunks
         # do not chunk if processing an IOC file
         ioc_hunt = list(self._queries.keys())
-        chunk_size = 1 if self._pq or (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
+        chunk_size = 1 if (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=25 if self._pq else 1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
             futures = list[Future]()
 
-            # merge queries into one large query and execute it
-            for i in range(0, len(query_text), chunk_size):
-                # do not chain more than 10 ORs in a S1QL query
-                merged_tags = set[Tag]()
-                merged_query = ''
-                for tag, query_str in query_text[i:i + chunk_size]:
-                    # combine queries with ORs
-                    if merged_query:
-                        merged_query += ' OR '
+            tag_buckets = {}
+            # group built queries by tag
+            for item in query_text:
+                tag = item[0].tag
+                if tag in tag_buckets:
+                    tag_buckets[tag].append(item)
+                else:
+                    tag_buckets[tag] = [item]
+            
+            
+            # merge queries into one large query by tag groupings and execute it
+            for tag, items in tag_buckets.items():
+                for i in range(0, len(items), chunk_size):
+                    # do not chain more than 10 ORs in a S1QL query
+                    merged_query = ''
+                    for item in items[i:i + chunk_size]:
+                        if merged_query:
+                            merged_query += ' OR '
+                        
+                        merged_query += item[1]
 
-                    merged_query += query_str
+                    merged_tag = item[0]
 
-                    # add tags to set to de-duplicate
-                    merged_tags.add(tag)
+                    if self._query_base is not None and len(self._query_base):
+                        # add base_query filter to merged query string
+                        merged_query = f'{self._query_base} AND ({merged_query})'
 
-                # merge all query tags into a single string
-                merged_tag = Tag(','.join(tag.tag for tag in merged_tags),
-                                 ','.join(str(tag.data) for tag in merged_tags))
+                    if self._pq:
+                        # PQ seems to not honor site IDs provided in POST request body
+                        if len(self._site_ids):
+                            # restrict query to specified sites
+                            merged_query = f'({merged_query}) AND ('
+                            first = True
+                            for site_id in self._site_ids:
+                                if not first:
+                                    merged_query += ' OR '
+                                else:
+                                    first = False
 
-                if self._query_base is not None and len(self._query_base):
-                    # add base_query filter to merged query string
-                    merged_query = f'{self._query_base} AND ({merged_query})'
+                                merged_query += f'site.id = {site_id}'
+                            merged_query += ')'
 
-                if self._pq:
-                    # PQ seems to not honor site IDs provided in POST request body
-                    if len(self._site_ids):
-                        # restrict query to specified sites
-                        merged_query = f'({merged_query}) AND ('
-                        first = True
-                        for site_id in self._site_ids:
-                            if not first:
-                                merged_query += ' OR '
-                            else:
-                                first = False
-
-                            merged_query += f'site.id = {site_id}'
-                        merged_query += ')'
-
-                    merged_query += ' | group count() by endpoint.name, src.process.user, ' \
-                                    'src.process.image.path, src.process.cmdline, src.process.name, ' \
-                                    'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
-                                    'site.id, site.name, src.process.storyline.id'
-
-                futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
-                                               cancel_event, not self._pq))
+                        merged_query += ' | group count() by endpoint.name, src.process.user, ' \
+                                        'src.process.image.path, src.process.cmdline, src.process.name, ' \
+                                        'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
+                                        'site.id, site.name, src.process.storyline.id'
+                    
+                    self.log.debug(f'Appending query to executor: {merged_query}')
+                    futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
+                                                cancel_event, not self._pq))
+                    if not self._pq:
+                        # ensure we do not submit more than one request every 60 seconds to comply with rate limit
+                            self.log.debug(f'Sleeping for 60 seconds')
+                            cancel_event.wait(60)
 
             p_bar = tqdm(desc='Running queries',
-                         disable=not self._tqdm_echo,
-                         total=len(futures))
+                    disable=not self._tqdm_echo,
+                    total=len(futures))
 
             try:
                 completed_futures = set[Future]()
