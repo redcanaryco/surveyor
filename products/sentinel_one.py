@@ -614,7 +614,7 @@ class SentinelOne(Product):
             if not self._pq:
                 params.update({
                     "isVerbose": False,
-                    "queryType": ['events'],  # options: 'events', 'procesState'
+                    "queryType": ['events'],  # options: 'events', 'procesState' (deprecated)
                 })
 
             self.log.debug(f'Query params: {params}')
