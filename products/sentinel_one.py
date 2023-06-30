@@ -496,7 +496,6 @@ class SentinelOne(Product):
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
-
                 parameter = self.parameter_mapping[search_field]
 
                 if tag not in self._queries:
@@ -510,6 +509,13 @@ class SentinelOne(Product):
                             else:
                                 search_value = terms[0]
                             self._queries[tag].append(Query(from_date, to_date, None, None, None, search_value))
+                        elif (sum(len(i) for i in terms)+300) / 8192 >= 0.75: # chunk terms if query is suspected to contain more than 8192 total characters (current PQ limitation)
+                            char_num = int((sum(len(i) for i in terms)) / 6144) + 1 # divide total characters of terms by 75% of limit to identify chunk number
+                            chunk_quantity = int(len(terms) / char_num) # determine number of terms per chunk to evenly split list of terms
+                            chunked_terms = list(self.divide_chunks(terms, chunk_quantity))
+                            for chunk in chunked_terms:
+                                search_value = '(' + ', '.join(f'"{x}"' for x in chunk) + ')'
+                                self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
                         else:
                             search_value = '(' + ', '.join(f'"{x}"' for x in terms) + ')'
                             self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
