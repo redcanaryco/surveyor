@@ -38,6 +38,7 @@ PARAMETER_MAPPING_DV: dict[str, list[str]] = {
     'query': ['query'], # non-existent field to specify a fully defined query string in a definition file.
     'process_name': ['ProcessName'],
     'ipaddr': ['IP'],
+    'ipport': ['DstPort'],
     'cmdline': ['CmdLine'],
     'digsig_publisher': ['Publisher'],
     'domain': ['DNS'],
@@ -55,6 +56,7 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'query': ['query'],
     'process_name': ['src.process.name'],
     'ipaddr': ['dst.ip.address'],
+    'ipport': ['dst.port.number'],
     'url': ['url.address'],
     'cmdline': ['src.process.cmdline'],
     'digsig_publisher': ['src.process.publisher'],

@@ -14,6 +14,8 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
                 'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
+    'ipport': {'table':'DeviceNetworkEvents','field':'RemotePort', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
                 'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
