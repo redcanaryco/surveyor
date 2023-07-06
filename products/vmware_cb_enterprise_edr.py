@@ -12,6 +12,7 @@ from common import Product, Result, Tag
 PARAMETER_MAPPING: dict[str, str] = {
     'process_name': 'process_name',
     'ipaddr': 'netconn_ipv4',
+    'ipport': 'netconn_port',
     'cmdline': 'process_cmdline',
     'digsig_publisher': 'process_publisher',
     'domain': 'netconn_domain',
