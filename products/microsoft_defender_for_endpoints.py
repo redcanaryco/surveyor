@@ -32,7 +32,9 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
     'sha256':{'table':'DeviceProcessEvents','field':'SHA256',
               'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'modload':{'table': 'DeviceImageLoadEvents', 'field':'FolderPath',
-               'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine']}
+               'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine']},
+    'regmod':{'table':'DeviceRegistryEvents','field':'RegistryKey',
+              'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingFolderPath', 'InitiatingProcessCommandLine', 'RegistryValueName', 'RegistryValueData']}
 }
 
 class DefenderForEndpoints(Product):
