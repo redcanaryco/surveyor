@@ -522,8 +522,9 @@ class SentinelOne(Product):
                     chunked_terms = list(self.divide_chunks(terms, 100))
                     for chunk in chunked_terms:
                         search_value_orig = ', '.join(f'"{x}"' for x in chunk)
-    
+                        
                         for param in parameter:
+                            search_value = search_value_orig
                             if param == 'query':
                                 # Formats queries as (a) OR (b) OR (c) OR (d)
                                 if len(chunk) > 1:
@@ -532,7 +533,7 @@ class SentinelOne(Product):
                                     search_value = terms[0]
                                 operator = 'raw'
                             elif len(terms) > 1:
-                                search_value = f'({search_value_orig})'
+                                search_value = f'({search_value})'
                                 operator = 'in contains anycase'
                             elif not re.findall(r'\w+\.\w+', search_value) and tag.tag.startswith("IOC - "):
                                 operator = 'regexp'
