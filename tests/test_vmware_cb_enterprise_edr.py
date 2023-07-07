@@ -126,6 +126,8 @@ def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
         mocker.call(Tag('field_translation'), {}, '(process_internal_name:powershell)'),
         mocker.call(Tag('field_translation'), {}, '(hash:asdfasdfasdfasdf)'),
         mocker.call(Tag('field_translation'), {}, '(hash:zxcvzxcvzxcv)'),
+        mocker.call(Tag('field_translation'), {}, '(netconn_port:80)'),
+        mocker.call(Tag('field_translation'), {}, '(regmod_name:HKLM)'),
         mocker.call(Tag('multiple_values'), {}, '(process_name:svchost.exe OR process_name:cmd.exe)'),
         mocker.call(Tag('single_query'), {}, '(process_name:rundll.exe)'),
         mocker.call(Tag('multiple_query'), {}, '((process_cmdline:-enc) OR (modload_name:malware.dll))')

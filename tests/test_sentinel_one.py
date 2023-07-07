@@ -144,7 +144,7 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 13
+    assert len(s1_product._queries[Tag('field_translation')]) == 16
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'ProcessName', 'containscis', '"notepad.exe"', None) in s1_product._queries[Tag('field_translation')]
@@ -160,7 +160,10 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     assert Query(sdate, edate, 'Md5', 'containscis', '"asdfasdfasdfasdf"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'Sha1', 'containscis', '"qwerqwerqwerqwer"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'Sha256', 'containscis', '"zxcvzxcvzxcv"', None) in s1_product._queries[Tag('field_translation')]
-    
+    assert Query(sdate, edate, 'DstPort', 'containscis', '"80"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'RegistryKeyPath', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'RegistryValue', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
+
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
     edate = s1_product._queries[Tag('multiple_values')][0].end_date    
@@ -188,7 +191,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 18
+    assert len(s1_product._queries[Tag('field_translation')]) == 21
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'src.process.name', 'in', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
@@ -209,7 +212,10 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     assert Query(sdate, edate, 'tgt.file.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'module.md5', 'in', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'module.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
-    
+    assert Query(sdate, edate, 'registry.keyPath', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'registry.value', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'dst.port.number', 'in', '("80")', None) in s1_product._queries[Tag('field_translation')]
+
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
     edate = s1_product._queries[Tag('multiple_values')][0].end_date    
