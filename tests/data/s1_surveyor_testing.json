@@ -12,7 +12,9 @@
     "process_file_description": ["Evil Stuff Here"],
     "md5":["asdfasdfasdfasdf"],
     "sha1":["qwerqwerqwerqwer"],
-    "sha256":["zxcvzxcvzxcv"]
+    "sha256":["zxcvzxcvzxcv"],
+    "regmod":["HKLM"],
+    "ipport": ["80"]
   }, 
   "multiple_values":{
     "process_name":["svchost.exe", "cmd.exe"]
