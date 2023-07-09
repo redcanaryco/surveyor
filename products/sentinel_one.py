@@ -100,7 +100,7 @@ class SentinelOne(Product):
         self._pq = pq
 
         if not self._pq: self._limit = 20000
-        self._limit = kwargs['limit'] if 'limit' in kwargs else self._limit
+        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         self._last_request = 0.0
 

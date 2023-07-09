@@ -43,7 +43,7 @@ class CbEnterpriseEdr(Product):
     def __init__(self, profile: str, **kwargs):
         self._device_group = kwargs['device_group'] if 'device_group' in kwargs else None
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
-        self._limit = kwargs['limit'] if 'limit' in kwargs else self._limit
+        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 

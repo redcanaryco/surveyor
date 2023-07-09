@@ -49,7 +49,7 @@ class DefenderForEndpoints(Product):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
         self.creds_file = creds_file
-        self._limit = kwargs['limit'] if 'limit' in kwargs else self._limit
+        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 

@@ -268,7 +268,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         kwargs.update(opt.product_args)
 
     if opt.limit:
-        kwargs['limit'] = opt.limit
+        kwargs['limit'] = str(opt.limit)
 
 
     kwargs['tqdm_echo'] = str(not opt.no_progress)
