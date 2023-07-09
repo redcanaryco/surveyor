@@ -85,7 +85,7 @@ class ExecutionOptions:
     days: Optional[int]
     minutes: Optional[int]
     username: Optional[str]
-    limit: Optional[str]
+    limit: Optional[int]
     ioc_file: Optional[str]
     ioc_type: Optional[str]
     query: Optional[str]
