@@ -141,7 +141,7 @@ class DefenderForEndpoints(Product):
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
-        if self._limit and 'limit' not in query:
+        if self._limit > 0 and 'limit' not in query:
             query += f"| limit {str(self._limit)}"
 
         self.log.debug(f'Query: {query}')
@@ -159,7 +159,7 @@ class DefenderForEndpoints(Product):
                     if isinstance(terms, list):
                         for query_entry in terms:
                             query_entry += f" {query_base}" if query_base != '' else ''
-                            if self._limit: query_entry += f"| limit {str(self._limit)}"
+                            if self._limit > 0: query_entry += f"| limit {str(self._limit)}"
                             self.process_search(tag, {}, query_entry)
                     else:
                         query_entry = terms
@@ -184,7 +184,7 @@ class DefenderForEndpoints(Product):
 
                     query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
-                    if self._limit: query += f"| limit {str(self._limit)}"
+                    if self._limit > 0: query += f"| limit {str(self._limit)}"
 
                     self.process_search(tag, {}, query)
         except KeyboardInterrupt:
