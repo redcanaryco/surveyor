@@ -42,12 +42,14 @@ class DefenderForEndpoints(Product):
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
+    _limit: int = -1
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
         self.creds_file = creds_file
+        self._limit = kwargs['limit'] if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -139,6 +141,9 @@ class DefenderForEndpoints(Product):
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
+        if self._limit and 'limit' not in query:
+            query += f"| limit {str(self._limit)}"
+
         self.log.debug(f'Query: {query}')
         full_query = {'Query': query}
 
@@ -154,10 +159,13 @@ class DefenderForEndpoints(Product):
                     if isinstance(terms, list):
                         for query_entry in terms:
                             query_entry += f" {query_base}" if query_base != '' else ''
+                            if self._limit: query_entry += f"| limit {str(self._limit)}"
                             self.process_search(tag, {}, query_entry)
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
+                        if self._limit: query_entry += f"| limit {str(self._limit)}"
+                        
                         self.process_search(tag, {}, query_entry)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
@@ -175,6 +183,8 @@ class DefenderForEndpoints(Product):
                     query += f" {query_base} " if query_base != '' else ''
 
                     query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
+
+                    if self._limit: query += f"| limit {str(self._limit)}"
 
                     self.process_search(tag, {}, query)
         except KeyboardInterrupt:
