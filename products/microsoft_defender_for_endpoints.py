@@ -164,7 +164,7 @@ class DefenderForEndpoints(Product):
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
-                        if self._limit: query_entry += f"| limit {str(self._limit)}"
+                        if self._limit > 0: query_entry += f"| limit {str(self._limit)}"
                         
                         self.process_search(tag, {}, query_entry)
                 else:
