@@ -11,7 +11,7 @@ from common import Tag
 def runner():
     return CliRunner()
 
-
+json_output = False
 def test_survey_cbr(runner: CliRunner, mocker):
     """
     Verify when passing `cbr` parameter, the CbResponse product is called
@@ -77,7 +77,7 @@ def test_custom_query(runner, mocker):
     mocked_process_search = mocker.patch('products.vmware_cb_response.CbResponse.process_search')
     result = runner.invoke(cli, ["--query", "SELECT * FROM processes"])
     assert "Running Custom Query: SELECT * FROM processes" in result.output
-    mocked_process_search.assert_called_once_with(Tag('query'), {}, 'SELECT * FROM processes')
+    mocked_process_search.assert_called_once_with(Tag('query'), {}, json_output, 'SELECT * FROM processes')
 
 
 def test_def_file(runner, mocker):
@@ -92,7 +92,7 @@ def test_def_file(runner, mocker):
             deffile.write("""{"ProgramA":{"process_name":["test.exe"]}}""")
         result = runner.invoke(cli, ["--deffile", def_file_path])
         assert "Processing definition files:" in result.output
-        mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {})
+        mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {}, json_output)
 
 
 def test_def_file_with_base_query(runner, mocker):
@@ -108,7 +108,7 @@ def test_def_file_with_base_query(runner, mocker):
             deffile.write("""{"ProgramA":{"process_name":["test.exe"]}}""")
         result = runner.invoke(cli, ["--deffile", def_file_path] + filter_args)
         assert "Processing definition files:" in result.output
-        mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'})
+        mocked_nested_process_search.assert_called_once_with(Tag('ProgramA', 'test_deffile'), {"process_name":["test.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}, json_output)
 
 
 def test_def_dir(runner, mocker):
@@ -125,8 +125,8 @@ def test_def_dir(runner, mocker):
         with open(def_file_path2, 'w') as deffile:
             deffile.write("""{"ProgramB":{"process_name":["test2.exe"]}}""")
 
-        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {}), 
-                          mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {})]
+        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {}, json_output), 
+                          mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {}, json_output)]
         result = runner.invoke(cli, ["--defdir", temp_dir])
         assert "Processing definition files:" in result.output
         mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
@@ -147,8 +147,8 @@ def test_def_dir_with_base_query(runner, mocker):
         with open(def_file_path2, 'w') as deffile:
             deffile.write("""{"ProgramB":{"process_name":["test2.exe"]}}""")
 
-        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}), 
-                          mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'})]
+        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}, json_output), 
+                          mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}, json_output)]
         result = runner.invoke(cli, ["--defdir", temp_dir] + filter_args)
         assert "Processing definition files:" in result.output
         mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
@@ -194,7 +194,7 @@ def test_ioc_file(runner, mocker):
         result = runner.invoke(cli, ["--iocfile", ioc_file_path, "--ioctype", "ipaddr"])
         assert "Processing IOC file" in result.output
         mocked_func.assert_called_once()
-        mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {})
+        mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {}, json_output)
 
 
 def test_ioc_file_with_base_query(runner, mocker):
@@ -211,7 +211,7 @@ def test_ioc_file_with_base_query(runner, mocker):
         result = runner.invoke(cli, ["--iocfile", ioc_file_path, "--ioctype", "ipaddr"] + filter_args)
         assert "Processing IOC file" in result.output
         mocked_func.assert_called_once()
-        mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {'days':5, 'hostname':'workstation1', 'username':'admin'})
+        mocked_nested_process_search.assert_called_once_with(Tag(f'IOC - {ioc_file_path}', 'ioc_list.txt'), {'ipaddr':['127.0.0.1']}, {'days':5, 'hostname':'workstation1', 'username':'admin'}, json_output)
 
 
 def test_no_argument_provided(runner):
@@ -295,7 +295,7 @@ def test_base_query_filters_with_query(runner, mocker):
     filter_args = ['--days', '5', '--hostname', 'workstation1', '--username', 'admin']
     result = runner.invoke(cli, ["--query", "SELECT * FROM processes"] + filter_args)
     assert "Running Custom Query: SELECT * FROM processes" in result.output
-    mocked_process_search.assert_called_once_with(Tag('query'), {'days':5, 'hostname':'workstation1','username':'admin'}, 'SELECT * FROM processes')
+    mocked_process_search.assert_called_once_with(Tag('query'), {'days':5, 'hostname':'workstation1','username':'admin'}, json_output, 'SELECT * FROM processes')
 
 
 def test_sigma_rule(runner, mocker):
@@ -318,7 +318,7 @@ fields:
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmarule", sigma_file_path])
         assert "Processing sigma rules" in result.output
-        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {})
+        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {}, json_output)
 
 
 def test_sigma_rule_with_base_query(runner, mocker):
@@ -342,7 +342,7 @@ fields:
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmarule", sigma_file_path] + filter_args)
         assert "Processing sigma rules" in result.output
-        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 })
+        mocked_nested_process_search.assert_called_once_with(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }, json_output)
 
 
 def test_sigma_dir(runner, mocker):
@@ -380,8 +380,8 @@ fields:
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmadir", temp_dir])
         
-        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {}),
-                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {})]
+        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {}, json_output),
+                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {}, json_output)]
         assert "Processing sigma rules" in result.output
         mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
 
@@ -422,8 +422,8 @@ fields:
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmadir", temp_dir] + filter_args)
         
-        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }),
-                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 })]
+        expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }, json_output),
+                          mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }, json_output)]
         assert "Processing sigma rules" in result.output
         mocked_nested_process_search.assert_has_calls(expected_calls, any_order=True)
 

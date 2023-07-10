@@ -52,7 +52,7 @@ def test_process_search(dfe_product : DefenderForEndpoints, mocker):
 
     dfe_product.log = logging.getLogger('pytest_surveyor')
     dfe_product._token = 'test_token_value'
-    dfe_product.process_search(Tag('test123'), {}, query)
+    dfe_product.process_search(Tag('test123'), {}, json, query)
     mocked_post_advanced_query.assert_called_once_with(data={'Query': query}, headers=None)
 
 def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
@@ -65,7 +65,7 @@ def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
         programs = json.load(f)
 
     for program, criteria in programs.items():
-        dfe_product.nested_process_search(Tag(program), criteria, {})
+        dfe_product.nested_process_search(Tag(program), criteria, {}, json)
 
     mocked_process_search.assert_has_calls(
         [
@@ -97,7 +97,7 @@ def test_nested_process_search_unsupported_field(dfe_product : DefenderForEndpoi
 
     dfe_product.log = logging.getLogger('pytest_surveyor')
 
-    dfe_product.nested_process_search(Tag('unsupported_field'), criteria, {})
+    dfe_product.nested_process_search(Tag('unsupported_field'), criteria, {}, json)
     mocked_process_search.assert_not_called()
 
 def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
@@ -118,7 +118,7 @@ def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
 
     dfe_product.log = logging.getLogger('pytest_surveyor')
     dfe_product._token = 'test_token_value'
-    dfe_product.process_search(Tag('test123'), filters, query)
+    dfe_product.process_search(Tag('test123'), filters, json, query)
     mocked_post_advanced_query.assert_called_once_with(data={'Query': 'DeviceFileEvents | where FileName="bar foo" | where Timestamp > ago(1d) | where Timestamp > ago(2m) | where DeviceName contains "server1" | where AccountName contains "guest"'}, headers=None)
 
 def test_nested_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
@@ -135,5 +135,5 @@ def test_nested_process_search_build_query(dfe_product : DefenderForEndpoints, m
 
     mocked_process_search = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints.process_search')
 
-    dfe_product.nested_process_search(Tag('test123'), criteria, filters)
+    dfe_product.nested_process_search(Tag('test123'), criteria, filters, json)
     mocked_process_search.assert_called_once_with(Tag('test123', data=None), {}, 'DeviceFileEvents | where FileName="bar foo" | where Timestamp > ago(1d) | where Timestamp > ago(2m) | where DeviceName contains "server1" | where AccountName contains "guest"')

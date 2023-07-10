@@ -50,7 +50,7 @@ def test_process_search(cbr_product : CbResponse, mocker):
     cbr_product._results = {}
     cbr_product._conn = mocker.Mock()
     mocker.patch.object(cbr_product._conn, 'select')
-    cbr_product.process_search(Tag('test_tag'), {}, 'process_name:cmd.exe')
+    cbr_product.process_search(Tag('test_tag'), {}, json, 'process_name:cmd.exe')
 
     cbr_product._conn.select.assert_called_once_with(Process)
     cbr_product._conn.select.return_value.where.assert_called_once_with('process_name:cmd.exe')
@@ -84,5 +84,5 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
     ]
 
     for program, criteria in programs.items():
-        cbr_product.nested_process_search(Tag(program), criteria, {})
+        cbr_product.nested_process_search(Tag(program), criteria, {}, json)
     cbr_product._conn.select.return_value.where.assert_has_calls(expected_calls, any_order=True)
