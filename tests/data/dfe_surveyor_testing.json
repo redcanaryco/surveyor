@@ -10,7 +10,9 @@
     "md5":["asdfasdfasdfasdf"],
     "sha1":["qwerqwerqwerqwer"],
     "sha256":["zxcvzxcvzxcv"],
-    "modload":["pcwutl.dll"]
+    "modload":["pcwutl.dll"],
+    "regmod":["HKLM"],
+    "ipport": ["80"]
   }, 
   "multiple_values":{
     "process_name":["svchost.exe", "cmd.exe"]

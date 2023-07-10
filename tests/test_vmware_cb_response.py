@@ -106,7 +106,9 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
         mocker.call('(sha256:zxcvzxcvzxcv)'),
         mocker.call('(process_name:svchost.exe OR process_name:cmd.exe)'),
         mocker.call('(process_name:rundll.exe)'),
-        mocker.call('((cmdline:-enc) OR (modload:malware.dll))')
+        mocker.call('((cmdline:-enc) OR (modload:malware.dll))'),
+        mocker.call('(regmod:HKLM)'),
+        mocker.call('(ipport:80)')
     ]
 
     for program, criteria in programs.items():

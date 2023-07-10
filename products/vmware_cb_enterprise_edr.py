@@ -18,7 +18,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'domain': 'netconn_domain',
     'internal_name': 'process_internal_name',
     'md5':'hash',
-    'sha256':'hash'
+    'sha256':'hash',
+    'regmod':'regmod_name'
 }
 
 def _convert_relative_time(relative_time) -> str:

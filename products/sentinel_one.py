@@ -49,7 +49,8 @@ PARAMETER_MAPPING_DV: dict[str, list[str]] = {
     'process_file_description': ['SrcProcDisplayName'],
     'md5': ['Md5'],
     'sha1':['Sha1'],
-    'sha256':['Sha256']
+    'sha256':['Sha256'],
+    'regmod':['RegistryKeyPath','RegistryValue']
 }
 
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
@@ -67,7 +68,8 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'process_file_description': ['src.process.displayName'],
     'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5'],
     'sha256':['src.process.image.sha256','tgt.file.sha256'],
-    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1']
+    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1'],
+    'regmod':['registry.keyPath','registry.value']
 }
 
 class SentinelOne(Product):
@@ -530,9 +532,10 @@ class SentinelOne(Product):
                     # play nice with 100 item limit per search field
                     chunked_terms = list(self.divide_chunks(terms, 100))
                     for chunk in chunked_terms:
-                        search_value = ', '.join(f'"{x}"' for x in chunk)
-
+                        search_value_orig = ', '.join(f'"{x}"' for x in chunk)
+                        
                         for param in parameter:
+                            search_value = search_value_orig
                             if param == 'query':
                                 # Formats queries as (a) OR (b) OR (c) OR (d)
                                 if len(chunk) > 1:
