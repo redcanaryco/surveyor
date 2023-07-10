@@ -34,7 +34,7 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
     'modload':{'table': 'DeviceImageLoadEvents', 'field':'FolderPath',
                'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine']},
     'regmod':{'table':'DeviceRegistryEvents','field':'RegistryKey',
-              'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingFolderPath', 'InitiatingProcessCommandLine', 'RegistryValueName', 'RegistryValueData']}
+              'projections':['DeviceName', 'InitiatingProcessAccountName', 'InitiatingProcessFolderPath', 'InitiatingProcessCommandLine', 'RegistryValueName', 'RegistryValueData']}
 }
 
 class DefenderForEndpoints(Product):
