@@ -9,6 +9,50 @@ sys.path.append(os.getcwd())
 from products.sentinel_one import SentinelOne, Query
 from common import Tag
 
+def test_init_dv_lower_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=False, limit = -1)
+    assert s1_product._limit == 20000
+
+def test_init_dv_upper_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=False, limit = 30000)
+    assert s1_product._limit == 20000
+
+def test_init_dv_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=False, limit = 5)
+    assert s1_product._limit == 5
+
+def test_init_pq_lower_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=True, limit = -1)
+    assert s1_product._limit == 1000
+
+def test_init_pq_upper_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=True, limit = 30000)
+    assert s1_product._limit == 1000
+
+def test_init_pq_limit_option(tmpdir, mocker):
+    mocker.patch.object(SentinelOne, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    s1_product = SentinelOne(profile='default',creds_file=cred_file_path, account_id=None, site_id=None, account_name=None, pq=True, limit = 6)
+    assert s1_product._limit == 6
+
 @pytest.fixture
 def s1_product():
     with patch.object(SentinelOne, "__init__", lambda x, y: None):
@@ -100,7 +144,7 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 13
+    assert len(s1_product._queries[Tag('field_translation')]) == 16
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'ProcessName', 'containscis', '"notepad.exe"', None) in s1_product._queries[Tag('field_translation')]
@@ -116,7 +160,10 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     assert Query(sdate, edate, 'Md5', 'containscis', '"asdfasdfasdfasdf"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'Sha1', 'containscis', '"qwerqwerqwerqwer"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'Sha256', 'containscis', '"zxcvzxcvzxcv"', None) in s1_product._queries[Tag('field_translation')]
-    
+    assert Query(sdate, edate, 'DstPort', 'containscis', '"80"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'RegistryKeyPath', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'RegistryValue', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
+
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
     edate = s1_product._queries[Tag('multiple_values')][0].end_date    
@@ -144,7 +191,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 18
+    assert len(s1_product._queries[Tag('field_translation')]) == 21
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'src.process.name', 'in', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
@@ -165,7 +212,10 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     assert Query(sdate, edate, 'tgt.file.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'module.md5', 'in', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'module.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
-    
+    assert Query(sdate, edate, 'registry.keyPath', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'registry.value', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'dst.port.number', 'in', '("80")', None) in s1_product._queries[Tag('field_translation')]
+
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
     edate = s1_product._queries[Tag('multiple_values')][0].end_date    

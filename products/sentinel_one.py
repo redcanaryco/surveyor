@@ -49,7 +49,8 @@ PARAMETER_MAPPING_DV: dict[str, list[str]] = {
     'process_file_description': ['SrcProcDisplayName'],
     'md5': ['Md5'],
     'sha1':['Sha1'],
-    'sha256':['Sha256']
+    'sha256':['Sha256'],
+    'regmod':['RegistryKeyPath','RegistryValue']
 }
 
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
@@ -67,7 +68,8 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'process_file_description': ['src.process.displayName'],
     'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5'],
     'sha256':['src.process.image.sha256','tgt.file.sha256'],
-    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1']
+    'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1'],
+    'regmod':['registry.keyPath','registry.value']
 }
 
 class SentinelOne(Product):
@@ -76,6 +78,7 @@ class SentinelOne(Product):
     """
     product: str = 's1'
     creds_file: str  # path to credential configuration file
+    _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
     _token: str  # AAD access token
     _url: str  # URL of SentinelOne console
     _site_id: Optional[str]  # Site ID for SentinelOne
@@ -99,6 +102,16 @@ class SentinelOne(Product):
         self._query_base = None
         self._pq = pq
         self._json = False
+
+        # If no conditions match, the default limit will be set to PowerQuery's default of 1000.
+        if self._pq and self._limit >= int(kwargs.get('limit',0)) > 0:
+            self._limit = int(kwargs['limit'])
+
+        elif not self._pq and 20000 > int(kwargs.get('limit',0)) > 0:
+                self._limit = int(kwargs['limit'])
+
+        elif not self._pq: 
+            self._limit = 20000
 
         self._last_request = 0.0
 
@@ -340,7 +353,7 @@ class SentinelOne(Product):
         return query_base, from_date, to_date
 
     def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
-                                key: str = 'data', after_request: Optional[Callable] = None, limit: int = 1000,
+                                key: str = 'data', after_request: Optional[Callable] = None,
                                 no_progress: bool = True, progress_desc: str = 'Retrieving data',
                                 add_default_params: bool = True) -> list[dict]:
         """
@@ -373,7 +386,7 @@ class SentinelOne(Product):
         if add_default_params:
             params.update(self._get_default_body())
 
-        params['limit'] = limit
+        params['limit'] = self._limit
 
         if headers is None:
             headers = dict()
@@ -523,9 +536,10 @@ class SentinelOne(Product):
                     # play nice with 100 item limit per search field
                     chunked_terms = list(self.divide_chunks(terms, 100))
                     for chunk in chunked_terms:
-                        search_value = ', '.join(f'"{x}"' for x in chunk)
-
+                        search_value_orig = ', '.join(f'"{x}"' for x in chunk)
+                        
                         for param in parameter:
+                            search_value = search_value_orig
                             if param == 'query':
                                 # Formats queries as (a) OR (b) OR (c) OR (d)
                                 if len(chunk) > 1:
@@ -607,7 +621,7 @@ class SentinelOne(Product):
             params.update({
                 "fromDate": datetime_to_epoch_millis(start_date),
                 "toDate": datetime_to_epoch_millis(end_date),
-                "limit": 20000,
+                "limit": self._limit,
                 "query": merged_query
             })
 

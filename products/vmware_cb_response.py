@@ -9,9 +9,11 @@ from common import Product, Tag, Result
 class CbResponse(Product):
     product: str = 'cbr'
     _conn: CbEnterpriseResponseAPI  # CB Response API
+    _limit: int = -1
 
     def __init__(self, profile: str, **kwargs):
         self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
+        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -64,6 +66,10 @@ class CbResponse(Product):
                     result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
                     results.add(result)
+  
+                if self._limit > 0 and len(results)+1 > self._limit:
+                        break
+                
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 

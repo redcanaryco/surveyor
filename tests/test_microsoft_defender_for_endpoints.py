@@ -8,6 +8,31 @@ sys.path.append(os.getcwd())
 from products.microsoft_defender_for_endpoints import DefenderForEndpoints
 from common import Tag
 
+def test_init_lower_limit_option(tmpdir, mocker):
+    mocker.patch.object(DefenderForEndpoints, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    dfe_product = DefenderForEndpoints(profile='default',creds_file=cred_file_path, limit=-2)
+    assert dfe_product._limit == -1
+
+
+def test_init_upper_limit_option(tmpdir, mocker):
+    mocker.patch.object(DefenderForEndpoints, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    dfe_product = DefenderForEndpoints(profile='default',creds_file=cred_file_path, limit=100001)
+    assert dfe_product._limit == -1
+
+
+def test_init_lower_limit_option(tmpdir, mocker):
+    mocker.patch.object(DefenderForEndpoints, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    dfe_product = DefenderForEndpoints(profile='default',creds_file=cred_file_path, limit=10)
+    assert dfe_product._limit == 10
+
+
+
 @pytest.fixture
 def dfe_product():
     with patch.object(DefenderForEndpoints, "__init__", lambda x, y: None):
@@ -40,6 +65,20 @@ def test_build_query_with_unsupported_field(dfe_product: DefenderForEndpoints, m
 
     assert dfe_product.build_query(filters) == ''
 
+def test_process_search_limit_option(dfe_product: DefenderForEndpoints, mocker):
+    query = 'DeviceFileEvents | where FileName = "foo bar"'
+    full_query = 'DeviceFileEvents | where FileName = "foo bar" | limit 5'
+    dfe_product._limit = 5
+
+    mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
+
+    dfe_product.log = logging.getLogger('pytest_surveyor')
+    dfe_product._token = 'test_token_value'
+    dfe_product.process_search(Tag('test123'), {}, query)
+    mocked_post_advanced_query.assert_called_once_with(data={'Query': full_query}, headers=None)
+
 def test_process_search(dfe_product : DefenderForEndpoints, mocker):
     """
     Verify process_search() does not alter a given query
@@ -47,8 +86,8 @@ def test_process_search(dfe_product : DefenderForEndpoints, mocker):
     query = 'DeviceFileEvents | where FileName="foo bar"'
 
     mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
-    mocked_add_results = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
-    mocked_get_default_headers = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
 
     dfe_product.log = logging.getLogger('pytest_surveyor')
     dfe_product._token = 'test_token_value'
@@ -80,12 +119,28 @@ def test_nested_process_search(dfe_product : DefenderForEndpoints, mocker):
             call(Tag('field_translation', data=None), {}, "DeviceProcessEvents | where SHA1 has_any ('qwerqwerqwerqwer') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
             call(Tag('field_translation', data=None), {}, "DeviceProcessEvents | where SHA256 has_any ('zxcvzxcvzxcv') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
             call(Tag('field_translation', data=None), {}, "DeviceImageLoadEvents | where FolderPath has_any ('pcwutl.dll') | project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFolderPath, InitiatingProcessCommandLine"),
+            call(Tag('field_translation', data=None), {}, "DeviceRegistryEvents | where RegistryKey has_any ('HKLM') | project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFolderPath, InitiatingProcessCommandLine, RegistryValueName, RegistryValueData"),
+            call(Tag('field_translation', data=None), {}, "DeviceNetworkEvents | where RemotePort has_any ('80') | project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFolderPath, InitiatingProcessCommandLine"),
             call(Tag('multiple_values', data=None), {}, "DeviceProcessEvents | where FolderPath has_any ('svchost.exe', 'cmd.exe') | project Timestamp, DeviceName, AccountName, FolderPath, ProcessCommandLine"),
             call(Tag('single_query', data=None), {}, "DeviceProcessEvents | where FileName contains \"rundll.exe\""),
             call(Tag('multiple_query', data=None), {}, "DeviceProcessEvents | where ProcessCommandLine contains \"-enc\""),
             call(Tag('multiple_query', data=None), {}, "DeviceImageLoadEvents | where FileName contains \"malware.dll\"")
         ]
     )
+
+def test_nested_process_search_limit_option(dfe_product: DefenderForEndpoints, mocker):
+    query = 'DeviceImageLoadEvents | where FileName = "foo bar"'
+    full_query = 'DeviceImageLoadEvents | where FileName = "foo bar" | limit 5'
+    dfe_product._limit = 5
+
+    mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
+
+    dfe_product.log = logging.getLogger('pytest_surveyor')
+    dfe_product._token = 'test_token_value'
+    dfe_product.nested_process_search(Tag('test123'), {'query': query}, {})
+    mocked_post_advanced_query.assert_called_once_with(data={'Query': full_query}, headers=None)
 
 def test_nested_process_search_unsupported_field(dfe_product : DefenderForEndpoints, mocker):
     """
@@ -113,8 +168,8 @@ def test_process_search_build_query(dfe_product : DefenderForEndpoints, mocker):
     }
 
     mocked_post_advanced_query = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._post_advanced_query')
-    mocked_add_results = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
-    mocked_get_default_headers = mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._add_results')
+    mocker.patch('products.microsoft_defender_for_endpoints.DefenderForEndpoints._get_default_header', return_value=None)
 
     dfe_product.log = logging.getLogger('pytest_surveyor')
     dfe_product._token = 'test_token_value'
