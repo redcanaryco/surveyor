@@ -52,6 +52,7 @@ def _write_results(output: Optional[Any], results: list[Result], program: str, s
     Helper function for writing search results to CSV or STDOUT.
     """
     if output:
+
         if isinstance(tag, tuple):
             tag = tag[0]
 
@@ -60,22 +61,25 @@ def _write_results(output: Optional[Any], results: list[Result], program: str, s
         else:
             log_echo(f"-->{tag.tag}: {len(results)} results", log, use_tqdm=use_tqdm)
 
-    for result in results:
-        row = [result.hostname, result.username, result.path, result.command_line, program, source]
+    try:
+        for result in results:
+            row = [result.hostname, result.username, result.path, result.command_line, program, source]
 
-        if output:
-            if result.other_data:
-                row.extend(result.other_data)
+            if output:
+                if result.other_data:
+                    row.extend(result.other_data)
 
-            output.writerow(row)
-        else:
-            # trim data to make sure it fits into table format
-            for i in range(len(row)):
-                if len(row[i]) > table_template[i]:
-                    row[i] = row[i][:table_template[i] - 3] + '...'
+                output.writerow(row)
+            else:
+                # trim data to make sure it fits into table format
+                for i in range(len(row)):
+                    if len(row[i]) > table_template[i]:
+                        row[i] = row[i][:table_template[i] - 3] + '...'
 
-            click.echo(table_template_str.format(*row))
-
+                click.echo(table_template_str.format(*row))
+    except AttributeError:
+        json_object = json.dumps(results, indent=4)
+        output.write(json_object)
 
 @dataclasses.dataclass
 class ExecutionOptions:
@@ -93,6 +97,7 @@ class ExecutionOptions:
     def_file: Optional[str]
     sigma_rule: Optional[str]
     sigma_dir: Optional[str]
+    json: bool
     no_file: bool
     no_progress: bool
     log_dir: str
@@ -119,6 +124,7 @@ class ExecutionOptions:
 # optional output
 @click.option("--output", "--o", help="Specify the output file for the results. "
                                       "The default is create survey.csv in the current directory.")
+@click.option("--json", help="write results to JSON file instead of the output CSV", is_flag=True, default=False)
 @click.option("--no-file", help="Write results to STDOUT instead of the output CSV", is_flag=True, default=False)
 @click.option("--no-progress", help="Suppress progress bar", is_flag=True, default=False)
 # version option
@@ -129,13 +135,13 @@ class ExecutionOptions:
 def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days: Optional[int], minutes: Optional[int],
         username: Optional[str],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
-        def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
+        def_dir: Optional[str], def_file: Optional[str], json: bool, no_file: bool, no_progress: bool,
         sigma_rule: Optional[str], sigma_dir: Optional[str],
         log_dir: str) -> None:
 
     ctx.ensure_object(dict)
     ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
-                               def_dir, def_file, sigma_rule, sigma_dir, no_file, no_progress, log_dir, dict())
+                               def_dir, def_file, sigma_rule, sigma_dir, json, no_file, no_progress, log_dir, dict())
 
     if ctx.invoked_subcommand is None:
         survey(ctx, 'cbr')
@@ -309,6 +315,10 @@ def survey(ctx, product_str: str = 'cbr') -> None:
             log_echo("Output arg takes precendence so prefix arg will be ignored", log)
         if opt.output:
             file_name = opt.output
+        elif opt.json:
+            file_name = 'survey.json'
+            if opt.prefix:
+                file_name = f'{opt.prefix}-{file_name}'
         elif opt.prefix:
             file_name = f'{opt.prefix}-survey.csv'
         else:
@@ -316,9 +326,12 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
         output_file = open(file_name, 'w', newline='', encoding='utf-8')
 
-        # create CSV writer and write the header row
-        writer = csv.writer(output_file)
-        writer.writerow(header)
+        if opt.json:
+            writer = output_file
+        else:
+            # create CSV writer and write the header row
+            writer = csv.writer(output_file)
+            writer.writerow(header)
     else:
         output_file = None
         writer = None
@@ -331,7 +344,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         if opt.query:
             # if a query is specified run it directly
             log_echo(f"Running Custom Query: {opt.query}", log)
-            product.process_search(Tag('query'), base_query, opt.query)
+            product.process_search(Tag('query'), base_query, opt.json, opt.query)
 
             for tag, results in product.get_results().items():
                 _write_results(writer, results, opt.query, "query", tag, log)
@@ -381,7 +394,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
                 ioc_list = [x.strip() for x in data]
 
-                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query)
+                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query, opt.json)
 
                 for tag, results in product.get_results().items():
                     _write_results(writer, results, opt.ioc_file, 'ioc', tag, log)
@@ -395,7 +408,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 with open(definitions, 'r') as file:
                     programs = json.load(file)
                     for program, criteria in programs.items():
-                        product.nested_process_search(Tag(program, data=source), criteria, base_query)
+                        product.nested_process_search(Tag(program, data=source), criteria, base_query, opt.json)
 
                         if product.has_results():
                             # write results as they become available
@@ -417,7 +430,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 program = f"{rule['title']} - {rule['id']}"
                 source = 'Sigma Rule'
 
-                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query)
+                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query, opt.json)
 
                 if product.has_results():
                     # write results as they become available

@@ -92,8 +92,11 @@ class CbEnterpriseEdr(Product):
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-    def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
-        results = set()
+    def perform_query(self, tag: Tag, base_query: dict, json: bool, query: str) -> set[Result]:
+        if json:
+            results = dict()
+        else:
+            results = set()
         parsed_base_query = self.build_query(base_query)
         try:
             self.log.debug(f'Query {tag}: {query}')
@@ -107,17 +110,19 @@ class CbEnterpriseEdr(Product):
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
                 deets = proc.get_details()
-                
-                hostname = deets['device_name'] if 'device_name' in deets else 'None'
-                user = deets['process_username'][0] if 'process_username' in deets else 'None'
-                proc_name = deets['process_name'] if 'process_name' in deets else 'None'
-                cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
-                ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
-                proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
-                
-                result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
-                
-                results.add(result)
+                if json:
+                    results.update(deets)
+                else:
+                    hostname = deets['device_name'] if 'device_name' in deets else 'None'
+                    user = deets['process_username'][0] if 'process_username' in deets else 'None'
+                    proc_name = deets['process_name'] if 'process_name' in deets else 'None'
+                    cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
+                    ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
+                    proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
+                    
+                    result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
+                    
+                    results.add(result)
         except cbc_sdk.errors.ApiError as e:
             self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)
@@ -126,12 +131,12 @@ class CbEnterpriseEdr(Product):
 
         return results
 
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
+    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:        
         results = self.perform_query(tag, base_query, query)
 
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
         results: list = []
 
         for search_field, terms in criteria.items():

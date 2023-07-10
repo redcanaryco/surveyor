@@ -55,6 +55,7 @@ class CortexXDR(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]]
     _last_request: float
+    _json: bool # output raw json
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
@@ -179,7 +180,8 @@ class CortexXDR(Product):
         # therefore we return the relative time separately
         return query_base, relative_time_ms
 
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
+        self._json = json
         self._base_query, relative_time_ms = self.build_query(base_query)
 
         if tag not in self._queries:
@@ -188,7 +190,8 @@ class CortexXDR(Product):
         full_query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data {query}')
         self._queries[tag].append(full_query)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
+        self._json = json
         self._base_query, relative_time_ms = self.build_query(base_query)
 
         try:
@@ -302,19 +305,22 @@ class CortexXDR(Product):
                 self.log.debug(f'Got {count} events')
                 self._results[tag] = list()
                 for event in events:
-                    hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
+                    if self._json:
+                        self._results[tag].update(events)
+                    else:
+                        hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
 
-                    # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
-                    username = event['action_process_username'] if 'action_process_username' in event else \
-                        event['actor_primary_username']
-                    path = event['action_process_image_path'] if 'action_process_image_path' in event else \
-                        event['actor_process_image_path']
-                    commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
-                        event['actor_process_command_line']
-                    additional_data = (event['_time'], event['event_id'])
+                        # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
+                        username = event['action_process_username'] if 'action_process_username' in event else \
+                            event['actor_primary_username']
+                        path = event['action_process_image_path'] if 'action_process_image_path' in event else \
+                            event['actor_process_image_path']
+                        commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
+                            event['actor_process_command_line']
+                        additional_data = (event['_time'], event['event_id'])
 
-                    result = Result(hostname, username, path, commandline, additional_data)
-                    self._results[tag].append(result)
+                        result = Result(hostname, username, path, commandline, additional_data)
+                        self._results[tag].append(result)
         self._queries.clear()
 
     def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:

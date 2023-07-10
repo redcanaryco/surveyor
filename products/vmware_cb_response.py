@@ -46,8 +46,11 @@ class CbResponse(Product):
         
         return query_base
 
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        results = set()
+    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
+        if json:
+            results = dict()
+        else:
+            results = set()
 
         query = query + self.build_query(base_query)
         self._echo(query)
@@ -55,16 +58,22 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                if json:
+                    results.update(proc)
+                else:
+                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
-                results.add(result)
+                    results.add(result)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
 
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = set()
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
+        if json:
+            results = dict()
+        else:
+            results = set()
 
         try:
             for search_field, terms in criteria.items():
@@ -86,9 +95,12 @@ class CbResponse(Product):
                 self.log.debug(f'Query: {query}')
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
-                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
-                                    (proc.start,))
-                    results.add(result)
+                    if json:
+                        results.update(proc)
+                    else:
+                        result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                                        (proc.start,))
+                        results.add(result)
         except Exception as e:
             self._echo(f'Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)

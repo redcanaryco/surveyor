@@ -42,6 +42,7 @@ class DefenderForEndpoints(Product):
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
+    _json: bool # output raw json
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
@@ -89,34 +90,40 @@ class DefenderForEndpoints(Product):
         return response.json()['access_token']
 
     def _post_advanced_query(self, data: dict, headers: dict) -> list[Result]:
-        results = set()
+        if self._json:
+            results = dict()
+        else:
+            results = set()
 
         try:
             url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
             response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
-                for res in response.json()["Results"]:
-                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
-                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
-                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
-                        username = 'Unknown'
-                    
-                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
-                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
-                    else:
-                        cmdline = 'Unknown'
-                    
-                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
-                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
-                    else:
-                        proc_name = 'Unknown'
+                if self._json:
+                    results = response.json()["Results"]
+                else:
+                    for res in response.json()["Results"]:
+                        hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                        if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
+                            username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                            username = 'Unknown'
+                        
+                        if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
+                            cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
+                        else:
+                            cmdline = 'Unknown'
+                        
+                        if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
+                            proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
+                        else:
+                            proc_name = 'Unknown'
 
-                    timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+                        timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
 
-                    result = Result(hostname, username, proc_name, cmdline,
-                                    (timestamp,))
-                    results.add(result)
+                        result = Result(hostname, username, proc_name, cmdline,
+                                        (timestamp,))
+                        results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
         except KeyboardInterrupt:
@@ -134,7 +141,8 @@ class DefenderForEndpoints(Product):
             "Accept": 'application/json'
         }
 
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
+        self._json = json
         query = query.rstrip() 
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
@@ -145,8 +153,9 @@ class DefenderForEndpoints(Product):
         results = self._post_advanced_query(data=full_query, headers=self._get_default_header())
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json:bool) -> None:
         query_base = self.build_query(base_query)
+        self._json = json
 
         try:
             for search_field, terms in criteria.items():
