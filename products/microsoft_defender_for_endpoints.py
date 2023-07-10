@@ -163,11 +163,11 @@ class DefenderForEndpoints(Product):
                     if isinstance(terms, list):
                         for query_entry in terms:
                             query_entry += f" {query_base}" if query_base != '' else ''
-                            self.process_search(tag, {}, query_entry)
+                            self.process_search(tag, {}, json, query_entry)
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
-                        self.process_search(tag, {}, query_entry)
+                        self.process_search(tag, {}, json, query_entry)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:
@@ -185,7 +185,7 @@ class DefenderForEndpoints(Product):
 
                     query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
-                    self.process_search(tag, {}, query)
+                    self.process_search(tag, {}, json, query)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
