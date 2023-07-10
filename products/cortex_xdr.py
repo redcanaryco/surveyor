@@ -63,9 +63,9 @@ class CortexXDR(Product):
 
         self.creds_file = creds_file
         self._queries = dict()
-
+        if self._limit >= int(kwargs.get('limit',0)) > 0:
+            self._limit = int(kwargs['limit'])
         self._last_request = 0.0
-        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 

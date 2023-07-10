@@ -107,7 +107,17 @@ class ExecutionOptions:
 @click.option("--profile", help="The credentials profile to use.", type=click.STRING)
 @click.option("--days", help="Number of days to search.", type=click.INT)
 @click.option("--minutes", help="Number of minutes to search.", type=click.INT)
-@click.option("--limit", help="Number of results to return.", type=click.INT)
+@click.option("--limit",help="""
+              Number of results to return. Cortex XDR: Default: 1000, Max: Default
+              Microsoft Defender for Endpoint: Default/Max: 100000
+              SentinelOne (PowerQuery): Default/Max: 1000
+              SentinelOne (Deep Visibility): Default/Max: 20000
+              VMware Carbon Black EDR: Default/Max: None
+              VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
+              
+              Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
+              """
+              , type=click.INT)
 @click.option("--hostname", help="Target specific host by name.", type=click.STRING)
 @click.option("--username", help="Target specific username.")
 # different ways you can survey the EDR
