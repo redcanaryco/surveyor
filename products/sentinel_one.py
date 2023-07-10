@@ -76,6 +76,7 @@ class SentinelOne(Product):
     """
     product: str = 's1'
     creds_file: str  # path to credential configuration file
+    _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
     _token: str  # AAD access token
     _url: str  # URL of SentinelOne console
     _site_id: Optional[str]  # Site ID for SentinelOne
@@ -97,6 +98,16 @@ class SentinelOne(Product):
         self._queries = dict()
         self._query_base = None
         self._pq = pq
+
+        # If no conditions match, the default limit will be set to PowerQuery's default of 1000.
+        if self._pq and self._limit >= int(kwargs.get('limit',0)) > 0:
+            self._limit = int(kwargs['limit'])
+
+        elif not self._pq and 20000 > int(kwargs.get('limit',0)) > 0:
+                self._limit = int(kwargs['limit'])
+
+        elif not self._pq: 
+            self._limit = 20000
 
         self._last_request = 0.0
 
@@ -338,7 +349,7 @@ class SentinelOne(Product):
         return query_base, from_date, to_date
 
     def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
-                                key: str = 'data', after_request: Optional[Callable] = None, limit: int = 1000,
+                                key: str = 'data', after_request: Optional[Callable] = None,
                                 no_progress: bool = True, progress_desc: str = 'Retrieving data',
                                 add_default_params: bool = True) -> list[dict]:
         """
@@ -371,7 +382,7 @@ class SentinelOne(Product):
         if add_default_params:
             params.update(self._get_default_body())
 
-        params['limit'] = limit
+        params['limit'] = self._limit
 
         if headers is None:
             headers = dict()
@@ -603,7 +614,7 @@ class SentinelOne(Product):
             params.update({
                 "fromDate": datetime_to_epoch_millis(start_date),
                 "toDate": datetime_to_epoch_millis(end_date),
-                "limit": 20000,
+                "limit": self._limit,
                 "query": merged_query
             })
 
