@@ -55,6 +55,7 @@ class CortexXDR(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]]
     _last_request: float
+    _limit: int = 1000 # Max is 1000 results otherwise have to get the results via stream
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
@@ -62,7 +63,8 @@ class CortexXDR(Product):
 
         self.creds_file = creds_file
         self._queries = dict()
-
+        if self._limit >= int(kwargs.get('limit',0)) > 0:
+            self._limit = int(kwargs['limit'])
         self._last_request = 0.0
 
         super().__init__(self.product, profile, **kwargs)
@@ -227,13 +229,12 @@ class CortexXDR(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-    def _get_xql_results(self, query_id: str, limit: int = 1000) -> Tuple[dict, int]:
-        actual_limit = limit if limit < 1000 else 1000  # Max is 1000 results otherwise have to get the results via stream
+    def _get_xql_results(self, query_id: str) -> Tuple[dict, int]:
         params = {
             'request_data': {
                 'query_id': query_id,
                 'pending_flag': True,
-                'limit': actual_limit,
+                'limit': self._limit,
                 'format': 'json'
             }
         }

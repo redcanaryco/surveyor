@@ -39,10 +39,12 @@ def _convert_relative_time(relative_time) -> str:
 class CbEnterpriseEdr(Product):
     product: str = 'cbc'
     _conn: CBCloudAPI  # CB Cloud API
+    _limit: int = -1
 
     def __init__(self, profile: str, **kwargs):
         self._device_group = kwargs['device_group'] if 'device_group' in kwargs else None
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
+        self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -119,6 +121,9 @@ class CbEnterpriseEdr(Product):
                 result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
                 
                 results.add(result)
+                if self._limit > 0 and len(results)+1 > self._limit:
+                    break
+
         except cbc_sdk.errors.ApiError as e:
             self._echo(f'CbC SDK Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)
