@@ -12,7 +12,7 @@ from common import Tag
 
 class MockProcResult():
     def get_details(self):
-        random_num = random.randint(1, 10)
+        random_num = random.randint(1, 1000)
         return {'device_name': f'workstation{random_num}', 'process_username':[f'username{random_num}'], 'process_name':f'proc{random_num}', 'process_cmdline':[f'cmdline{random_num}'], 'device_timestamp': f'ts{random_num}', 'process_guid': f'guid{random_num}'}
 
 
