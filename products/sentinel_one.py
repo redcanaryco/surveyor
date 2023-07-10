@@ -76,7 +76,7 @@ class SentinelOne(Product):
     """
     product: str = 's1'
     creds_file: str  # path to credential configuration file
-    _limit: int = 1000
+    _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
     _token: str  # AAD access token
     _url: str  # URL of SentinelOne console
     _site_id: Optional[str]  # Site ID for SentinelOne
@@ -99,11 +99,13 @@ class SentinelOne(Product):
         self._query_base = None
         self._pq = pq
 
+        # If no conditions match, the default limit will be set to PowerQuery's default of 1000.
         if self._pq and self._limit >= int(kwargs.get('limit',0)) > 0:
             self._limit = int(kwargs['limit'])
 
         elif not self._pq and 20000 > int(kwargs.get('limit',0)) > 0:
                 self._limit = int(kwargs['limit'])
+
         elif not self._pq: 
             self._limit = 20000
 
