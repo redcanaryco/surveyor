@@ -14,6 +14,8 @@ PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
                 'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
+    'ipport': {'table':'DeviceNetworkEvents','field':'RemotePort', 
+               'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
     'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
                 'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
@@ -40,12 +42,16 @@ class DefenderForEndpoints(Product):
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
+    _limit: int = -1
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
             raise ValueError(f'Credential file {creds_file} does not exist')
 
         self.creds_file = creds_file
+
+        if 100000 >= int(kwargs.get('limit', -1)) > self._limit:
+            self._limit = int(kwargs['limit'])
 
         super().__init__(self.product, profile, **kwargs)
 
@@ -137,6 +143,9 @@ class DefenderForEndpoints(Product):
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
+        if self._limit > 0 and 'limit' not in query:
+            query += f" | limit {str(self._limit)}"
+
         self.log.debug(f'Query: {query}')
         full_query = {'Query': query}
 
@@ -156,6 +165,7 @@ class DefenderForEndpoints(Product):
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
+
                         self.process_search(tag, {}, query_entry)
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)

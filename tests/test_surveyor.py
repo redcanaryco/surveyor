@@ -215,7 +215,7 @@ def test_ioc_file_with_base_query(runner, mocker):
 
 
 def test_no_argument_provided(runner):
-    arguments = ["--deffile", "--profile", "--prefix", "--output", "--defdir", "--iocfile", "--ioctype", "--query", "--hostname", "--days", "--minutes", "--username"]
+    arguments = ["--deffile", "--profile", "--prefix", "--output", "--defdir", "--iocfile", "--ioctype", "--query", "--hostname", "--days", "--minutes", "--username", "--limit"]
 
     for arg in arguments:
         result = runner.invoke(cli, [arg])

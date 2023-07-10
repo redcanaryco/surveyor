@@ -85,6 +85,7 @@ class ExecutionOptions:
     days: Optional[int]
     minutes: Optional[int]
     username: Optional[str]
+    limit: Optional[int]
     ioc_file: Optional[str]
     ioc_type: Optional[str]
     query: Optional[str]
@@ -106,6 +107,17 @@ class ExecutionOptions:
 @click.option("--profile", help="The credentials profile to use.", type=click.STRING)
 @click.option("--days", help="Number of days to search.", type=click.INT)
 @click.option("--minutes", help="Number of minutes to search.", type=click.INT)
+@click.option("--limit",help="""
+              Number of results to return. Cortex XDR: Default: 1000, Max: Default
+              Microsoft Defender for Endpoint: Default/Max: 100000
+              SentinelOne (PowerQuery): Default/Max: 1000
+              SentinelOne (Deep Visibility): Default/Max: 20000
+              VMware Carbon Black EDR: Default/Max: None
+              VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
+              
+              Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
+              """
+              , type=click.INT)
 @click.option("--hostname", help="Target specific host by name.", type=click.STRING)
 @click.option("--username", help="Target specific username.")
 # different ways you can survey the EDR
@@ -127,14 +139,14 @@ class ExecutionOptions:
 @click.option("--log-dir", 'log_dir', help="Specify the logging directory.", type=click.STRING, default='logs')
 @click.pass_context
 def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days: Optional[int], minutes: Optional[int],
-        username: Optional[str],
+        username: Optional[str], limit: Optional[int],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
         def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
         sigma_rule: Optional[str], sigma_dir: Optional[str],
         log_dir: str) -> None:
 
     ctx.ensure_object(dict)
-    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
+    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, limit, ioc_file, ioc_type, query, output,
                                def_dir, def_file, sigma_rule, sigma_dir, no_file, no_progress, log_dir, dict())
 
     if ctx.invoked_subcommand is None:
@@ -264,6 +276,10 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
     if len(opt.product_args) > 0:
         kwargs.update(opt.product_args)
+
+    if opt.limit:
+        kwargs['limit'] = str(opt.limit)
+
 
     kwargs['tqdm_echo'] = str(not opt.no_progress)
 
