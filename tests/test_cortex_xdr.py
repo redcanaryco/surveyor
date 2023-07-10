@@ -9,6 +9,29 @@ from products.cortex_xdr import CortexXDR, Query
 from common import Tag
 
 
+def test_init_lower_limit_option(tmpdir, mocker):
+    mocker.patch.object(CortexXDR, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    cortex_product = CortexXDR(profile='default',creds_file = cred_file_path, limit = -1)
+    assert cortex_product._limit == 1000
+
+
+def test_init_upper_limit_option(tmpdir, mocker):
+    mocker.patch.object(CortexXDR, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    cortex_product = CortexXDR(profile='default',creds_file = cred_file_path, limit = 1001)
+    assert cortex_product._limit == 1000
+
+
+def test_init_limit_option(tmpdir, mocker):
+    mocker.patch.object(CortexXDR, '_authenticate')
+    cred_file_path = tmpdir.mkdir('test_dir').join('test_creds.ini')
+    cred_file_path.write("asdfasdfasdf")
+    cortex_product = CortexXDR(profile='default',creds_file = cred_file_path, limit = 11)
+    assert cortex_product._limit == 11
+
 @pytest.fixture
 def cortex_product():
     with patch.object(CortexXDR, "__init__", lambda x, y: None):
