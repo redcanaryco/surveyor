@@ -4,7 +4,7 @@ Surveyor is a Python utility that queries Endpoint Detection and Response (EDR)
 products and summarizes the results. Security and IT teams can use Surveyor to
 baseline their environments and identify abnormal activity.
 
-## Current Version: 2.4.1
+## Current Version: 2.5.0
 
 Version 2.0 introduced breaking changes to the command line interface and support for SentinelOne. 
 If you are looking for the prior version of Surveyor, see [past releases](https://github.com/redcanaryco/surveyor/releases).
