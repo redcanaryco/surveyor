@@ -79,6 +79,7 @@ class SentinelOne(Product):
     _site_id: Optional[str]  # Site ID for SentinelOne
     _account_id: Optional[str]  # Account ID for SentinelOne
     _session: requests.Session
+    _dv_wait: int = 60
     _queries: dict[Tag, list[Query]]
     _last_request: float
     _site_ids: list[str]
@@ -599,8 +600,8 @@ class SentinelOne(Product):
             if not self._pq:
                 # ensure we do not submit more than one request every 60 seconds to comply with rate limit
                 seconds_sice_last_request = time.time() - self._last_request
-                if seconds_sice_last_request < 60:
-                    sleep_seconds = 60 - seconds_sice_last_request
+                if seconds_sice_last_request < self._dv_wait:
+                    sleep_seconds = self._dv_wait - seconds_sice_last_request
                     self.log.debug(f'Sleeping for {sleep_seconds}')
 
                     cancel_event.wait(ceil(sleep_seconds))
@@ -743,8 +744,8 @@ class SentinelOne(Product):
                                                 cancel_event, not self._pq))
                     if not self._pq:
                         # ensure we do not submit more than one request every 60 seconds to comply with rate limit
-                            self.log.debug(f'Sleeping for 60 seconds')
-                            cancel_event.wait(60)
+                            self.log.debug(f'Sleeping for {self._dv_wait} seconds')
+                            cancel_event.wait(self._dv_wait)
 
             p_bar = tqdm(desc='Running queries',
                     disable=not self._tqdm_echo,
