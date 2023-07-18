@@ -38,18 +38,28 @@ def _convert_relative_time(relative_time) -> str:
 
 class CbEnterpriseEdr(Product):
     product: str = 'cbc'
+    profile: str = "default"
     _conn: CBCloudAPI  # CB Cloud API
     _limit: int = -1
+    _raw: bool = False
 
-    def __init__(self, profile: str, **kwargs):
+    def __init__(self, **kwargs):
+        self.url = kwargs['url'] if 'url' in kwargs else None
+        self.token = kwargs['token'] if 'token' in kwargs else None
+        self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
+        self.org_key = kwargs['org_key'] if 'org_key' in kwargs else None
         self._device_group = kwargs['device_group'] if 'device_group' in kwargs else None
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
+        self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        print(kwargs)
 
-        super().__init__(self.product, profile, **kwargs)
+        super().__init__(self.product, **kwargs)
 
     def _authenticate(self) -> None:
-        if self.profile:
+        if self.token and self.url and self.org_key:
+            cb_conn = CBCloudAPI(token=self.token, url=self.url, org_key = self.org_key)
+        elif self.profile:
             cb_conn = CBCloudAPI(profile=self.profile)
         else:
             cb_conn = CBCloudAPI()
@@ -96,7 +106,8 @@ class CbEnterpriseEdr(Product):
             yield l[i:i + n]
 
     def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
-        results = set()
+ 
+        results = list()
         parsed_base_query = self.build_query(base_query)
         try:
             self.log.debug(f'Query {tag}: {query}')
@@ -116,11 +127,15 @@ class CbEnterpriseEdr(Product):
                 proc_name = deets['process_name'] if 'process_name' in deets else 'None'
                 cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
                 ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
-                proc_guid = deets['process_guid'] if 'process_guid' in deets else 'Non'
+                proc_guid = deets['process_guid'] if 'process_guid' in deets else 'None'
                 
                 result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
                 
-                results.add(result)
+                if self._raw: 
+                    results.append(deets)
+                else:
+                    results.append(result)
+                    
                 if self._limit > 0 and len(results)+1 > self._limit:
                     break
 
@@ -129,12 +144,15 @@ class CbEnterpriseEdr(Product):
             self.log.exception(e)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
-
+            
         return results
-
+    
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
         results = self.perform_query(tag, base_query, query)
-
+        
+        if self._raw: 
+            return results
+        
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:

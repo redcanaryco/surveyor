@@ -32,20 +32,15 @@ class Product(ABC):
     Subclasses must implement all abstract methods and invoke this class's constructor.
     """
     product: Optional[str] = None  # a string describing the product (e.g. cbr/cbth/defender/s1)
-    profile: str  # the profile is used to authenticate to the target platform
     _results: dict[Tag, list[Result]]
     log: logging.Logger
     _tqdm_echo: bool = False
 
-    def __init__(self, product, profile, tqdm_echo: bool = False, **kwargs):
-        self.profile = profile
+    def __init__(self, product, tqdm_echo: bool = False, **kwargs):
         self.product = product
         self._tqdm_echo = tqdm_echo
 
         self.log = logging.getLogger(f'surveyor.{self.product}')
-
-        if not self.profile:
-            self.profile = 'default'
 
         self._results = dict()
 
@@ -137,7 +132,7 @@ class Product(ABC):
         """
         log_echo(message, self.log, level, use_tqdm=self._tqdm_echo)
 
-def sigma_translation(product: str, sigma_rules: list) -> dict:
+def sigma_translation(product: str, sigma_rules: list, file=False) -> dict:
     supports_json_ouput = True
 
     try:
@@ -167,7 +162,39 @@ def sigma_translation(product: str, sigma_rules: list) -> dict:
         from sigma.backends.microsoft365defender import Microsoft365DefenderBackend # type: ignore
         backend = Microsoft365DefenderBackend()
 
-    rule_collection = SigmaCollection.load_ruleset(sigma_rules)
+    #Will take in filenames and load from disk
+    if file:
+        rule_collection = SigmaCollection.load_ruleset(sigma_rules)
+
+    #Will take in a list of yaml objects in str format
+    else:
+        rule_collection = [SigmaCollection.from_yaml(i) for i in sigma_rules]
+        rule_collection = SigmaCollection.merge(rule_collection)
+
+        """
+        Example: 
+        
+        sigma_rules = [
+            \"""
+            title: title
+            status: experimental
+            description: description
+            author: 'you'
+            date: date
+            logsource:
+                category: some_category
+            detection:
+                selection:
+                    DestinationHostname|contains:
+                        - 'google.com'
+                condition: selection
+            falsepositives:
+                - Unknown
+            level: high\"""
+
+            ]
+        """
+        
     if supports_json_ouput:
         return backend.convert(rule_collection, "json")
     else:

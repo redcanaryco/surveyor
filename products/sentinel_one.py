@@ -8,7 +8,6 @@ from concurrent.futures import Future
 from math import ceil
 from threading import Event
 
-import click
 from tqdm import tqdm
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -77,30 +76,35 @@ class SentinelOne(Product):
     Surveyor implementation for product "SentinelOne"
     """
     product: str = 's1'
-    creds_file: str  # path to credential configuration file
+    profile: Optional[str] = None
+    creds_file: str = None # path to credential configuration file
     _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
-    _token: str  # AAD access token
-    _url: str  # URL of SentinelOne console
-    _site_id: Optional[str]  # Site ID for SentinelOne
-    _account_id: Optional[str]  # Account ID for SentinelOne
+    _token: str  = None # AAD access token
+    _url: str = None # URL of SentinelOne console
+    _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
+    _account_ids: list() = [] # Account ID(s) for SentinelOne
+    _site_ids: list() = [] # Site ID(s) for SentinelOne
     _session: requests.Session
-    _queries: dict[Tag, list[Query]]
-    _last_request: float
-    _site_ids: list[str]
-    _query_base: Optional[str]
-    _pq: bool  # Run queries using PowerQuery instead of DeepVisibility
+    _queries: dict[Tag, list[Query]] = dict()
+    _last_request: float = 0.0
+    _query_base: Optional[str] = None
+    _pq: bool = True # Run queries using PowerQuery instead of DeepVisibility
+    _raw: bool = False
 
-    def __init__(self, profile: str, creds_file: str, account_id: Optional[list[str]] = None,
-                 site_id: Optional[list[str]] = None, account_name: Optional[list[str]] = None, pq: bool = False,
-                 **kwargs):
-        if not os.path.isfile(creds_file):
-            raise ValueError(f'Credential file {creds_file} does not exist')
+    def __init__(self, **kwargs):
+  
+        self.profile = kwargs['profile'] if 'profile' in kwargs else None
+        self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
+        self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
+        self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
+        self._url = kwargs['url'] if 'url' in kwargs else None
+        self._token = kwargs['token'] if 'token' in kwargs else None
+        self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
+        self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
 
-        self.creds_file = creds_file
-        self._queries = dict()
-        self._query_base = None
-        self._pq = pq
-
+        if kwargs.get('deep_visibility', False):
+            self._pq = False
+            
         # If no conditions match, the default limit will be set to PowerQuery's default of 1000.
         if self._pq and self._limit >= int(kwargs.get('limit',0)) > 0:
             self._limit = int(kwargs['limit'])
@@ -111,38 +115,38 @@ class SentinelOne(Product):
         elif not self._pq: 
             self._limit = 20000
 
-        self._last_request = 0.0
-
-        # Save these values to `self` for reference in _authenticate()
-        self.site_id = site_id
-        self.account_id = account_id
-        self.account_name = account_name
-
-        super().__init__(self.product, profile, **kwargs)
+        super().__init__(self.product, **kwargs)
 
     def _authenticate(self):
-        config = configparser.ConfigParser()
-        config.read(self.creds_file)
+        if self._url and self._token:
+            self._url = self._url.rstrip('/')
 
-        if self.profile not in config:
-            raise ValueError(f'Profile {self.profile} is not present in credential file')
+        elif os.path.isfile(self.creds_file):
+            config = configparser.ConfigParser()
+            config.read(self.creds_file)
 
-        section = config[self.profile]
+            if self.profile and self.profile not in config:
+                raise ValueError(f'Profile {self.profile} is not present in credential file or no profile has been provided. Please validate profile or ensure profile is provided.')
 
-        # ensure configuration has required fields
-        if 'url' not in section:
-            raise ValueError(f'S1 configuration invalid, ensure "url" is specified')
+            section = config[self.profile]
 
-        # extract required information from configuration
-        if 'token' in section:
-            self._token = section['token']
-        else:
-            if 'S1_TOKEN' not in os.environ:
-                raise ValueError(f'S1 configuration invalid, specify "token" configuration value or "S1_TOKEN" '
-                                 f'environment variable')
-            self._token = os.environ['S1_TOKEN']
+            # ensure configuration has required fields
+            if 'url' not in section:
+                raise ValueError(f'S1 configuration invalid, ensure "url" is specified')
 
-        self._url = section['url'].rstrip('/')
+            # extract required information from configuration
+            if 'token' in section:
+                self._token = section['token']
+            else:
+                if 'S1_TOKEN' not in os.environ:
+                    raise ValueError(f'S1 configuration invalid, specify "token" configuration value or "S1_TOKEN" '
+                                    f'environment variable')
+                self._token = os.environ['S1_TOKEN']
+
+            self._url = section['url'].rstrip('/')
+
+        elif not os.path.isfile(self.creds_file):
+            raise ValueError(f'Credential file {self.creds_file} does not exist')
 
         if not self._url.startswith('https://'):
             raise ValueError(f'URL must start with "https://"')
@@ -153,21 +157,18 @@ class SentinelOne(Product):
 
         # generate a list of site_ids based on config file and cmdline input
         # this will also test API keys as it goes
-        self._get_site_ids(self.site_id, self.account_id, self.account_name)
+        self._get_site_ids(self._site_ids,self._account_ids,self._account_names)
 
         if len(self._site_ids) < 1 and len(self._account_ids) < 1:
             raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
 
-    def _get_site_ids(self, site_id, account_id, account_name):
-        config = configparser.ConfigParser()
-        config.read(self.creds_file)
-
-        # check if any cmdline stuff was input - that will take precedence over config file stuff
-        site_ids = site_id if site_id else list()
-        account_ids = account_id if account_id else list()
-        account_names = account_name if account_name else list()
-
+    def _get_site_ids(self, site_ids, account_ids, account_names):
+        account_ids = list()
+        # If either of the following were passed into surveyor, their value will take precedence and the config file will not be used.
         if not site_ids and not account_ids and not account_names:
+            config = configparser.ConfigParser()
+            config.read(self.creds_file)
+
             # extract account/site ID from configuration if set
             if 'account_id' in config[self.profile]:
                 for scope_id in config[self.profile]['account_id'].split(','):
@@ -184,11 +185,8 @@ class SentinelOne(Product):
                     if name not in account_names:
                         account_names.append(name.strip())
 
-        # determine site and account IDs to query (default is all)
-        self._site_ids = list()
-        self._account_ids = list()
-
-        if account_ids:  # verify provided account IDs are valid
+        # verify provided account IDs are valid
+        if account_ids:  
             # create batch of 10 account IDs per call
             counter = 0
             temp_list = []
@@ -239,7 +237,8 @@ class SentinelOne(Product):
             if len(diff) > 0:
                 self.log.warning(f'Account names {",".join(diff)} not found')
 
-        if site_ids:  # ensure specified site IDs are valid and not already covered by the account_ids listed above
+        # ensure specified site IDs are valid and not already covered by the account_ids listed above
+        if site_ids:  
             temp_site_ids = list()
             # create batches of 10 site_ids
             counter = 0
@@ -281,9 +280,9 @@ class SentinelOne(Product):
                 self.log.warning(f'Site IDs {",".join(diff)} not found')
 
         # remove unnecessary variables from self
-        self.__dict__.pop('site_id', None)
-        self.__dict__.pop('account_id', None)
-        self.__dict__.pop('account_name', None)
+        self.__dict__.pop('site_ids', None)
+        self.__dict__.pop('account_ids', None)
+        self.__dict__.pop('account_names', None)
 
         self.log.debug(f'Site IDs: {self._site_ids}')
         self.log.debug(f'Account IDs: {self._account_ids}')
@@ -409,7 +408,6 @@ class SentinelOne(Product):
 
                 if not isinstance(call_data, list):
                     call_data = [call_data]
-
                 self.log.debug(f'Got {len(call_data)} results in page')
                 data.extend(call_data)
                 pagination_data = response.json()['pagination']
@@ -423,7 +421,7 @@ class SentinelOne(Product):
 
                 next_cursor = pagination_data['nextCursor']
                 params['cursor'] = next_cursor
-
+                
             return data
 
     def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar_needed: bool = True) -> list[dict]:
@@ -661,7 +659,7 @@ class SentinelOne(Product):
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
-
+            
             for event in events:
                 if self._pq:
                     hostname = event[0]
@@ -690,10 +688,13 @@ class SentinelOne(Product):
 
                 result = Result(hostname, username, path, command_line, additional_data)
 
-                self._results[merged_tag].append(result)
+                if self._raw:
+                    self._results[merged_tag].append(event)
+                else:
+                    self._results[merged_tag].append(result)
+
         except Exception as e:
             self.log.error(e)
-            click.secho(f'Error in query thread: {e}', fg='red')
 
     def _process_queries(self) -> None:
         """
