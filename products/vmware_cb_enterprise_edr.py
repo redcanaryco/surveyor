@@ -52,8 +52,7 @@ class CbEnterpriseEdr(Product):
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
-        print(kwargs)
-
+        
         super().__init__(self.product, **kwargs)
 
     def _authenticate(self) -> None:

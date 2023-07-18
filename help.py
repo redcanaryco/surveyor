@@ -250,9 +250,11 @@ def logger(edr:str, logs_dir:str='logs') -> logging.Logger:
     return log
 
 def check_product_args_structure(edr: str, product_args: dict) -> dict:
+    if product_args == {}:
+        return {"result": True, "edr": edr, "required_fields": "No arguments were supplied"}
 
-    product_check = [k for k, v in product_args.items() if v]
-
+    product_check = [k for k, v in product_args.items()]
+    
     if edr == "cbc":
         required_fields = ['device_group', 'device_policy']
     elif edr == "cbr":

@@ -10,7 +10,7 @@ import csv
 import json
 import logging
 from tqdm import tqdm
-from help import log_echo, build_survey, logger, check_credentials_structure, check_product_args_structure, credential_builder
+from help import log_echo, build_survey, logger, check_credentials_structure, check_product_args_structure, credential_builder, product_arg_builder
 from common import Tag, Result, sigma_translation
 from load import get_product_instance
 from typing import Optional, Tuple, Any
@@ -92,7 +92,7 @@ class Surveyor:
         if (sigma_rules or sigma_rule or sigma_rules_str) and self._edr == 'cortex':
             sys.exit('sigmarules are not supported by edr "cortex"')
 
-        if (sigma_rules or sigma_rule or sigma_rules_str) and self._edr == 's1' and product_args.get('deep_visibility', None) == False:
+        if (sigma_rules or sigma_rule or sigma_rules_str) and self._edr == 's1' and product_args.get('deep_visibility', True) == False:
             sys.exit('sigmarules are not supported by SentinelOne PowerQuery')
 
         #Instantiate a Logger
@@ -115,7 +115,7 @@ class Surveyor:
         kwargs['tqdm_echo'] = str(not no_progress)
 
         if product_args:
-            validation = check_product_args_structure(edr=self._edr,product_args=product_args)
+            validation = check_product_args_structure(edr=self._edr, product_args=product_args)
             required_fields = validation["required_fields"]
             if validation["result"] != True:
                 sys.exit(f"Invalid products arguments provided for edr: {self._edr}, here were the keys provided {list(product_args.keys())}, here are the keys required for {self._edr}: {required_fields}")
@@ -203,14 +203,18 @@ class Surveyor:
                         return raw_results
                     
                     elif self._edr in ['cortex', 'dfe', 's1']:
+                        self._results_collector = [] 
                         for tag, results in product.get_results().items():
-                            self._results_collector .append(results)                    
+                            self._results_collector.append(results)                    
                             if len(self._results_collector ) > 0:
                                 log_echo(f"\033[92m-->query: {len(self._results_collector )} results \033[0m", self._log, use_tqdm=self._use_tqdm)
                             else:
                                 log_echo(f"-->query: {len(self._results_collector )} results", self._log, use_tqdm=self._use_tqdm)
                                 
-                        return self._results_collector 
+                    if len(self._results_collector) > 1:
+                         return self._results_collector
+                    else:
+                        return "No results"
                         
                 else:
                     product.process_search(Tag('query'), base_query, query)
@@ -326,6 +330,11 @@ class Surveyor:
                         outfile.write(json_object)
                         
                 log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", self._log)
+
+            if len(self._results_collector) > 1:
+                 return self._results_collector
+            else:
+                return "No results"
                         
             
             return self._results_collector
@@ -445,6 +454,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
+    args.product_args = product_arg_builder(args)
     args.creds = credential_builder(args)
     
     #Run Surveyor
