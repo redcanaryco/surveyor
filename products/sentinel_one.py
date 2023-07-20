@@ -76,11 +76,11 @@ class SentinelOne(Product):
     Surveyor implementation for product "SentinelOne"
     """
     product: str = 's1'
-    profile: Optional[str] = None
-    creds_file: str = None # path to credential configuration file
+    profile: str = 'default'
+    creds_file: Optional[str] = None # path to credential configuration file
     _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
-    _token: str  = None # AAD access token
-    _url: str = None # URL of SentinelOne console
+    _token: Optional[str]  = None # AAD access token
+    _url: Optional[str] = None # URL of SentinelOne console
     _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
     _account_ids: list() = [] # Account ID(s) for SentinelOne
     _site_ids: list() = [] # Site ID(s) for SentinelOne
@@ -93,7 +93,7 @@ class SentinelOne(Product):
 
     def __init__(self, **kwargs):
   
-        self.profile = kwargs['profile'] if 'profile' in kwargs else None
+        self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
         self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
         self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
         self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
@@ -165,7 +165,7 @@ class SentinelOne(Product):
     def _get_site_ids(self, site_ids, account_ids, account_names):
         account_ids = list()
         # If either of the following were passed into surveyor, their value will take precedence and the config file will not be used.
-        if not site_ids and not account_ids and not account_names:
+        if not (site_ids or account_ids or account_names):
             config = configparser.ConfigParser()
             config.read(self.creds_file)
 

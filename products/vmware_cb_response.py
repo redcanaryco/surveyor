@@ -3,12 +3,15 @@ import logging
 from cbapi.response import CbEnterpriseResponseAPI # type: ignore
 from cbapi.response.models import Process # type: ignore
 
-from common import Product, Tag, Result
+from common import Product, Tag, Result, Optional
 
 
 class CbResponse(Product):
     product: str = 'cbr'
     profile: str = 'default'
+    url: Optional[str] = None
+    token: Optional[str] = None
+    _sensor_group: Optional[list[str]] = None
     _conn: CbEnterpriseResponseAPI  # CB Response API
     _limit: int = -1
     _raw: bool = False
@@ -68,8 +71,10 @@ class CbResponse(Product):
             for proc in self._conn.select(Process).where(query):
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
-                raw_results.append(proc)
-                results.add(result)
+                if self._raw:
+                    raw_results.append(proc)
+                else:
+                    results.add(result)
                 
 
                 if self._limit > 0 and len(results)+1 > self._limit:
@@ -78,7 +83,8 @@ class CbResponse(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
         
-        if self._raw: return raw_results
+        if self._raw: 
+            return raw_results
         
         self._add_results(list(results), tag)
 
