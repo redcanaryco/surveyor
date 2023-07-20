@@ -78,7 +78,7 @@ class SentinelOne(Product):
     product: str = 's1'
     profile: str = 'default'
     creds_file: Optional[str] = None # path to credential configuration file
-    _limit: int = 1000 # Default limit set to PowerQuery's default of 1000.
+    _limit: int = 20000 # Default limit set to PowerQuery's default of 1000.
     _token: Optional[str]  = None # AAD access token
     _url: Optional[str] = None # URL of SentinelOne console
     _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
@@ -88,10 +88,10 @@ class SentinelOne(Product):
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
     _query_base: Optional[str] = None
-    _pq: bool = True # Run queries using PowerQuery instead of DeepVisibility
+    _pq: bool # Run queries using PowerQuery instead of Deep Visibility
     _raw: bool = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, pq: bool = False, **kwargs):
   
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
         self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
@@ -102,20 +102,20 @@ class SentinelOne(Product):
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
+        self._pq = pq
+        if kwargs.get('deep_visibility') == "True": self._pq = False 
         
         # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or the Deep Visbility Max of 20000.
         if isinstance(limit,str):
             limit = int(limit)
-        if kwargs.get('deep_visibility') == "True":
-            self._pq = False 
-        
+
         if (limit and self._pq):
             if self._limit >= limit > 0:
                 self._limit = limit
+            else: self._limit = 1000
         elif (limit and not self._pq):
             if 20000 >= limit > 0:
-                self._limit = limit
-            else: self._limit = 20000   
+                self._limit = limit 
 
         super().__init__(self.product, **kwargs)
 
