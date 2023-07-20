@@ -4,7 +4,7 @@ import logging
 import os
 
 import requests
-from typing import Union
+from typing import Union,Optional
 from common import Product, Tag, Result
 
 PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
@@ -41,21 +41,21 @@ class DefenderForEndpoints(Product):
     """
     Surveyor implementation for product "Microsoft Defender For Endpoint"
     """
-    profile: str = None
+    profile: str = 'default'
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
     _limit: int = -1
-    _tenantId: str = None 
-    _appId: str = None
-    _appSecret: str = None
+    _tenantId: Optional[str] = None 
+    _appId: Optional[str] = None
+    _appSecret: Optional[str] = None
     _raw: bool = False
 
     def __init__(self, **kwargs):
 
-        self.profile = kwargs['profile'] if 'profile' in kwargs else None
-        self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
-        self._token = kwargs['token'] if 'token' in kwargs else None
+        self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
+        self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else ''
+        self._token = kwargs['token'] if 'token' in kwargs else ''
         self._tenantId = kwargs['tenantId'] if 'tenantId' in kwargs else None
         self._appId = kwargs['appId'] if 'appId' in kwargs else None
         self._appSecret = kwargs['appSecret'] if 'appSecret' in kwargs else None
@@ -123,7 +123,8 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    raw_results.append(res)
+                    if self._raw:
+                        raw_results.append(res)
                     hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
                     if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
                         username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']

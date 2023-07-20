@@ -47,7 +47,7 @@ class CortexXDR(Product):
     """
     product: str = 'cortex'
     creds_file: str  # path to credential configuration file
-    profile:str = None
+    profile:str = "default"
     _api_key: str  # Required API key
     _api_key_id: str  # Required API key ID
     _url: str  # URL of CortexXDR console
@@ -61,12 +61,12 @@ class CortexXDR(Product):
 
     def __init__(self, **kwargs):
 
-        self.profile = kwargs['profile'] if 'profile' in kwargs else None
-        self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
-        self._tenant_ids = kwargs['tenant_ids'] if 'tenant_ids' in kwargs else None
-        self._api_key = kwargs['api_key'] if 'api_key' in kwargs else None
-        self._api_key_id = kwargs['api_key_id'] if 'api_key_id' in kwargs else None   
-        self._url =  kwargs['url'] if 'url' in kwargs else None
+        self.profile = kwargs['profile'] if 'profile' in kwargs else "default"
+        self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else ''
+        self._tenant_ids = kwargs['tenant_ids'] if 'tenant_ids' in kwargs else []
+        self._api_key = kwargs['api_key'] if 'api_key' in kwargs else ''
+        self._api_key_id = kwargs['api_key_id'] if 'api_key_id' in kwargs else ''   
+        self._url =  kwargs['url'] if 'url' in kwargs else ''
         self._auth_type = kwargs['auth_type'] if 'auth_type' in kwargs else "standard"
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
 
