@@ -11,22 +11,27 @@ ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERB
 
 EDR_DEETS = {
     'cbc': {
+        "full_name": "VMware Carbon Black Cloud Enterprise EDR (CBC)",
         "required_credentials": "VMware Carbon Black Cloud Enterprise EDR requires a URL, token, and org_key or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
         "product_arguments":['device_group', 'device_policy']
     },
     'cbr': {
+        "full_name": "VMware Carbon Black EDR (CBr)",
         "required_credentials": "VMware Carbon Black EDR requires a URL and token or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
         "product_arguments": ['sensor_group']
     },
     'cortex': {
+        "full_name": "Cortex XDR (Cortex)",
         "required_credentials": "Cortex XDR requires a URL, api_key, api_key_id, and auth_type or a credential file and profile to be passed",
         "product_arguments": None
     },
     'dfe': {
+        "full_name": "Microsoft Defender for Endpoint (DFE)",
         "required_credentials": "Microsoft Defender for Endpoint requires a token or all of 'tenantId', 'appId', and 'appSecret', or a credential file and profile to be passed",
         "product_arguments": None
     },
     's1': {
+        "full_name": "SentinelOne (S1)",
         "required_credentials": "SentinelOne requires a URL and token and one of the following site_ids, account_ids, or account_names, or a credential file and profile to be passed",
         "product_arguments": ['deep_visibility']
     }
