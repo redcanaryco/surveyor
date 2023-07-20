@@ -103,7 +103,10 @@ class SentinelOne(Product):
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq
-        if kwargs.get('deep_visibility') == "True": self._pq = False 
+        if kwargs.get('deep_visibility') == "True": 
+            self._pq = False
+        elif kwargs.get('deep_visibility') == "False":
+            self._pq = True 
         
         # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or the Deep Visbility Max of 20000.
         if isinstance(limit,str):
