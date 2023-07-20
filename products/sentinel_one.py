@@ -101,12 +101,13 @@ class SentinelOne(Product):
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
-            
+        limit = (kwargs['limit']) if 'limit' in kwargs else 0
+        
         # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or the Deep Visbility Max of 20000.
+        if isinstance(limit,str):
+            limit = int(limit)
         if kwargs.get('deep_visibility') == "True":
             self._pq = False 
-
-        limit = int(kwargs.get('limit'),0) 
         
         if (limit and self._pq):
             if self._limit >= limit > 0:
@@ -114,7 +115,7 @@ class SentinelOne(Product):
         elif (limit and not self._pq):
             if 20000 >= limit > 0:
                 self._limit = limit
-            else: self._limit = 20000
+            else: self._limit = 20000   
 
         super().__init__(self.product, **kwargs)
 
