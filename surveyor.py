@@ -55,6 +55,7 @@ class Surveyor:
         username: str = None,
         namespace: str = None,
         limit: int = None,
+        ioc_file: list = None,
         ioc_list: list = None,
         ioc_source: str = "No Source Specified",
         ioc_type: str = None,
@@ -235,7 +236,6 @@ class Surveyor:
                         self._write_results(results, ioc_source, 'ioc', tag)
 
             # Sigma
-            sigma_rules = list()
             if sigma_rule or sigma_rules or sigma_rules_str:
                  
                 if sigma_rule:
@@ -297,7 +297,8 @@ class Surveyor:
                     # write any remaining results
                     for tag, nested_results in product.get_results().items():
                         self._write_results(nested_results, tag.tag, str(tag.data), tag)
-
+                else: 
+                    sys.exit("The definitions argument must be a list of absolute paths to a JSON file")
             # Definition JSON
 
             if definition:
@@ -335,9 +336,6 @@ class Surveyor:
                  return self._results_collector
             else:
                 return "No results"
-                        
-            
-            return self._results_collector
         
         except KeyboardInterrupt:
             log_echo("Caught CTRL-C. Exiting...", self._log)
@@ -386,8 +384,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", help="Output filename prefix.", type=str)
     parser.add_argument("--profile", help="The credentials profile to use.", type=str)
-    parser.add_argument("--days", help="Number of days to search.", type=int)
-    parser.add_argument("--minutes", help="Number of minutes to search.", type=int)
+    days_minutes_group = parser.add_mutually_exclusive_group(required=False)
+    days_minutes_group.add_argument("--days", help="Number of days to search.", type=int)
+    days_minutes_group.add_argument("--minutes", help="Number of minutes to search.", type=int)
     parser.add_argument("--limit",help="""
                 Number of results to return. Cortex XDR: Default: 1000, Max: Default
                 Microsoft Defender for Endpoint: Default/Max: 100000
@@ -404,33 +403,35 @@ if __name__ == "__main__":
     parser.add_argument("--username", help="Target specific username.",  type=str)
 
     # different ways you can survey the EDR
-    parser.add_argument("--deffile", help="Definition file to process (must end in .json).", type=str)
-    parser.add_argument("--defdir", help="Directory containing multiple definition files.", type=str)
+    parser.add_argument("--deffile", help="Definition file to process (must end in .json).", type=os.path.abspath)
+    parser.add_argument("--defdir", help="Directory containing multiple definition files.", type=os.path.abspath, default=None)
     parser.add_argument("--query", help="A single query to execute.", type=str)
-    parser.add_argument("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype")
+    parser.add_argument("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype", type=os.path.abspath, default=None)
     parser.add_argument("--ioctype", help="One of: ipaddr, domain, md5", choices=['ipaddr', 'domain', 'md5'])
-    parser.add_argument("--iocsource", help="One of: ipaddr, domain, md5", type=str, default= None)
-    parser.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=str)
-    parser.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=str)
+    parser.add_argument("--iocsource", help=" The source of the IOCs specified in ioc_list.", type=str, default= None)
+    parser.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=os.path.abspath, default=None)
+    parser.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=os.path.abspath, default=None)
 
     #required
-    parser.add_argument("--edr", help="Specify EDR to be queried must be one of 'cbc', 'cbr', 'cortex', 'dfe', 's1'", choices=['cbc', 'cbr', 'cortex', 'dfe', 's1'], required=True)
+    subparsers = parser.add_subparsers(help='sub-command help')
+    edr_parser = subparsers.add_parser('edr', help="Specify EDR to be queried must be one of 'cbc', 'cbr', 'cortex', 'dfe', 's1'")
+    edr_parser.add_argument('edr', choices=['cbc', 'cbr', 'cortex', 'dfe', 's1'])
 
     # optional output
-    parser.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None)
-    parser.add_argument("--output", "-o", help="Specify the output file for the results. The default is create survey.csv in the current directory.")
+    parser.add_argument("--creds", help="Absolute path to credential file", type=os.path.abspath, default=None)
+    parser.add_argument("--output", "-o", help="Specify the output file for the results. The default is create survey.csv in the current directory.", type=os.path.abspath)
     parser.add_argument("--output-format", help="Specify the output file for the results. The default is create survey.csv in the current directory.", choices=['csv', 'json'], default='csv')
     parser.add_argument("--no-file", help="Write results to STDOUT instead of the output CSV", default=False)
     parser.add_argument("--no-progress", help="Suppress progress bar", default=False)
 
 
     # logging options
-    parser.add_argument("--log-dir", help="Specify the logging directory.", type=str, default='logs')
+    parser.add_argument("--log-dir", help="Specify the logging directory.", type=os.path.abspath, default='logs')
 
     # Cortex options
     cortex_group = parser.add_argument_group('Optional Cortex XDR Parameters')
-    cortex_group.add_argument("--auth-type", help="ID of SentinelOne site to query", type=str, default='standard')
-    cortex_group.add_argument("--tenant-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=None)
+    cortex_group.add_argument("--auth-type", help="Cortex XDR authentication type (standard or advanced). Default is standard", type=str, default='standard')
+    cortex_group.add_argument("--tenant-ids", help="Space delimited list of Cortex XDR tenant IDs", type=str, nargs='+', default=None)
 
 
     # S1 options

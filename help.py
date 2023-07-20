@@ -9,6 +9,28 @@ from tqdm import tqdm
 
 ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
+EDR_DEETS = {
+    'cbc': {
+        "required_credentials": "VMware Carbon Black Cloud Enterprise EDR requires a URL, token, and org_key or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
+        "product_arguments":['device_group', 'device_policy']
+    },
+    'cbr': {
+        "required_credentials": "VMware Carbon Black EDR requires a URL and token or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
+        "product_arguments": ['sensor_group']
+    },
+    'cortex': {
+        "required_credentials": "Cortex XDR requires a URL, api_key, api_key_id, and auth_type or a credential file and profile to be passed",
+        "product_arguments": None
+    },
+    'dfe': {
+        "required_credentials": "Microsoft Defender for Endpoint requires a token or all of 'tenantId', 'appId', and 'appSecret', or a credential file and profile to be passed",
+        "product_arguments": None
+    },
+    's1': {
+        "required_credentials": "SentinelOne requires a URL and token and one of the following site_ids, account_ids, or account_names, or a credential file and profile to be passed",
+        "product_arguments": ['deep_visibility']
+    }
+}
 
 def _strip_ansi_codes(message: str) -> str:
     """
@@ -119,7 +141,7 @@ def product_arg_builder(args) -> dict:
             cbc_product_args['device_policy'] = args.device_policy
         
         cbc_product_args = {k:v for k,v in cbc_product_args.items() if v != None}
-        return {}
+        return cbc_product_args
     
     #CBr
     if args.sensor_group:
@@ -217,7 +239,8 @@ def build_survey(args, edr: str) -> dict:
             with open(args.iocfile) as ioc_file:
                 basename = os.path.basename(args.iocfile)
                 ioc_source = basename
-                ioc_list = [x.strip() for x in ioc_list]
+                data = ioc_file.readlines()
+                ioc_list = [x.strip() for x in data]
 
             survey_payload.update({"ioc_source": ioc_source, "ioc_list": ioc_list, "ioc_type": args.ioctype})
 
@@ -250,68 +273,56 @@ def logger(edr:str, logs_dir:str='logs') -> logging.Logger:
     return log
 
 def check_product_args_structure(edr: str, product_args: dict) -> dict:
-    if product_args == {}:
-        return {"result": True, "edr": edr, "required_fields": "No arguments were supplied"}
-
-    product_check = [k for k, v in product_args.items()]
+    edr_details = EDR_DEETS[edr]
+    base = {
+        "result": False,
+        "edr": edr_details['full_name'],
+        "required_fields": edr_details['product_arguments'],
+        "incompatible_arguments": None
+    }
     
-    if edr == "cbc":
-        required_fields = ['device_group', 'device_policy']
-    elif edr == "cbr":
-        required_fields = ['sensor_group']
-    elif edr == "s1":
-        required_fields = ['deep_visibility']
-    else:
-        return {"result": False, "edr": edr, "required_fields": required_fields}
+    if not product_args:
+        base.update({"result": True, "required_fields": "No arguments were supplied"})
+        return base
 
-    for field in required_fields:
-        if field not in product_check:
-            return {"result": False, "edr": edr, "required_fields": required_fields}
-
-    return {"result": True, "edr": edr, "required_fields": required_fields}
-
-
-def check_credentials_structure(edr, creds: dict) -> dict:
-    # Check credential provided for the bare minimum arguments for execution.
-    # This function checks for the presence of needed arguments; it does not check for valid input.
-    if edr in ["cbc", "cbr"]:
-        return {"result": True, "edr": edr, "required_fields": "Assuming credentials file is stored in required location"}
+    product_check = set(product_args.keys())
+    required_fields_set = set(edr_details['product_arguments'])
     
+    incompatible_arguments = required_fields_set - product_check
+    compatible_arguments = required_fields_set & product_check
+
+    if compatible_arguments:
+        base['result'] = True
+    if incompatible_arguments:
+        base['incompatible_arguments'] = incompatible_arguments
+
+    return base
+
+def check_credentials_structure(edr: str, creds: dict) -> dict:
+    # Check if the bare minimum arguments for execution are provided in the credentials.
+    # This function checks for the presence of needed arguments; it does not validate input.
+
     cred_check = [k for k, v in creds.items() if v]
+    state = False
 
-    if 'creds_file' and 'profile' in cred_check:
-        return {"result": True, "edr": edr, "required_fields": ["creds_file", "profile"]}
+    if edr in ["cbc", "cbr"] and 'creds_file' in cred_check:
+        return {"result": True, "edr": edr, "required_fields": EDR_DEETS[edr]["required_credentials"]}
 
-    if edr == "cbc":
-        required_fields = ['url', 'token', 'org_key']
-    elif edr == "cbr":
-        required_fields = ['url', 'token']
-    elif edr == "cortex":
-        required_fields = ['api_key', 'url', 'api_key_id', 'auth_type']
-    elif edr == "dfe":
-        if 'token' in cred_check:
-            return {"result": True, "edr": edr, "required_fields": "token"}
-        else:
-            required_fields = ['tenantId', 'appId', 'appSecret']
-    elif edr == "s1":
-        state = False
-        required_fields = ['site_ids', 'account_ids', 'account_names']
-        for i in required_fields:
-            if i in cred_check:
-                state = True
-        if state:
-            required_fields = ['url', 'token']
-            for i in required_fields:
-                if i in cred_check:
-                    state = True
-            
-        return {"result": state, "edr": edr, "required_fields": "'url', 'token', and one of 'site_ids', 'account_ids', or 'account_names'"}
-        
-    else:
-        return {"result": False, "edr": edr, "required_fields": required_fields}
+    if 'creds_file' in cred_check and 'profile' in cred_check:
+        state = True
+        return {"result": state, "edr": edr, "required_fields": "A profile and path to a credentials file argument have been supplied"}
 
-    for field in required_fields:
-        if field not in cred_check:
-            return {"result": False, "edr": edr, "required_fields": required_fields}
+    if edr == "cbc" and all(field in cred_check for field in ['url', 'token', 'org_key']):
+        state = True
+    elif edr == "cbr" and all(field in cred_check for field in ['url', 'token']):
+        state = True
+    elif edr == "cortex" and all(field in cred_check for field in ['api_key', 'url', 'api_key_id', 'auth_type']):
+        state = True
+    elif edr == "dfe" and ('token' in cred_check or all(field in cred_check for field in ['tenantId', 'appId', 'appSecret'])):
+        state = True
+    elif edr == "s1" and all(field in cred_check for field in ['url', 'token']) and any(field in cred_check for field in ['site_ids', 'account_ids', 'account_names']):
+        state = True
+    elif not EDR_DEETS.get(edr,None):
+        return {"result": state, "edr": f"{edr} is not a supported EDR", "required_fields": None}
 
-    return {"result": True, "edr": edr, "required_fields": required_fields}
+    return {"result": state, "edr": edr, "required_fields": EDR_DEETS[edr]["required_credentials"]}
