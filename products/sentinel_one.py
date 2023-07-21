@@ -101,15 +101,12 @@ class SentinelOne(Product):
         self._query_base = None
         self._pq = pq
 
-        # If no conditions match, the default limit will be set to PowerQuery's default of 1000.
+        # If no conditions match, the default limit will be set to Deep Visibility's default of 1000.
         if self._pq and self._limit >= int(kwargs.get('limit',0)) > 0:
             self._limit = int(kwargs['limit'])
 
-        elif not self._pq and 20000 > int(kwargs.get('limit',0)) > 0:
-                self._limit = int(kwargs['limit'])
-
-        elif not self._pq: 
-            self._limit = 20000
+        else: 
+            self._limit = 1000
 
         self._last_request = 0.0
 
