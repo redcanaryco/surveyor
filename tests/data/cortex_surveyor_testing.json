@@ -1,0 +1,25 @@
+{
+  "field_translation":{
+    "process_name":["cmd.exe"],
+    "ipaddr":["8.8.8.8"],
+    "cmdline":["grep"],
+    "digsig_publisher":["Microsoft Corporation"],
+    "modload":["asdf.dll"],
+    "filemod":["helloworld.txt"],
+    "regmod":["HKCU"],
+    "md5": ["asdfasdfasdf"],
+    "sha256":["qwerqwerqwer"],
+    "ipport":["80"],
+    "filewrite_md5":["zxcvzxcvzxcv"],
+    "filewrite_sha256":["poiupoiupoiu"]
+  },
+  "multiple_values":{
+    "process_name":["svchost.exe", "services.exe"]
+  },
+  "single_query":{
+    "query":["FieldA=ValueB"]
+  },
+  "multiple_query":{
+    "query":["FieldA=ValueB", "FieldC=ValueD"]
+  }
+}

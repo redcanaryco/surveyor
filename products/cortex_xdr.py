@@ -55,6 +55,7 @@ class CortexXDR(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]]
     _last_request: float
+    _limit: int = 1000 # Max is 1000 results otherwise have to get the results via stream
 
     def __init__(self, profile: str, creds_file: str, **kwargs):
         if not os.path.isfile(creds_file):
@@ -62,7 +63,8 @@ class CortexXDR(Product):
 
         self.creds_file = creds_file
         self._queries = dict()
-
+        if self._limit >= int(kwargs.get('limit',0)) > 0:
+            self._limit = int(kwargs['limit'])
         self._last_request = 0.0
 
         super().__init__(self.product, profile, **kwargs)
@@ -168,10 +170,10 @@ class CortexXDR(Product):
             elif key == 'minutes':
                 relative_time_ms = value * 60 * 1000
             elif key == 'hostname':
-                query_base += f' | filter lowercase(agent_hostname) contains "{value.lower()}"'
+                query_base += f' | filter agent_hostname contains "{value}"'
             elif key == 'username':
                 # Need to look at both actor and action in case action is actually a filemod,netconn,regmod rather than proc
-                query_base += f' | filter lowercase(action_process_username) contains "{value.lower()}" or lowercase(actor_primary_username) contains "{value.lower()}"'
+                query_base += f' | filter action_process_username contains "{value}" or actor_primary_username contains "{value}"'
             else:
                 self._echo(f'Query filter {key} is not supported by product {self.product}', logging.WARNING)
 
@@ -185,7 +187,7 @@ class CortexXDR(Product):
         if tag not in self._queries:
             self._queries[tag] = list()
 
-        full_query = Query(relative_time_ms, None, None, None, f'dataset=xdr_data {query}')
+        full_query = Query(relative_time_ms, None, None, None, query)
         self._queries[tag].append(full_query)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
@@ -193,47 +195,45 @@ class CortexXDR(Product):
 
         try:
             for search_field, terms in criteria.items():
+                if tag not in self._queries:
+                    self._queries[tag] = list()
+
                 if search_field == 'query':
-                    operator = 'raw'
-                    parameter = 'query'
                     if isinstance(terms, list):
                         if len(terms) > 1:
-                            search_value = ' '.join(terms)
+                            for term in terms:
+                                self._queries[tag].append(Query(relative_time_ms, None, None, None, term))
                         else:
-                            search_value = terms[0]
+                            self._queries[tag].append(Query(relative_time_ms, None, None, None, terms[0]))
                     else:
-                        search_value = terms
+                        self._queries[tag].append(Query(relative_time_ms, None, None, None, terms))
                 else:
-                    all_terms = ', '.join((f'"*{term}*"').replace("**", "*") for term in terms)
-
                     if search_field not in PARAMETER_MAPPING:
                         self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                    logging.WARNING)
                         continue
 
                     parameter = PARAMETER_MAPPING[search_field]
-                    search_value = all_terms
 
                     if len(terms) > 1:
+                        # there isn't an operator for `in contains` so we have to use wildcards instead
+                        all_terms = ', '.join((f'"*{term}*"').replace("**", "*") for term in terms)
                         search_value = f'({all_terms})'
                         operator = 'in'
                     else:
                         operator = 'contains'
+                        search_value = f'"{terms[0]}"'
 
-                if tag not in self._queries:
-                    self._queries[tag] = list()
-
-                self._queries[tag].append(Query(relative_time_ms, parameter, operator, search_value))
+                    self._queries[tag].append(Query(relative_time_ms, parameter, operator, search_value))
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 
-    def _get_xql_results(self, query_id: str, limit: int = 1000) -> Tuple[dict, int]:
-        actual_limit = limit if limit < 1000 else 1000  # Max is 1000 results otherwise have to get the results via stream
+    def _get_xql_results(self, query_id: str) -> Tuple[dict, int]:
         params = {
             'request_data': {
                 'query_id': query_id,
                 'pending_flag': True,
-                'limit': actual_limit,
+                'limit': self._limit,
                 'format': 'json'
             }
         }
@@ -261,17 +261,10 @@ class CortexXDR(Product):
                 if query.full_query is not None:
                     query_string = query.full_query
                 else:
-                    query_string = 'dataset=xdr_data'
+                    query_string = f'dataset=xdr_data | filter {query.parameter} {query.operator} {str(query.search_value)}'
 
-                    if query.operator in ('contains', 'in'):
-                        # Fix the query to be case-insensitive if using `contains`
-                        query_string += f' | filter lowercase({query.parameter}) {query.operator} {str(query.search_value).lower()}'
-                    elif query.operator == 'raw':
-                        query_string += f' {query.search_value}'
-                    else:
-                        query_string += f' | filter {query.parameter} {query.operator} {query.search_value}'
-
-                query_string += f' {self._base_query} | fields agent_hostname, action_process_image_path, action_process_username, action_process_image_command_line, actor_process_image_path, actor_primary_username, actor_process_command_line, event_id'
+                query_string += f' {self._base_query}' if self._base_query != '' else ''
+                query_string += f' | fields agent_hostname, action_process_image_path, action_process_username, action_process_image_command_line, actor_process_image_path, actor_primary_username, actor_process_command_line, event_id'
 
                 # Run that query!
                 params = self._get_default_body()
@@ -292,14 +285,18 @@ class CortexXDR(Product):
                 if 'reply' not in body:
                     raise ValueError(f'Cortex encountered an error and could not process query "{query_string}"')
 
-                self.log.debug(query_response.json())
+                self.log.debug(body)
                 query_response.raise_for_status()
 
                 query_id = body['reply']
                 self.log.info(f'Query ID is {query_id}')
 
                 events, count = self._get_xql_results(query_id)
-                self.log.debug(f'Got {count} events')
+                if count == 1000:
+                    self.log.info(f'Maximum limit of results (1000) was reached')
+                else:
+                    self.log.debug(f'Got {count} event(s)')
+
                 self._results[tag] = list()
                 for event in events:
                     hostname = event['agent_hostname'] if 'agent_hostname' in event else ''

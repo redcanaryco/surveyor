@@ -4,10 +4,16 @@ import os
 import logging
 import json
 from datetime import datetime, timedelta
+import random
 from unittest.mock import patch
 sys.path.append(os.getcwd())
 from products.vmware_cb_enterprise_edr import CbEnterpriseEdr
 from common import Tag
+
+class MockProcResult():
+    def get_details(self):
+        random_num = random.randint(1, 1000)
+        return {'device_name': f'workstation{random_num}', 'process_username':[f'username{random_num}'], 'process_name':f'proc{random_num}', 'process_cmdline':[f'cmdline{random_num}'], 'device_timestamp': f'ts{random_num}', 'process_guid': f'guid{random_num}'}
 
 
 @pytest.fixture
@@ -120,6 +126,8 @@ def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
         mocker.call(Tag('field_translation'), {}, '(process_internal_name:powershell)'),
         mocker.call(Tag('field_translation'), {}, '(hash:asdfasdfasdfasdf)'),
         mocker.call(Tag('field_translation'), {}, '(hash:zxcvzxcvzxcv)'),
+        mocker.call(Tag('field_translation'), {}, '(netconn_port:80)'),
+        mocker.call(Tag('field_translation'), {}, '(regmod_name:HKLM)'),
         mocker.call(Tag('multiple_values'), {}, '(process_name:svchost.exe OR process_name:cmd.exe)'),
         mocker.call(Tag('single_query'), {}, '(process_name:rundll.exe)'),
         mocker.call(Tag('multiple_query'), {}, '((process_cmdline:-enc) OR (modload_name:malware.dll))')
@@ -128,3 +136,34 @@ def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
     for program, criteria in programs.items():
         cbc_product.nested_process_search(Tag(program), criteria, {})
     cbc_product.perform_query.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_perform_query_with_limit_option(cbc_product : CbEnterpriseEdr, mocker):
+    cbc_product.log = logging.getLogger('pytest_surveyor')
+    cbc_product._device_policy = None
+    cbc_product._device_group = None
+    cbc_product._limit = 2
+
+    cbc_product._conn = mocker.Mock()
+    cbc_product._conn.select = mocker.Mock()
+    cbc_product._conn.select.return_value = mocker.Mock(where = mocked_query_return)
+
+    assert len(cbc_product.perform_query(Tag('test_tag'), {}, 'process_name:pwsh.exe')) == 2
+
+def test_perform_query_without_limit_option(cbc_product : CbEnterpriseEdr, mocker):
+    cbc_product.log = logging.getLogger('pytest_surveyor')
+    cbc_product._device_policy = None
+    cbc_product._device_group = None
+
+    cbc_product._conn = mocker.Mock()
+    cbc_product._conn.select = mocker.Mock()
+    cbc_product._conn.select.return_value = mocker.Mock(where = mocked_query_return)
+
+    assert len(cbc_product.perform_query(Tag('test_tag'), {}, 'process_name:pwsh.exe')) == 3
+
+def mocked_query_return(full_query: str):
+    return [
+        MockProcResult(),
+        MockProcResult(),
+        MockProcResult()
+    ]
