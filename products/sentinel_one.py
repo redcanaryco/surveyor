@@ -82,8 +82,8 @@ class SentinelOne(Product):
     _token: Optional[str]  = None # AAD access token
     _url: Optional[str] = None # URL of SentinelOne console
     _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
-    _account_ids: list() = [] # Account ID(s) for SentinelOne
-    _site_ids: list() = [] # Site ID(s) for SentinelOne
+    _account_ids: list() = Optional[list] # Account ID(s) for SentinelOne
+    _site_ids: list() = Optional[list] # Site ID(s) for SentinelOne
     _session: requests.Session
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
