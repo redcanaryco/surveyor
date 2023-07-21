@@ -102,7 +102,7 @@ class SentinelOne(Product):
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
-        self._pq = pq # This supports command-line options, will default to Deep Visibility
+        self._pq = pq # This supports command-line options, will default to Power Query
         
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
