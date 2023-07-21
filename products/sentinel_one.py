@@ -78,7 +78,7 @@ class SentinelOne(Product):
     product: str = 's1'
     profile: str = 'default'
     creds_file: Optional[str] = None # path to credential configuration file
-    _limit: int = 20000 # Default limit set to PowerQuery's default of 1000.
+    _limit: int # Limit results
     _token: Optional[str]  = None # AAD access token
     _url: Optional[str] = None # URL of SentinelOne console
     _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
@@ -102,23 +102,21 @@ class SentinelOne(Product):
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
-        self._pq = pq
-        if kwargs.get('deep_visibility') == "True": 
-            self._pq = False
-        elif kwargs.get('deep_visibility') == "False":
-            self._pq = True 
+        self._pq = pq # This supports command-line options, will default to Deep Visibility
         
-        # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or the Deep Visbility Max of 20000.
+        # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
+        if 'deep_visibility' in kwargs:
+            self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
+
+        # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or to Deep Visibility's Max of 20000.
         if isinstance(limit,str):
             limit = int(limit)
-
-        if (limit and self._pq):
-            if self._limit >= limit > 0:
-                self._limit = limit
-            else: self._limit = 1000
-        elif (limit and not self._pq):
-            if 20000 >= limit > 0:
-                self._limit = limit 
+        # If using Power Query, a default of 1000 results will be set when no user arguments are supplied or when the supplied arguments are invalid.
+        if self._pq:
+            self._limit = limit if (1000 >= limit > 0 and self._pq) else 1000
+        # If using Deep Visibility, a default of 20000 will be set when no user arguments are supplied or when the supplied arguments are invalid.
+        elif not self._pq:
+            self._limit = limit if 20000 >= limit > 0 else 20000
 
         super().__init__(self.product, **kwargs)
 
@@ -168,7 +166,6 @@ class SentinelOne(Product):
             raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
 
     def _get_site_ids(self, site_ids, account_ids, account_names):
-        account_ids = list()
         # If either of the following were passed into surveyor, their value will take precedence and the config file will not be used.
         if not (site_ids or account_ids or account_names):
             config = configparser.ConfigParser()
@@ -355,7 +352,7 @@ class SentinelOne(Product):
         return query_base, from_date, to_date
 
     def _get_all_paginated_data(self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None,
-                                key: str = 'data', after_request: Optional[Callable] = None,
+                                key: str = 'data', after_request: Optional[Callable] = None, limit: int = 1000,
                                 no_progress: bool = True, progress_desc: str = 'Retrieving data',
                                 add_default_params: bool = True) -> list[dict]:
         """
@@ -388,7 +385,7 @@ class SentinelOne(Product):
         if add_default_params:
             params.update(self._get_default_body())
 
-        params['limit'] = self._limit
+        params['limit'] = limit
 
         if headers is None:
             headers = dict()
