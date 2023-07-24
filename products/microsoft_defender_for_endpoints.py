@@ -114,7 +114,7 @@ class DefenderForEndpoints(Product):
         return response.json()['access_token']
 
     def _post_advanced_query(self, data: dict, headers: dict) -> list[Result]:
-        raw_results = list()
+        #raw_results = list()
         results = set()
 
         try:
@@ -123,8 +123,12 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
+                    
+                    # Raw Feature (Inactive)
+                    '''
                     if self._raw:
                         raw_results.append(res)
+                    '''
                     hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
                     if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
                         username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
@@ -152,10 +156,12 @@ class DefenderForEndpoints(Product):
         except Exception as e:
             self._echo(f"There was an exception {e}")
             self.log.exception(e)
-
+        
+        # Raw Feature (Inactive)
+        '''
         if self._raw:
             return raw_results
-
+        '''
         return list(results)
 
     def _get_default_header(self) -> dict[str, str]:

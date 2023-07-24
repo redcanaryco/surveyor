@@ -322,11 +322,15 @@ class CortexXDR(Product):
                         event['actor_process_command_line']
                     additional_data = (event['_time'], event['event_id'])
 
+                    '''
                     if self._raw:
                         self._results[tag].append(event)
                     else:
                         result = Result(hostname, username, path, commandline, additional_data)
                         self._results[tag].append(result)
+                    '''
+                    result = Result(hostname, username, path, commandline, additional_data)
+                    self._results[tag].append(result)
                         
         self._queries.clear()
 

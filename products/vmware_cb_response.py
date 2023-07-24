@@ -60,7 +60,7 @@ class CbResponse(Product):
         return query_base
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        raw_results = list()
+        #raw_results = list()
         results = set()
 
         query = query + self.build_query(base_query)
@@ -71,11 +71,15 @@ class CbResponse(Product):
             for proc in self._conn.select(Process).where(query):
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
+                
+                # Raw Feature (Inactive)
+                '''
                 if self._raw:
                     raw_results.append(proc)
                 else:
                     results.add(result)
-                
+                '''
+                results.add(result)
 
                 if self._limit > 0 and len(results)+1 > self._limit:
                         break
@@ -83,9 +87,13 @@ class CbResponse(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
         
+        # Raw Feature (Inactive)
+        '''
         if self._raw: 
-            return raw_results
-        
+            self._add_results(list(raw_results), tag)
+        else:
+            self._add_results(list(results), tag)
+        '''
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:

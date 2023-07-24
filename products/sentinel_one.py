@@ -80,10 +80,10 @@ class SentinelOne(Product):
     creds_file: Optional[str] = None # path to credential configuration file
     _limit: int # Limit results
     _token: Optional[str]  = None # AAD access token
-    _url: Optional[str] = None # URL of SentinelOne console
+    _url: Optional[str] = '' # URL of SentinelOne console
     _account_names: Optional[list] = [] # Account Name(s) for SentinelOne
-    _account_ids: list() = Optional[list] # Account ID(s) for SentinelOne
-    _site_ids: list() = Optional[list] # Site ID(s) for SentinelOne
+    _account_ids: Optional[list] # Account ID(s) for SentinelOne
+    _site_ids: Optional[list] # Site ID(s) for SentinelOne
     _session: requests.Session
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
@@ -97,7 +97,7 @@ class SentinelOne(Product):
         self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
         self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
         self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
-        self._url = kwargs['url'] if 'url' in kwargs else None
+        self._url = kwargs['url'] if 'url' in kwargs else ''
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
@@ -689,11 +689,16 @@ class SentinelOne(Product):
                     additional_data = (event['eventTime'], event['siteId'], event['siteName'], srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'])
 
                 result = Result(hostname, username, path, command_line, additional_data)
-
+                
+                # Raw Feature (Inactive)
+                '''
                 if self._raw:
                     self._results[merged_tag].append(event)
                 else:
                     self._results[merged_tag].append(result)
+                '''
+
+                self._results[merged_tag].append(result)
 
         except Exception as e:
             self.log.error(e)

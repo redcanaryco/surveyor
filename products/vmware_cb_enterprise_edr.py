@@ -109,7 +109,7 @@ class CbEnterpriseEdr(Product):
             yield l[i:i + n]
 
     def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
-        raw_results= list()
+        #raw_results= list()
         results = set()
         parsed_base_query = self.build_query(base_query)
         try:
@@ -134,10 +134,14 @@ class CbEnterpriseEdr(Product):
                 
                 result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
                 
+                # Raw Feature (Inactive)
+                '''
                 if self._raw: 
                     raw_results.append(deets)
                 else:
                     results.add(result)
+                '''
+                results.add(result)
                     
                 if self._limit > 0 and len(results)+1 > self._limit:
                     break
@@ -147,17 +151,18 @@ class CbEnterpriseEdr(Product):
             self.log.exception(e)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
-
+        
+        # Raw Feature (Inactive)
+        ''' 
         if self._raw:
             return raw_results
         else:
             return results
+        '''
+        return results
     
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
         results = self.perform_query(tag, base_query, query)
-        
-        if self._raw: 
-            return results
         
         self._add_results(list(results), tag)
 
