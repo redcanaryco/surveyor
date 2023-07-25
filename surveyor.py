@@ -24,7 +24,7 @@ from load import get_product_instance, get_products
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 
 # Application version
-current_version = "2.4.1"
+current_version = "2.5.0"
 
 
 def _list_products(ctx, _, value) -> None:
@@ -329,7 +329,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     if not opt.no_file:
         # determine output file name
         if opt.output and opt.prefix:
-            log_echo("Output arg takes precendence so prefix arg will be ignored", log)
+            log.debug("Output arg takes precendence so prefix arg will be ignored")
         if opt.output:
             file_name = opt.output
         elif opt.json:
@@ -443,6 +443,8 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         # if there's sigma rules to be processed
         if len(sigma_rules) > 0:
             translated_rules = sigma_translation(product_str, sigma_rules)
+            if len(translated_rules['queries']) != len(sigma_rules):
+                log.warning(f"Only {len(translated_rules['queries'])} out of {len(sigma_rules)} were able to be translated.")
             for rule in tqdm(translated_rules['queries'], desc="Processing sigma rules", disable=opt.no_progress):
                 program = f"{rule['title']} - {rule['id']}"
                 source = 'Sigma Rule'
