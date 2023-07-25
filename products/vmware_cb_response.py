@@ -3,22 +3,33 @@ import logging
 from cbapi.response import CbEnterpriseResponseAPI # type: ignore
 from cbapi.response.models import Process # type: ignore
 
-from common import Product, Tag, Result
+from common import Product, Tag, Result, Optional
 
 
 class CbResponse(Product):
     product: str = 'cbr'
+    profile: str = 'default'
+    url: Optional[str] = None
+    token: Optional[str] = None
+    _sensor_group: Optional[list[str]] = None
     _conn: CbEnterpriseResponseAPI  # CB Response API
     _limit: int = -1
+    _raw: bool = False
 
-    def __init__(self, profile: str, **kwargs):
+    def __init__(self, **kwargs):
+        self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
+        self.url = kwargs['url'] if 'url' in kwargs else None
+        self.token = kwargs['token'] if 'token' in kwargs else None
         self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
+        self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
 
-        super().__init__(self.product, profile, **kwargs)
+        super().__init__(self.product, **kwargs)
 
     def _authenticate(self) -> None:
-        if self.profile:
+        if self.token and self.url:
+            cb_conn = CbEnterpriseResponseAPI(token=self.token, url=self.url)
+        elif self.profile:
             cb_conn = CbEnterpriseResponseAPI(profile=self.profile)
         else:
             cb_conn = CbEnterpriseResponseAPI()
@@ -49,6 +60,7 @@ class CbResponse(Product):
         return query_base
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+        #raw_results = list()
         results = set()
 
         query = query + self.build_query(base_query)
@@ -59,6 +71,14 @@ class CbResponse(Product):
             for proc in self._conn.select(Process).where(query):
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
+                
+                # Raw Feature (Inactive)
+                '''
+                if self._raw:
+                    raw_results.append(proc)
+                else:
+                    results.add(result)
+                '''
                 results.add(result)
 
                 if self._limit > 0 and len(results)+1 > self._limit:
@@ -66,7 +86,14 @@ class CbResponse(Product):
                 
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
-
+        
+        # Raw Feature (Inactive)
+        '''
+        if self._raw: 
+            self._add_results(list(raw_results), tag)
+        else:
+            self._add_results(list(results), tag)
+        '''
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:

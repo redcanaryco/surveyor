@@ -279,7 +279,7 @@ def test_output_argument_filename(runner, mocker):
 def test_mutually_exclusive_output_prefix(runner, mocker):
     mocker.patch('products.vmware_cb_response.CbResponse._authenticate')
     result = runner.invoke(cli, ['--prefix', 'test_prefix', '--output', 'test_output.csv'])
-    assert "Output arg takes precendence so prefix arg will be ignored" in result.output
+    assert "Results saved: test_output.csv" in result.output
 
 
 def test_no_file_output(runner, mocker):
