@@ -159,7 +159,7 @@ def sigma_translation(product: str, sigma_rules: list) -> dict:
         backend = CarbonBlackBackend(cb_pipeline())
     elif product == 's1':
         plugins.get_plugin_by_id('sentinelone').install()
-        from sigma.backends.sentinel_one import SentinelOneBackend # type: ignore
+        from sigma.backends.sentinelone import SentinelOneBackend # type: ignore
         backend = SentinelOneBackend()
     elif product == 'dfe':
         supports_json_ouput = False
