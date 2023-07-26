@@ -85,7 +85,7 @@ def test_process_search_limit_option(cbr_product : CbResponse, mocker):
 
 
 def test_nested_process_search(cbr_product : CbResponse, mocker):
-    with open(os.path.join(os.getcwd(), 'tests', 'data', 'cbr_surveyor_testing.json')) as f:
+    with open(os.path.join(os.getcwd(), 'tests', 'data', 'test_def_file.json')) as f:
         programs = json.load(f)
     
     cbr_product.log = logging.getLogger('pytest_surveyor')
@@ -102,18 +102,19 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
         mocker.call('(digsig_publisher:Microsoft)'),
         mocker.call('(domain:raw.githubusercontent.com)'),
         mocker.call('(internal_name:powershell)'),
-        mocker.call('(url:https://google.com)'),
         mocker.call('(filemod:current_date.txt)'),
         mocker.call('(modload:pcwutl.dll)'),
         mocker.call('(md5:asdfasdfasdfasdf)'),
         mocker.call('(sha1:qwerqwerqwerqwer)'),
         mocker.call('(sha256:zxcvzxcvzxcv)'),
-        mocker.call('(process_name:svchost.exe OR process_name:cmd.exe)'),
-        mocker.call('(process_name:rundll.exe)'),
-        mocker.call('((cmdline:-enc) OR (modload:malware.dll))'),
         mocker.call('(regmod:HKLM)'),
         mocker.call('(ipport:80)'),
-        mocker.call('(parent_name:cmd.exe)')
+        mocker.call('(filewrite_md5:tyuityuityuityui)'),
+        mocker.call('(filewrite_sha256:poiupoiupoiu)'),
+        mocker.call('(parent_name:cmd.exe)'),
+        mocker.call('(process_name:svchost.exe OR process_name:cmd.exe)'),
+        mocker.call('(single_query_string_here)'),
+        mocker.call('((first_query_string) OR (second_query_string))')
     ]
 
     for program, criteria in programs.items():
