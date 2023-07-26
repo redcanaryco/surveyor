@@ -20,7 +20,9 @@ PARAMETER_MAPPING: dict[str, str] = {
     'md5':'hash',
     'sha256':'hash',
     'regmod':'regmod_name',
-    'parent_name': 'parent_name'
+    'parent_name': 'parent_name',
+    'filemod':'filemod_name',
+    'modload':'modload_name'
 }
 
 def _convert_relative_time(relative_time) -> str:
