@@ -42,17 +42,20 @@ def test_build_query_with_supported_field(cbr_product : CbResponse):
     assert result == ' hostname:workstation1 username:admin start:-1440m start:-10m (group:"accounting dept")'
 
 
-def test_build_query_with_unsupported_field(cbr_product : CbResponse):
+def test_build_query_with_unsupported_field(cbr_product : CbResponse, mocker):
     filters = {
       "useless key": "asdfasdasdf"
     }
 
     cbr_product._sensor_group = None
-    cbr_product.log = logging.getLogger('pytest_surveyor')
+    mocked_logger = mocker.patch.object(cbr_product, '_echo')
 
     result = cbr_product.build_query(filters)
 
     assert result == ''
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter useless key is not supported by product cbr', logging.WARNING)
+    ], any_order = True)
 
 
 def test_process_search(cbr_product : CbResponse, mocker):
@@ -90,6 +93,7 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
     cbr_product._results = {}
     cbr_product._conn = mocker.Mock()
     mocker.patch.object(cbr_product._conn, 'select')
+    mocked_logger = mocker.patch.object(cbr_product, '_echo')
 
     expected_calls = [
         mocker.call('(process_name:notepad.exe)'),
@@ -108,13 +112,14 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
         mocker.call('(process_name:rundll.exe)'),
         mocker.call('((cmdline:-enc) OR (modload:malware.dll))'),
         mocker.call('(regmod:HKLM)'),
-        mocker.call('(ipport:80)')
+        mocker.call('(ipport:80)'),
+        mocker.call('(parent_name:cmd.exe)')
     ]
 
     for program, criteria in programs.items():
         cbr_product.nested_process_search(Tag(program), criteria, {})
     cbr_product._conn.select.return_value.where.assert_has_calls(expected_calls, any_order=True)
-
+    mocked_logger.assert_not_called()
 
 def test_nested_process_search_limit_option(cbr_product : CbResponse, mocker):
     cbr_product.log = logging.getLogger('pytest_surveyor')
