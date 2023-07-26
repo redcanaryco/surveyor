@@ -115,26 +115,26 @@ class DefenderForEndpoints(Product):
         return response.json()['access_token']
 
     def _post_advanced_query(self, data: dict, headers: dict) -> list[Result]:
-<<<<<<< HEAD
         if self._json:
             results = dict()
         else:
             results = set()
-=======
-        #raw_results = list()
-        results = set()
->>>>>>> master
+            #raw_results = list()
 
         try:
             url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
             response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
-<<<<<<< HEAD
                 if self._json:
                     results = response.json()["Results"]
                 else:
                     for res in response.json()["Results"]:
+                        # Raw Feature (Inactive)
+                        '''
+                        if self._raw:
+                            raw_results.append(res)
+                        '''
                         hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
                         if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
                             username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
@@ -149,29 +149,6 @@ class DefenderForEndpoints(Product):
                             proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
                         else:
                             proc_name = 'Unknown'
-=======
-                for res in response.json()["Results"]:
-                    
-                    # Raw Feature (Inactive)
-                    '''
-                    if self._raw:
-                        raw_results.append(res)
-                    '''
-                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
-                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
-                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
-                        username = 'Unknown'
-                    
-                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
-                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
-                    else:
-                        cmdline = 'Unknown'
-                    
-                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
-                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
-                    else:
-                        proc_name = 'Unknown'
->>>>>>> master
 
                         timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
 
@@ -200,14 +177,9 @@ class DefenderForEndpoints(Product):
             "Accept": 'application/json'
         }
 
-<<<<<<< HEAD
     def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
         self._json = json
         query = query.rstrip() 
-=======
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        query = query.rstrip()
->>>>>>> master
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 

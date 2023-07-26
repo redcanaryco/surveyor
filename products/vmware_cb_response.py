@@ -59,17 +59,12 @@ class CbResponse(Product):
         
         return query_base
 
-<<<<<<< HEAD
     def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
         if json:
             results = dict()
         else:
+            #raw_results = list()
             results = set()
-=======
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        #raw_results = list()
-        results = set()
->>>>>>> master
 
         query = query + self.build_query(base_query)
         self._echo(query)
@@ -82,10 +77,6 @@ class CbResponse(Product):
                 else:
                     result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
-<<<<<<< HEAD
-                    results.add(result)
-  
-=======
                 
                 # Raw Feature (Inactive)
                 '''
@@ -96,7 +87,6 @@ class CbResponse(Product):
                 '''
                 results.add(result)
 
->>>>>>> master
                 if self._limit > 0 and len(results)+1 > self._limit:
                         break
                 

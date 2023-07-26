@@ -54,14 +54,9 @@ class CortexXDR(Product):
     _auth_type: Optional[str] = 'standard'  # Either standard or advanced, default is standard
     _tenant_ids: list[str] = []  # tenant ID list
     _session: requests.Session
-<<<<<<< HEAD
-    _queries: dict[Tag, list[Query]]
-    _last_request: float
-    _json: bool # output raw json
-=======
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
->>>>>>> master
+    _json: bool # output raw json
     _limit: int = 1000 # Max is 1000 results otherwise have to get the results via stream
     _raw: bool = False
 
@@ -333,21 +328,16 @@ class CortexXDR(Product):
                             event['actor_process_command_line']
                         additional_data = (event['_time'], event['event_id'])
 
-<<<<<<< HEAD
+                        '''
+                        if self._raw:
+                            self._results[tag].append(event)
+                        else:
+                            result = Result(hostname, username, path, commandline, additional_data)
+                            self._results[tag].append(result)
+                        '''
                         result = Result(hostname, username, path, commandline, additional_data)
                         self._results[tag].append(result)
-=======
-                    '''
-                    if self._raw:
-                        self._results[tag].append(event)
-                    else:
-                        result = Result(hostname, username, path, commandline, additional_data)
-                        self._results[tag].append(result)
-                    '''
-                    result = Result(hostname, username, path, commandline, additional_data)
-                    self._results[tag].append(result)
                         
->>>>>>> master
         self._queries.clear()
 
     def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:

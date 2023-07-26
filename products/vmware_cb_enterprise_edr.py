@@ -108,17 +108,12 @@ class CbEnterpriseEdr(Product):
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-<<<<<<< HEAD
     def perform_query(self, tag: Tag, base_query: dict, json: bool, query: str) -> set[Result]:
         if json:
             results = dict()
         else:
+            #raw_results= list()
             results = set()
-=======
-    def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
-        #raw_results= list()
-        results = set()
->>>>>>> master
         parsed_base_query = self.build_query(base_query)
         try:
             self.log.debug(f'Query {tag}: {query}')
@@ -132,7 +127,6 @@ class CbEnterpriseEdr(Product):
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
                 deets = proc.get_details()
-<<<<<<< HEAD
                 if json:
                     results.update(deets)
                 else:
@@ -145,29 +139,15 @@ class CbEnterpriseEdr(Product):
                     
                     result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
                     
+                    # Raw Feature (Inactive)
+                    '''
+                    if self._raw: 
+                        raw_results.append(deets)
+                    else:
+                        results.add(result)
+                    '''                   
                     results.add(result)
 
-=======
-                
-                hostname = deets['device_name'] if 'device_name' in deets else 'None'
-                user = deets['process_username'][0] if 'process_username' in deets else 'None'
-                proc_name = deets['process_name'] if 'process_name' in deets else 'None'
-                cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
-                ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
-                proc_guid = deets['process_guid'] if 'process_guid' in deets else 'None'
-                
-                result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
-                
-                # Raw Feature (Inactive)
-                '''
-                if self._raw: 
-                    raw_results.append(deets)
-                else:
-                    results.add(result)
-                '''
-                results.add(result)
-                    
->>>>>>> master
                 if self._limit > 0 and len(results)+1 > self._limit:
                     break
 
@@ -185,13 +165,8 @@ class CbEnterpriseEdr(Product):
             return results
         '''
         return results
-<<<<<<< HEAD
 
     def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:        
-=======
-    
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
->>>>>>> master
         results = self.perform_query(tag, base_query, query)
         
         self._add_results(list(results), tag)
