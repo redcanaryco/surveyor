@@ -37,7 +37,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'sha256': 'action_process_image_sha256',
     'ipport': 'action_remote_port',
     'filewrite_md5': 'action_file_md5',
-    'filewrite_sha256': 'action_file_sha256'
+    'filewrite_sha256': 'action_file_sha256',
+    'parent_name':'actor_process_image_name'
 }
 
 
