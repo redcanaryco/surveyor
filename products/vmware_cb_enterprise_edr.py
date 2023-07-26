@@ -19,7 +19,8 @@ PARAMETER_MAPPING: dict[str, str] = {
     'internal_name': 'process_internal_name',
     'md5':'hash',
     'sha256':'hash',
-    'regmod':'regmod_name'
+    'regmod':'regmod_name',
+    'parent_name': 'parent_name'
 }
 
 def _convert_relative_time(relative_time) -> str:
@@ -117,9 +118,9 @@ class CbEnterpriseEdr(Product):
 
             process = self._conn.select(Process)
 
-            full_query = parsed_base_query.where(query)
+            full_query = parsed_base_query.and_(query)
 
-            self.log.debug(f'Full Query: {full_query.__str__}')
+            self.log.debug(f'Full Query: {" ".join(full_query._raw_query)}')
 
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
