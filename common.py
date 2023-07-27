@@ -137,7 +137,7 @@ class Product(ABC):
         """
         log_echo(message, self.log, level, use_tqdm=self._tqdm_echo)
 
-def sigma_translation(product: str, sigma_rules: list) -> dict:
+def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict:
     supports_json_ouput = True
 
     try:
@@ -158,14 +158,23 @@ def sigma_translation(product: str, sigma_rules: list) -> dict:
 
         backend = CarbonBlackBackend(cb_pipeline())
     elif product == 's1':
-        plugins.get_plugin_by_id('sentinelone').install()
-        from sigma.backends.sentinelone import SentinelOneBackend # type: ignore
-        backend = SentinelOneBackend()
+        if pq:
+            plugins.get_plugin_by_id('sentinelone-pq').install()
+            from sigma.backends.sentinelone_pq import SentinelOnePQBackend # type: ignore
+            backend = SentinelOnePQBackend()
+        else:
+            plugins.get_plugin_by_id('sentinelone').install()
+            from sigma.backends.sentinelone import SentinelOneBackend # type: ignore
+            backend = SentinelOneBackend()
     elif product == 'dfe':
         supports_json_ouput = False
         plugins.get_plugin_by_id('microsoft365defender').install()
         from sigma.backends.microsoft365defender import Microsoft365DefenderBackend # type: ignore
         backend = Microsoft365DefenderBackend()
+    elif product == 'cortex':
+        plugins.get_plugin_by_id('cortexxdr').install()
+        from sigma.backends.cortexxdr import CortexXDRBackend # type: ignore
+        backend = CortexXDRBackend()
 
     rule_collection = SigmaCollection.load_ruleset(sigma_rules)
     if supports_json_ouput:
