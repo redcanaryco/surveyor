@@ -422,7 +422,8 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
         # if there's sigma rules to be processed
         if len(sigma_rules) > 0:
-            translated_rules = sigma_translation(product_str, sigma_rules, opt.product_args['pq'])
+            pq_check = True if 'pq' in opt.product_args and opt.product_args['pq'] else False
+            translated_rules = sigma_translation(product_str, sigma_rules, pq_check)
             if len(translated_rules['queries']) != len(sigma_rules):
                 log.warning(f"Only {len(translated_rules['queries'])} out of {len(sigma_rules)} were able to be translated.")
             for rule in tqdm(translated_rules['queries'], desc="Processing sigma rules", disable=opt.no_progress):
