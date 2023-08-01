@@ -719,11 +719,11 @@ class SentinelOne(Product):
             tag_buckets: dict[str, list[Tuple[Tag, str]]] = {}
             # group built queries by tag
             for item in query_text:
-                tag = item[0].tag
-                if tag in tag_buckets:
-                    tag_buckets[tag].append(item)
+                tag_value = item[0].tag
+                if tag_value in tag_buckets:
+                    tag_buckets[tag_value].append(item)
                 else:
-                    tag_buckets[tag] = [item]
+                    tag_buckets[tag_value] = [item]
             
             
             # merge queries into one large query by tag groupings and execute it
