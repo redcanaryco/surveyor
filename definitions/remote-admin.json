@@ -1,4 +1,4 @@
-{{
+{
     "AweRay (AweSun)": {
         "process_name": ["aweray_remote*.exe"],
         "domain": ["asapi.aweray.net", 
@@ -376,5 +376,4 @@
         "process_name": ["superops.exe", "superopsticket.exe"],
         "domain": ["serv.superopsalpha.com", "*.superops.ai", "*.superopsalpha.com", "*.superopsbeta.com"]
     }
-}
 }
