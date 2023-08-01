@@ -716,7 +716,7 @@ class SentinelOne(Product):
         with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
             futures = list[Future]()
 
-            tag_buckets = {}
+            tag_buckets: dict[str, list[Tuple[Tag, str]]] = {}
             # group built queries by tag
             for item in query_text:
                 tag = item[0].tag
