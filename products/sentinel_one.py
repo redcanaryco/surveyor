@@ -727,7 +727,7 @@ class SentinelOne(Product):
             
             
             # merge queries into one large query by tag groupings and execute it
-            for tag, items in tag_buckets.items():
+            for items in tag_buckets.values():
                 for i in range(0, len(items), chunk_size):
                     # do not chain more than 10 ORs in a S1QL query
                     merged_query = ''
