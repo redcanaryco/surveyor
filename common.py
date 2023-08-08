@@ -201,7 +201,7 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
         rule_collection = SigmaCollection.merge([SigmaCollection.from_yaml(i) for i in sigma_rules])
     else:
         logging.error("There appears to be a mix of files and YML strings. Cannot process a mixed list of values. Aborting.")
-        return []
+        return {'queries': []}
 
     if supports_json_ouput:
         return backend.convert(rule_collection, "json")
