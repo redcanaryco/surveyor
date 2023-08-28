@@ -9,31 +9,31 @@ from tqdm import tqdm
 
 ansi_escape_regex = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', re.VERBOSE)
 
-EDR_DEETS = {
-    'cbc': {
-        "full_name": "VMware Carbon Black Cloud Enterprise EDR (CBC)",
-        "required_credentials": "VMware Carbon Black Cloud Enterprise EDR requires a URL, token, and org_key or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
-        "product_arguments":['device_group', 'device_policy']
+EDR_SUPPORTED_ARGUMENTS = {
+    "cbc": {
+        "cred_check_logic": lambda a: True if set(['url','token','org_key']) == set(a) else False,
+        "credential_requirements": "url, token, and org_key",
+        "product_arguements": ['device_group', 'device_policy']
     },
-    'cbr': {
-        "full_name": "VMware Carbon Black EDR (CBr)",
-        "required_credentials": "VMware Carbon Black EDR requires a URL and token or a credential file located following the documentation at: https://github.com/redcanaryco/surveyor/wiki/Getting-started",
-        "product_arguments": ['sensor_group']
+    "cbr": {
+        "cred_check_logic": lambda a: True if set(['url','token']) == set(a) else False,
+        "credential_requirements": "url and token",
+        "product_arguements": ['sensor_group']
     },
-    'cortex': {
-        "full_name": "Cortex XDR (Cortex)",
-        "required_credentials": "Cortex XDR requires a URL, api_key, api_key_id, and auth_type or a credential file and profile to be passed",
-        "product_arguments": None
+    "cortex": {
+        "cred_check_logic":  lambda a: True if set(['api_key','url', 'api_key_id','auth_type']) == set(a) else False,
+        "credential_requirements": "api_key, url, api_key_id, and auth_type",
+        "product_arguements": None
     },
-    'dfe': {
-        "full_name": "Microsoft Defender for Endpoint (DFE)",
-        "required_credentials": "Microsoft Defender for Endpoint requires a token or all of 'tenantId', 'appId', and 'appSecret', or a credential file and profile to be passed",
-        "product_arguments": None
+    "dfe": {
+        "cred_check_logic":  lambda a: True if (set(['tenantId','appId','appSecret']) or set('token')) == set(a) else False,
+        "credential_requirements": "tenantId, appId, and appSecret or token",
+        "product_arguements": None
     },
-    's1': {
-        "full_name": "SentinelOne (S1)",
-        "required_credentials": "SentinelOne requires a URL and token and one of the following site_ids, account_ids, or account_names, or a credential file and profile to be passed",
-        "product_arguments": ['deep_visibility']
+    "s1": {
+        "cred_check_logic": lambda a: True if (('site_ids' or 'account_ids' or 'account_names') or 'bypass') in a else False,
+        "credential_requirements": "site_ids, account_ids, account_names, or bypass",
+        "product_arguements": ['deep_visibility']
     }
 }
 
@@ -70,100 +70,52 @@ def datetime_to_epoch_millis(date: datetime) -> int:
     """
     return int((date - datetime.utcfromtimestamp(0)).total_seconds() * 1000)
 
-def credential_builder(args) -> dict:
-    cbr_creds =  {'profile': "default"} # CBr authentication requires a url and token or a credential file containing both.
-    cbc_creds =  {'profile': "default"} # CBC authentication requires a url, token, and org_key or a credential file containing all.
-    cortex_creds = {'profile': "", "auth_type": "standard", "tenant_ids": [], "creds_file": ""} # Cortex authentication requires api_key, url, api_key_id, and auth_type or a credential file containing all.
-    dfe_creds =  {'profile': "", "creds_file": ""} # DFE authentication must include a token or the fields tenantId, appId, and appSecret values or a credential file containing all.
-    s1_creds = {'profile': "", "site_ids": [], "account_ids": [], "account_names": [], "creds_file": ""} # S1 authentication requires url, token and a list containing that provides a site_id(s), account_id(s), or account_name(s) or a credential file containing all.
-        
+def credential_builder(args) -> dict: 
+
     # CBC
     if args.edr == 'cbc':
-        if args.profile:
-            cbc_creds['profile'] = args.profile
-            
-        return cbc_creds
+        return {'profile': args.profile}
     
     # CBr
     if args.edr == 'cbr':
-        if args.profile:
-            cbr_creds['profile'] = args.profile
-            
-        return cbr_creds
-        
-    if not (args.creds and args.profile) and args.edr in ['cortex', 'dfe', 's1']:
-            sys.exit("Cortex, S1, and DFE need to be passed the location to a credentials file, and a profile")
-            return {}
+        return {'profile': args.profile}
         
     # Cortex
     if args.edr == 'cortex':
-        cortex_creds['profile'] = args.profile
-        cortex_creds['creds_file'] = args.creds    
-        
-        if args.auth_type:
-            cortex_creds['auth_type'] = args.auth_type.lower()
-        if args.tenant_ids:
-            cortex_creds['tenant_ids'] = args.tenant_ids
-        
-        return cortex_creds
+        return {'profile': args.profile, "auth_type": args.auth_type.lower(), "tenant_ids": args.tenant_ids, "creds_file": args.creds} 
             
     # DFE
     if args.edr == "dfe":
-        dfe_creds['profile'] = args.profile
-        dfe_creds['creds_file'] = args.creds
-        
-        return dfe_creds
+       return {'profile': args.profile, "creds_file": args.creds} 
     
     # S1
     if args.edr == "s1":
-        s1_creds['profile'] = args.profile
-        s1_creds['creds_file'] = args.creds
-        
-        if args.site_ids:
-            s1_creds['site_ids'] = args.site_ids
-            
-        if args.account_ids:
-            s1_creds['account_ids'] = args.account_ids
-            
-        if args.account_names:
-            s1_creds['account_names'] = args.account_names
-        
-        return s1_creds
+        return {'profile': args.profile, "site_ids": args.site_ids, "account_ids": args.account_ids, "account_names": args.account_names, "creds_file": args.creds, "bypass": args.bypass}
+
 
 def product_arg_builder(args) -> dict:
     # Takes in argparse arguements and creates product arguments by applicable edr
-    
-    cbr_product_args =  {"sensor_group": None} #list
-    cbc_product_args = {"device_group": None,"device_policy": None} #list and str
-    s1_product_args = {"deep_visibility": None} #str
+    product_args = {}
 
     #CBC
     if args.edr == 'cbc':
-        if args.device_group:
-            cbc_product_args['device_group'] = args.device_group
-        
-        if args.device_policy:
-            cbc_product_args['device_policy'] = args.device_policy
-        
-        cbc_product_args = {k:v for k,v in cbc_product_args.items() if v != None}
-        return cbc_product_args
+        cbc_product_args = {"device_group": args.device_group,"device_policy": args.device_policy} 
+        product_args = {k:v for k,v in cbc_product_args.items() if v != None}
     
     #CBr
-    if args.sensor_group:
-        cbr_product_args['sensor_group'] = args.sensor_group
-        cbr_product_args = {k:v for k,v in cbr_product_args.items() if v != None}
-        return cbr_product_args
-        
+    if args.edr == 'cbr':
+        cbr_product_args =  {"sensor_group": args.sensor_group} 
+        product_args = {k:v for k,v in cbr_product_args.items() if v != None}
+
     #S1
-    if args.dv:
-        s1_product_args['deep_visibility'] = True
-        s1_product_args = {k:v for k,v in s1_product_args.items() if v != None}
-        return s1_product_args
+    if args.edr == 's1':
+        s1_product_args = {"deep_visibility": args.dv} #str
+        product_args = {k:v for k,v in s1_product_args.items() if v != None}
     
-    return {}
+    return product_args
 
 def build_survey(args, edr: str) -> dict:
-        survey_payload = {'prefix': None, 'days': None, 'minutes': None, 'limit': None, 'hostname': None, 'username': None, 'query': None, 'output': None, 'no_file': True, 'no_progress': False, 'log_dir': None, "log": None, "ioc_list": None, "ioc_source": None, "ioc_type": None, "definitions" : None, "sigma_rules": None, "products_args": None, "output_format": "csv"}
+        survey_payload = {'prefix': None, 'days': None, 'minutes': None, 'limit': None, 'hostname': None, 'username': None, 'query': None, 'output': None, 'no_file': True, 'no_progress': False, 'log_dir': None, "ioc_list": None, "ioc_type": None, "definitions" : None, "sigma_rules": None, "products_args": None, "output_format": "csv"}
 
         for k,v in args.__dict__.items():
             if k in list(survey_payload.keys()):
@@ -181,22 +133,14 @@ def build_survey(args, edr: str) -> dict:
         if args.days and args.minutes:
             sys.exit('--days and --minutes are mutually exclusive')
 
-        if (args.sigmarule or args.sigmadir) and edr == 'cortex':
-            sys.exit('Neither --sigmarule nor --sigmadir are supported by product "cortex"')
-
-        if (args.sigmarule or args.sigmadir) and edr == 's1' and not args.dv:
-            sys.exit('Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery')
-
         if args.sigmarule and not os.path.isfile(args.sigmarule):
             sys.exit('Supplied --sigmarule is not a file')
 
         if args.sigmadir and not os.path.isdir(args.sigmadir):
             sys.exit('Supplied --sigmadir is not a directory')
 
-        log = logger(edr=args.edr,logs_dir=args.log_dir)
-
         definition_files = list()
-        definitions = dict()
+        ioc_files = list()
         sigma_rules = list()
 
         # test if deffile exists
@@ -208,7 +152,6 @@ def build_survey(args, edr: str) -> dict:
                     repo_deffile = repo_deffile + '.json'
 
                 if os.path.isfile(repo_deffile):
-                    log.debug(f'Using repo definition file {repo_deffile}')
                     args.deffile = repo_deffile
                 else:
                     sys.exit("The deffile doesn't exist. Please try again.")
@@ -224,7 +167,7 @@ def build_survey(args, edr: str) -> dict:
                         if os.path.splitext(filename)[1] == '.json':
                             definition_files.append(os.path.join(root_dir, filename))
 
-        if definitions: survey_payload['definitions'] = definitions
+        if definition_files: survey_payload['definitions'] = definition_files
 
         # add sigmarule to list
         if args.sigmarule:
@@ -239,15 +182,17 @@ def build_survey(args, edr: str) -> dict:
 
         if sigma_rules: survey_payload['sigma_rules'] = sigma_rules
 
-        # run search based on IOC file
         if args.iocfile:
-            with open(args.iocfile) as ioc_file:
-                basename = os.path.basename(args.iocfile)
-                ioc_source = basename
-                data = ioc_file.readlines()
-                ioc_list = [x.strip() for x in data]
+            ioc_files.append(args.iocfile)
 
-            survey_payload.update({"ioc_source": ioc_source, "ioc_list": ioc_list, "ioc_type": args.ioctype})
+        # if --sigmadir, add all files to sigma_rules list
+        if args.iocdir:
+            for root_dir, dirs, files in os.walk(args.iocdir):
+                for filename in files:
+                    if os.path.splitext(filename)[1] == '.txt':
+                        ioc_files.append(os.path.join(root_dir, filename))
+
+        if ioc_files: survey_payload.update({"ioc_list": ioc_files, "ioc_type": args.ioctype})
 
         survey_payload['product_args'] = product_arg_builder(args=args)
 
@@ -277,57 +222,64 @@ def logger(edr:str, logs_dir:str='logs') -> logging.Logger:
     
     return log
 
-def check_product_args_structure(edr: str, product_args: dict) -> dict:
-    edr_details = EDR_DEETS[edr]
-    base = {
-        "result": False,
-        "edr": edr_details['full_name'],
-        "required_fields": edr_details['product_arguments'],
-        "incompatible_arguments": None
-    }
+def check_product_args_structure(edr: str, product_args: dict) -> bool:
+    """
+    Check the structure of product arguments against supported arguments for the given EDR.
+    
+    Args:
+        edr (str): The EDR identifier to check against.
+        product_args (dict): A dictionary containing product arguments to check.
+        
+    Returns:
+        bool: True if the product arguments are supported or empty, False otherwise.
+    """
+    
+    unsupported_arguments = []
+    supported_arguments = []
     
     if not product_args:
-        base.update({"result": True, "required_fields": "No arguments were supplied"})
-        return base
-
-    product_check = set(product_args.keys())
-    required_fields_set = set(edr_details['product_arguments'])
+        return True
     
-    incompatible_arguments = required_fields_set - product_check
-    compatible_arguments = required_fields_set & product_check
+    for argument_key in product_args:
+        if edr in EDR_SUPPORTED_ARGUMENTS:
+            product_arguments = EDR_SUPPORTED_ARGUMENTS[edr]['product_arguments']
+            if argument_key in product_arguments:
+                supported_arguments.append(argument_key)
+            else:
+                unsupported_arguments.append(argument_key)
+    
+    if unsupported_arguments:
+        unsupported_args_list = ', '.join(unsupported_arguments)
+        supported_args_list = ', '.join(EDR_SUPPORTED_ARGUMENTS[edr]['product_arguments'])
+        print(f"You have provided the following unsupported product arguments for {edr}: {unsupported_args_list}. {edr} supports: {supported_args_list}. Execution will continue.")
+    
+    return True
 
-    if compatible_arguments:
-        base['result'] = True
-    if incompatible_arguments:
-        base['incompatible_arguments'] = incompatible_arguments
+def check_credentials_structure(edr, creds: dict) -> bool:
 
-    return base
-
-def check_credentials_structure(edr: str, creds: dict) -> dict:
-    # Check if the bare minimum arguments for execution are provided in the credentials.
-    # This function checks for the presence of needed arguments; it does not validate input.
-
+    """
+    Check the structure of provided credentials against supported credentials for the given EDR.
+    
+    This function verifies the presence of essential credential arguments required for execution.
+    It ensures the necessary arguments are present, without validating the input values.
+    
+    Args:
+        edr (str): The EDR identifier for which credentials are being checked.
+        creds (dict): A dictionary containing credential arguments to be checked.
+        
+    Returns:
+        bool: True if the provided credentials meet the necessary structure, False otherwise.
+        
+    Raises:
+        ValueError: If the provided credentials for the EDR do not meet the required structure.
+    """
+    
     cred_check = [k for k, v in creds.items() if v]
-    state = False
 
-    if edr in ["cbc", "cbr"] and 'creds_file' in cred_check:
-        return {"result": True, "edr": edr, "required_fields": EDR_DEETS[edr]["required_credentials"]}
+    if (('creds_file' and 'profile') in cred_check) or ((edr in ["cbc", "cbr"]) and ('profile' in cred_check)):
+        return True
 
-    if 'creds_file' in cred_check and 'profile' in cred_check:
-        state = True
-        return {"result": state, "edr": edr, "required_fields": "A profile and path to a credentials file argument have been supplied"}
-
-    if edr == "cbc" and all(field in cred_check for field in ['url', 'token', 'org_key']):
-        state = True
-    elif edr == "cbr" and all(field in cred_check for field in ['url', 'token']):
-        state = True
-    elif edr == "cortex" and all(field in cred_check for field in ['api_key', 'url', 'api_key_id', 'auth_type']):
-        state = True
-    elif edr == "dfe" and ('token' in cred_check or all(field in cred_check for field in ['tenantId', 'appId', 'appSecret'])):
-        state = True
-    elif edr == "s1" and all(field in cred_check for field in ['url', 'token']) and any(field in cred_check for field in ['site_ids', 'account_ids', 'account_names']):
-        state = True
-    elif not EDR_DEETS.get(edr,None):
-        return {"result": state, "edr": f"{edr} is not a supported EDR", "required_fields": None}
-
-    return {"result": state, "edr": edr, "required_fields": EDR_DEETS[edr]["required_credentials"]}
+    if edr in EDR_SUPPORTED_ARGUMENTS and EDR_SUPPORTED_ARGUMENTS[edr]['cred_check_logic'](cred_check):
+        return True
+    elif edr in EDR_SUPPORTED_ARGUMENTS:
+        raise ValueError(f"Credentials for {edr} must include: {EDR_SUPPORTED_ARGUMENTS[edr]['credential_requirements']}")

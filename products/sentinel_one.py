@@ -90,6 +90,7 @@ class SentinelOne(Product):
     _query_base: Optional[str] = None
     _pq: bool = True # Run queries using PowerQuery instead of DeepVisibility
     _raw: bool = False
+    _bypass: bool = False
 
     def __init__(self, **kwargs):
   
@@ -101,6 +102,7 @@ class SentinelOne(Product):
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._bypass = kwargs['bypass'] if 'bypass' in kwargs else self._bypass
 
         if kwargs.get('deep_visibility', False):
             self._pq = False
@@ -157,10 +159,11 @@ class SentinelOne(Product):
 
         # generate a list of site_ids based on config file and cmdline input
         # this will also test API keys as it goes
-        self._get_site_ids(self._site_ids,self._account_ids,self._account_names)
+        if not self._bypass:
+            self._get_site_ids(self._site_ids,self._account_ids,self._account_names)
 
-        if len(self._site_ids) < 1 and len(self._account_ids) < 1:
-            raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
+            if len(self._site_ids) < 1 and len(self._account_ids) < 1:
+                raise ValueError(f'S1 configuration invalid, specify a site_id, account_id, or account_name')
 
     def _get_site_ids(self, site_ids, account_ids, account_names):
         account_ids = list()
