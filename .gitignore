@@ -120,3 +120,4 @@ ENV/
 # other
 logs/
 products/.DS_Store
+testbed.ipynb
