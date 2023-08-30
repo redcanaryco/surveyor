@@ -123,27 +123,29 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    raw_results.append(res)
-                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
-                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
-                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
-                        username = 'Unknown'
-                    
-                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
-                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
-                    else:
-                        cmdline = 'Unknown'
-                    
-                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
-                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
-                    else:
-                        proc_name = 'Unknown'
+                    if self._raw:
+                        raw_results.append(res)
 
-                    timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+                    else:
+                        hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                        if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
+                            username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                            username = 'Unknown'
+                        
+                        if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
+                            cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
+                        else:
+                            cmdline = 'Unknown'
+                        
+                        if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
+                            proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
+                        else:
+                            proc_name = 'Unknown'
 
-                    result = Result(hostname, username, proc_name, cmdline,
-                                    (timestamp,))
-                    results.add(result)
+                        timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+                        result = Result(hostname, username, proc_name, cmdline,
+                                        (timestamp,))
+                        results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
         except KeyboardInterrupt:

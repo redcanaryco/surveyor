@@ -78,9 +78,10 @@ class CbResponse(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
         
-        if self._raw: return raw_results
-        
-        self._add_results(list(results), tag)
+        if self._raw:
+            self._add_results(list(raw_results), tag)
+        else:
+            self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results = set()
