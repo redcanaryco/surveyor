@@ -163,7 +163,7 @@ class Surveyor:
                 print(self.table_template_str.format(*header))
 
         try:
-            self._results_collector = [header] #A dd header to results collector.
+            self._results_collector = [header] #Add header to results collector.
             
             # Query
             if query:
@@ -292,7 +292,6 @@ class Surveyor:
                     # Serializing json
                     json_object = json.dumps(self._results_collector, indent=4, default=str)
 
-                    # Writing to sample.json
                     with open(file_name, "w") as outfile:
                         outfile.write(json_object)
                         

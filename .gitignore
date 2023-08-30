@@ -89,6 +89,7 @@ ENV/
 .ropeproject
 
 # Project things
+survey.json
 *.csv
 .carbonblack
 
