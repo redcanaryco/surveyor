@@ -31,6 +31,7 @@ class Surveyor:
     _results_collector: list = None
     _output_format: str = "csv"
     _writer: csv.writer = None
+    _raw = None
         
     def __init__(self):
         None
@@ -86,7 +87,7 @@ class Surveyor:
             
         #Update class variable
         self._output_format = output_format
-        
+        self._raw = raw
         # build arguments required for product class
         kwargs={}
 
@@ -297,7 +298,7 @@ class Surveyor:
                         
                 log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", self._log)
 
-            if len(self._results_collector) > 1:
+            if (raw and len(self._results_collector) > 0) or (len(self._results_collector) > 1):
                  return self._results_collector
             else:
                 return "No results"
@@ -328,19 +329,21 @@ class Surveyor:
             log_echo(f"-->{tag.tag}: {len(results)} results", self._log, use_tqdm=self._use_tqdm)
 
         for result in results:
-            row = [result.hostname, result.username, result.path, result.command_line, program, source, edr]
-
-            #Checking for optional addtions to add to output
-            if namespace: row.append(namespace)
-            if result.other_data: row.extend(result.other_data)
-                
-            self._results_collector.append(row)
-            
-            if self._writer and self._output_format == 'csv':
-                self._writer.writerow(row)
-                
+            if self._raw:
+                self._results_collector.append(result)
             else:
-                print(self.table_template_str.format(*row))
+                row = [result.hostname, result.username, result.path, result.command_line, program, source, edr]
+
+                #Checking for optional addtions to add to output
+                if namespace: row.append(namespace)
+                if result.other_data: row.extend(result.other_data)
+                    
+                self._results_collector.append(row)
+                
+                if self._writer and self._output_format == 'csv':
+                    self._writer.writerow(row)
+                else:
+                    print(self.table_template_str.format(*row))
 
 if __name__ == "__main__":
     Surveyor().process_telemetry(**build_survey(sys.argv))

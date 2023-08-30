@@ -93,8 +93,7 @@ class SentinelOne(Product):
     _raw: bool = False
     _bypass: bool = False
 
-    def __init__(self, pq: bool = False, **kwargs):
-  
+    def __init__(self, pq: bool = True, **kwargs):
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
         self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
         self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
@@ -109,7 +108,7 @@ class SentinelOne(Product):
         
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
-            self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
+            self._pq = False if kwargs.get('deep_visibility', "False") == bool("True") else True
 
         # If no conditions match, the default limit will be set to PowerQuery's default of 1000 or to Deep Visibility's Max of 20000.
         if isinstance(limit,str):
@@ -679,15 +678,12 @@ class SentinelOne(Product):
 
                 result = Result(hostname, username, path, command_line, additional_data)
                 
-                # Raw Feature (Inactive)
-                '''
+                # Raw Feature
+
                 if self._raw:
                     self._results[merged_tag].append(event)
                 else:
                     self._results[merged_tag].append(result)
-                '''
-
-                self._results[merged_tag].append(result)
 
         except Exception as e:
             self.log.error(e)
