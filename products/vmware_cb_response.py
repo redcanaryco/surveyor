@@ -78,7 +78,10 @@ class CbResponse(Product):
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
         
-        if self._raw: return raw_results
+        if self._raw:
+            self._add_results(list(raw_results), tag)
+        else:
+            self._add_results(list(results), tag)
         
         self._add_results(list(results), tag)
 

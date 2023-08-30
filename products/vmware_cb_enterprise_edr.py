@@ -148,10 +148,7 @@ class CbEnterpriseEdr(Product):
     
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
         results = self.perform_query(tag, base_query, query)
-        
-        if self._raw: 
-            return results
-        
+
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
