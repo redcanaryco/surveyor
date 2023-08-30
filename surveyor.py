@@ -13,23 +13,14 @@ from tqdm import tqdm
 from help import log_echo, build_survey, logger, check_credentials_structure, check_product_args_structure, credential_builder, product_arg_builder
 from common import Tag, Result, sigma_translation
 from load import get_product_instance
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple
 
 # Application version
 
 current_version = '2.5'
 
 class Surveyor:
-    
-    _table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
-    _table_template_str = f'{{:<{_table_template[0]}}} ' \
-                             f'{{:<{_table_template[1]}}} ' \
-                             f'{{:<{_table_template[2]}}} ' \
-                             f'{{:<{_table_template[3]}}}'
-    _edr: str = None
-    _creds: dict = None
-    _prefix: str = None
-    _namespace: str = None
+
     _log: logging.Logger = None
     _use_tqdm: bool = True
     _log_dir = str = "logs"
@@ -37,17 +28,13 @@ class Surveyor:
     _output_format: str = "csv"
     _writer: csv.writer = None
         
-    def __init__(self, edr:str, creds:dict):
-        validation = check_credentials_structure(edr,creds)
+    def __init__(self):
+        None
         
-        if validation['result'] == True:
-            self._edr = edr
-            self._creds = creds
-        else:
-            sys.exit(validation)
-            
     def process_telemetry(
         self,
+        edr: str,
+        creds: dict,
         query: Optional[str] = None,
         definitions: Optional[list] = [],
         ioc_list: Optional[list] = [],
@@ -69,9 +56,6 @@ class Surveyor:
         raw: Optional[bool] = False
     ) -> list:
         
-        if (definitions is not []) + (ioc_list is not []) + (sigma_rules is not []) >= 2:
-            raise ValueError("Error: Two or more variables have values.")
- 
         if ioc_list and not ioc_type:
             sys.exit('keyword argument ioc_list requires type of ioc to be specified with one of the following [md5, ipaddr, or domain]')
 
@@ -84,13 +68,19 @@ class Surveyor:
         if days and minutes:
             sys.exit('keyword arguments days and minutes are mutually exclusive')
 
+        validation = check_credentials_structure(edr,creds)
+        
+        if validation == True:
+            edr = edr
+            creds = creds
+        else:
+            sys.exit(validation)
+
         #Instantiate a Logger
         self._log_dir = log_dir
-        self._log = logger(self._edr, self._log_dir)
+        self._log = logger(edr, self._log_dir)
             
-        #Update class variables
-        if prefix: self._prefix = prefix
-        if namespace: self._namespace = namespace    
+        #Update class variable
         self._output_format = output_format
         
         # build arguments required for product class
@@ -102,17 +92,17 @@ class Surveyor:
         kwargs['tqdm_echo'] = str(not no_progress)
 
         if product_args:
-            check_product_args_structure(edr=self._edr, product_args=product_args) 
+            check_product_args_structure(edr=edr, product_args=product_args) 
             kwargs.update(product_args)
 
-        if self._creds:
-            validation = check_credentials_structure(edr = self._edr, creds = self._creds)
+        if creds:
+            validation = check_credentials_structure(edr = edr, creds = creds)
             if validation == True:
-                kwargs.update(self._creds)
+                kwargs.update(creds)
 
         # instantiate a product class instance based on the product string
         try:
-            product = get_product_instance(self._edr, **kwargs)
+            product = get_product_instance(edr, **kwargs)
         except ValueError as e:
             self._log.exception(e)
             sys.exit(str(e))
@@ -134,7 +124,6 @@ class Surveyor:
 
         # default header, shared by all products 
         header = ["endpoint", "username", "process_path", "cmdline", "program", "source", "edr"]
-        if prefix: header.append('prefix')
         if namespace: header.append('namespace')
 
         # add any additional rows that the current product includes to header
@@ -160,10 +149,13 @@ class Surveyor:
         else:
             output_file = None
             no_progress = True
-            template_str = f'{{:<{self._table_template[0]}}} {{:<{self._table_template[1]}}} {{:<{self._table_template[2]}}} ' \
-                            f'{{:<{self._table_template[3]}}}'
+            table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
+            table_template_str = f'{{:<{table_template[0]}}} ' \
+                                    f'{{:<{table_template[1]}}} ' \
+                                    f'{{:<{table_template[2]}}} ' \
+                                    f'{{:<{table_template[3]}}}'
             if not raw: 
-                print(template_str.format(*header))
+                print(table_template_str.format(*header))
 
         try:
             self._results_collector = [header] #A dd header to results collector.
@@ -175,14 +167,14 @@ class Surveyor:
                 if raw:
                     raw_results = product.process_search(Tag('query'), base_query, query) # Returns data directly from API
 
-                    if self._edr in ['cbr', 'cbc']: 
+                    if edr in ['cbr', 'cbc']: 
                         if len(raw_results) > 0:
                             log_echo(f"\033[92m-->query: {len(raw_results)} results \033[0m", self._log, use_tqdm=self._use_tqdm)
                         else:
                             log_echo(f"-->query: {len(raw_results)} results", self._log, use_tqdm=False)
                         return raw_results
                     
-                    elif self._edr in ['cortex', 'dfe', 's1']:
+                    elif edr in ['cortex', 'dfe', 's1']:
                         self._results_collector = [] 
                         for tag, results in product.get_results().items():
                             self._results_collector.append(results)                    
@@ -200,7 +192,7 @@ class Surveyor:
                     product.process_search(Tag('query'), base_query, query)
                 
                 for tag, results in product.get_results().items():
-                    self._write_results(results, query, "query", tag)
+                    self._write_results(results, edr, query, "query", tag, namespace)
             
             # IOC
             if (ioc_list and ioc_type):
@@ -216,7 +208,7 @@ class Surveyor:
                             product.nested_process_search(Tag(f"IOC - {iocs}", data=basename), {ioc_type: iocs}, base_query)
 
                             for tag, results in product.get_results().items():
-                                self._write_results(results, basename, 'ioc', tag)
+                                self._write_results(results, edr, basename, 'ioc', tag, namespace)
 
                 elif not any(are_files): # if none of the items in the list are files, assume JSON definitions:
                     log_echo(f"Processing IOC list: {ioc_list}", self._log)
@@ -225,7 +217,7 @@ class Surveyor:
                     product.nested_process_search(Tag(f"IOC", data="ioc"), {ioc_type: ioc_list}, base_query)
 
                     for tag, results in product.get_results().items():
-                        self._write_results(results, "IOC", 'ioc', tag)
+                        self._write_results(results, edr, "IOC", 'ioc', tag, namespace)
 
                 else:
                     logging.error("There appears to be a mix of an IOC file and IOC's passed in directly to a python array. Cannot process a mixed list of values. Aborting.")
@@ -237,7 +229,7 @@ class Surveyor:
                 
                 #If list of one or more sigma rules is provided, rule(s) will be translated.
                 if sigma_rules:
-                    translated_rules = sigma_translation(product=self._edr, sigma_rules=sigma_rules, pq=pq)
+                    translated_rules = sigma_translation(product=edr, sigma_rules=sigma_rules, pq=pq)
                     length = len(sigma_rules)
 
                 if len(translated_rules['queries']) != length:
@@ -252,14 +244,14 @@ class Surveyor:
                     if product.has_results():
                         # write results as they become available
                         for tag, nested_results in product.get_results(final_call=False).items():
-                            self._write_results(nested_results, program, str(tag.data), tag)
+                            self._write_results(nested_results, edr, program, str(tag.data), tag, namespace)
 
                         # ensure results are only written once
                         product.clear_results()
 
                 # write any remaining results
                 for tag, nested_results in product.get_results().items():
-                    self._write_results(nested_results, tag.tag, str(tag.data), tag)
+                    self._write_results(nested_results, edr, tag.tag, str(tag.data), tag, namespace)
 
             # Definition Files
             # run search against definition files and write to csv
@@ -280,14 +272,14 @@ class Surveyor:
                                 if product.has_results():
                                     # write results as they become available
                                     for tag, nested_results in product.get_results(final_call=False).items():
-                                        self._write_results(nested_results, program, str(tag.data), tag)
+                                        self._write_results(nested_results,edr, program, str(tag.data), tag, namespace)
 
                                     # ensure results are only written once
                                     product.clear_results()
 
                     # write any remaining results
                     for tag, nested_results in product.get_results().items():
-                        self._write_results(nested_results, tag.tag, str(tag.data), tag)
+                        self._write_results(nested_results, edr, tag.tag, str(tag.data), tag, namespace)
 
                 elif not any(are_files): # if none of the items in the list are files, assume JSON definitions
                     for definition in definitions:
@@ -299,14 +291,14 @@ class Surveyor:
                             if product.has_results():
                                 # write results as they become available
                                 for tag, nested_results in product.get_results(final_call=False).items():
-                                    self._write_results(nested_results, program, str(tag.data), tag)
+                                    self._write_results(nested_results, edr, program, str(tag.data), tag, namespace)
 
                                 # ensure results are only written once
                                 product.clear_results()
 
                         # write any remaining results
                         for tag, nested_results in product.get_results().items():
-                            self._write_results(nested_results, tag.tag, str(tag.data), tag)
+                            self._write_results(nested_results, edr, tag.tag, str(tag.data), tag, namespace)
                 else:
                     logging.error("There appears to be a mix of definition files and definition JSON objects. Cannot process a mixed list of values. Aborting.")
 
@@ -339,7 +331,7 @@ class Surveyor:
             if output_file:
                 output_file.close()
                 
-    def _write_results(self, results: list[Result], program: str, source: str, tag: Tag) -> None:
+    def _write_results(self, edr, results: list[Result], program: str, source: str, tag: Tag, namespace) -> None:
         
         """
         Helper function for writing search results to CSV or STDOUT.
@@ -354,11 +346,10 @@ class Surveyor:
             log_echo(f"-->{tag.tag}: {len(results)} results", self._log, use_tqdm=self._use_tqdm)
 
         for result in results:
-            row = [result.hostname, result.username, result.path, result.command_line, program, source, self._edr]
+            row = [result.hostname, result.username, result.path, result.command_line, program, source, edr]
 
             #Checking for optional addtions to add to output
-            if self._prefix: row.append(self._prefix)
-            if self._namespace: row.append(self._namespace)
+            if namespace: row.append(namespace)
             if result.other_data: row.extend(result.other_data)
                 
             self._results_collector.append(row)
@@ -370,95 +361,4 @@ class Surveyor:
                 print(self._table_template_str.format(*row))
 
 if __name__ == "__main__":
-    
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix", help="Output filename prefix.", type=str)
-    parser.add_argument("--profile", help="The credentials profile to use.", type=str)
-    parser.add_argument("--days", help="Number of days to search.", type=int)
-    parser.add_argument("--minutes", help="Number of minutes to search.", type=int)
-    parser.add_argument("--limit",help="""
-                Number of results to return. Cortex XDR: Default: 1000, Max: Default
-                Microsoft Defender for Endpoint: Default/Max: 100000
-                SentinelOne (PowerQuery): Default/Max: 1000
-                SentinelOne (Deep Visibility): Default/Max: 20000
-                VMware Carbon Black EDR: Default/Max: None
-                VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
-                
-                Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
-                """
-                , type=int)
-
-    parser.add_argument("--hostname", help="Target specific host by name.", type=str)
-    parser.add_argument("--username", help="Target specific username.",  type=str)
-
-    # different ways you can survey the EDR
-    parser.add_argument("--deffile", help="Definition file to process (must end in .json).", type=os.path.abspath, metavar='FILE')
-    parser.add_argument("--defdir", help="Directory containing multiple definition files.", type=os.path.abspath, metavar='DIR')
-    parser.add_argument("--query", "-q", help="A single query to execute.", type=str)
-    parser.add_argument("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype", type=os.path.abspath, metavar='FILE')
-    parser.add_argument("--iocdir", help='Directory containing multiple IOC files of the same type [ipaddr, domain, md5] (file must be in TXT format).', type=os.path.abspath, metavar='DIR')
-    parser.add_argument("--ioctype", help="One of: ipaddr, domain, md5", choices=['ipaddr', 'domain', 'md5'])
-    parser.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=os.path.abspath, metavar='FILE')
-    parser.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=os.path.abspath, metavar='DIR')
-
-    # optional output
-    parser.add_argument("--output", "-o", help="Specify the output file for the results. The default is create survey.csv in the current directory.")
-    parser.add_argument("--output-format", help="Specify the output file for the results. The default is create survey.csv in the current directory.", choices=['csv', 'json'], default='csv')
-    parser.add_argument("--no-file", help="Write results to STDOUT instead of the output CSV", default=False)
-    parser.add_argument("--no-progress", help="Suppress progress bar", default=False)
-
-    # logging options
-    parser.add_argument("--log-dir", help="Specify the logging directory.", type=str, default='logs')
-
-    # required
-    subparsers = parser.add_subparsers(dest='edr',help="Specify EDR to be queried must be one of 'cbc', 'cbr', 'cortex', 'dfe', 's1'", required=True)
-
-    # CbC options
-    cbc_group = subparsers.add_parser('cbc', help='Optional VMware Cb Enterprise EDR Parameters')
-    cbc_group.add_argument("--device-group", help="Name of device group to query", type=str, nargs='+', default=None)
-    cbc_group.add_argument("--device-policy", help="Name of device policy to query", type=str, nargs='+', default=None)
-    cbc_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
-    cbc_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
-
-    # CbR Options
-    cbr_group = subparsers.add_parser('cbr', help='Optional VMware Cb Response Parameters')
-    cbr_group.add_argument("--sensor-group", help="Name of sensor group to query", type=str, nargs='+', default=None)
-    cbr_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
-    cbr_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
-    
-    
-    # Cortex options
-    cortex_group = subparsers.add_parser('cortex', help='Optional Cortex XDR Parameters')
-    cortex_group.add_argument("--auth-type", help="ID of SentinelOne site to query", type=str, default='standard')
-    cortex_group.add_argument("--tenant-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
-    cortex_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    cortex_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
-    
-    # DFE options
-    dfe_group = subparsers.add_parser('dfe', help='Optional Microsoft Defender for Endpoints Parameters')
-    dfe_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    dfe_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
-
-    # S1 options
-    s1_group = subparsers.add_parser('s1', help='Optional S1 parameters')
-    s1_group.add_argument("--site-ids", help="ID of SentinelOne site to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--account-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--account-names", help="Name of SentinelOne account to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--dv", help="Use Deep Visibility for queries", action='store_true', default=False)
-    s1_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    s1_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
-    s1_group.add_argument(
-        "--bypass",
-        help="Bypass authorization verification if account IDs, Site IDs, or Account Names are not to be taken into account.",
-        action='store_true',
-        default=False
-    )
-
-    args = parser.parse_args()
-    
-    args.product_args = product_arg_builder(args)
-    args.creds = credential_builder(args)
-    
-    #Run Surveyor
-    Surveyor(args.edr, args.creds).process_telemetry(**build_survey(args, args.edr))
+    Surveyor().process_telemetry(**build_survey(sys.argv))
