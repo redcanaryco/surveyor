@@ -18,17 +18,17 @@ def any_item_in_list(values_list, check_list):
 
 EDR_SUPPORTED_ARGUMENTS = {
     "cbc": {
-        "cred_check_logic": lambda a: True if set(['url','token','org_key']) == set(a) else False,
+        "cred_check_logic": lambda a: True if set(['url','token','org_key']).issubset(set(a)) else False,
         "credential_requirements": "url, token, and org_key",
         "product_arguments": ['device_group', 'device_policy']
     },
     "cbr": {
-        "cred_check_logic": lambda a: True if set(['url','token']) == set(a) else False,
+        "cred_check_logic": lambda a: True if set(['url','token']).issubset(set(a)) else False,
         "credential_requirements": "url and token",
         "product_arguments": ['sensor_group']
     },
     "cortex": {
-        "cred_check_logic":  lambda a: True if set(['api_key','url', 'api_key_id','auth_type']) == set(a) else False,
+        "cred_check_logic":  lambda a: True if set(['api_key','url', 'api_key_id','auth_type']).issubset(set(a)) else False,
         "credential_requirements": "api_key, url, api_key_id, and auth_type",
         "product_arguments": None
     },
