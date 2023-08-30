@@ -311,19 +311,20 @@ class CortexXDR(Product):
 
                 self._results[tag] = list()
                 for event in events:
+                    hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
+
+                    # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
+                    username = event['action_process_username'] if 'action_process_username' in event else \
+                        event['actor_primary_username']
+                    path = event['action_process_image_path'] if 'action_process_image_path' in event else \
+                        event['actor_process_image_path']
+                    commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
+                        event['actor_process_command_line']
+                    additional_data = (event['_time'], event['event_id'])
+
                     if self._raw:
                         self._results[tag].append(event)
                     else:
-                        hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
-
-                        # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
-                        username = event['action_process_username'] if 'action_process_username' in event else \
-                            event['actor_primary_username']
-                        path = event['action_process_image_path'] if 'action_process_image_path' in event else \
-                            event['actor_process_image_path']
-                        commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
-                            event['actor_process_command_line']
-                        additional_data = (event['_time'], event['event_id'])
                         result = Result(hostname, username, path, commandline, additional_data)
                         self._results[tag].append(result)
                         

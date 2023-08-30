@@ -169,16 +169,24 @@ class Surveyor:
                 # if a query is specified run it directly
                 log_echo(f"Running Custom Query: {query}", self._log)
                 if raw:
-                    product.process_search(Tag('query'), base_query, query) # Returns data directly from API
+                    raw_results = product.process_search(Tag('query'), base_query, query) # Returns data directly from API
 
-                    self._results_collector = [] 
-                    for tag, results in product.get_results().items():
-                        self._results_collector.append(results)                    
-                        if len(self._results_collector ) > 0:
-                            log_echo(f"\033[92m-->query: {len(self._results_collector )} results \033[0m", self._log, use_tqdm=self._use_tqdm)
+                    if edr in ['cbr', 'cbc']: 
+                        if len(raw_results) > 0:
+                            log_echo(f"\033[92m-->query: {len(raw_results)} results \033[0m", self._log, use_tqdm=self._use_tqdm)
                         else:
-                            log_echo(f"-->query: {len(self._results_collector )} results", self._log, use_tqdm=self._use_tqdm)
-                            
+                            log_echo(f"-->query: {len(raw_results)} results", self._log, use_tqdm=False)
+                        return raw_results
+                    
+                    elif edr in ['cortex', 'dfe', 's1']:
+                        self._results_collector = [] 
+                        for tag, results in product.get_results().items():
+                            self._results_collector.append(results)                    
+                            if len(self._results_collector ) > 0:
+                                log_echo(f"\033[92m-->query: {len(self._results_collector )} results \033[0m", self._log, use_tqdm=self._use_tqdm)
+                            else:
+                                log_echo(f"-->query: {len(self._results_collector )} results", self._log, use_tqdm=self._use_tqdm)
+                                
                     if len(self._results_collector) > 1:
                          return self._results_collector
                     else:
