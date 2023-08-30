@@ -145,7 +145,7 @@ def build_survey(args) -> dict:
     # different ways you can survey the EDR
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--query", "-q", help="A single query to execute.", type=str)
-    mode.add_argument("--deffile", help="Definition file to process (must end in .json).", type=os.path.abspath, metavar='FILE')
+    mode.add_argument("--deffile", help="Definition file to process (must end in .json).", type=str)
     mode.add_argument("--defdir", help="Directory containing multiple definition files.", type=os.path.abspath, metavar='DIR')
     mode.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=os.path.abspath, metavar='FILE')
     mode.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=os.path.abspath, metavar='DIR')
