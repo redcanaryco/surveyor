@@ -82,8 +82,6 @@ class CbResponse(Product):
             self._add_results(list(raw_results), tag)
         else:
             self._add_results(list(results), tag)
-        
-        self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results = set()
