@@ -4,31 +4,18 @@ The Surveyor class is a utility class designed to perform surveys on various tar
 ### Class Attributes:
 - `_table_template` (Tuple[int, int, int, int, int, int]): A tuple containing the column widths for formatting tabular data during the survey.
 - `_table_template_str` (str): A string representation of the table template used for formatting survey results.
-- `_edr` (str): The name of the Endpoint Detection and Response (EDR) system to be used for the survey.
-- `_creds` (dict): A dictionary containing EDR-specific credential parameters for authentication.
-- `_prefix` (str): A string used as a prefix for the survey operation.
-- `_namespace` (str): The namespace or scope of the survey.
 - `_log` (logging.Logger): A logger to record the survey progress and messages.
 - `_use_tqdm` (bool): A flag indicating whether to use tqdm for displaying progress during the survey.
 - `_log_dir` (str): The directory where log files will be stored during the survey.
 - `_results_collector`: (list): Holds collected results in a list during class operations.
 - `_output_format` (str): Specifies the output format for generated or saved results (default: CSV).
 - `_writer` (csv.writer): Used for writing data to the output file based on the chosen format.
+- `_raw` (bool): Used to tell Surveyor that you'd like raw output. (Not yet extended to the CLI, but accessible via script import)
 
 ### Methods:
 
-- `__init__(self, edr: str, creds: dict)`
-The constructor method for the Surveyor class.
-
-### Parameters:
-- `edr` (str): The name of the Endpoint Detection and Response (EDR) system to be used for the survey.
-- `creds` (dict): A dictionary containing EDR-specific credential parameters for authentication.
-
-### Notes:
-The constructor initializes the `Surveyor `class with the specified EDR system and its corresponding credentials.
-It performs validation on the supplied credentials using the `check_credentials_structure` function.
-If the validation result is `True`, the attributes _edr and _creds are set to the supplied values.
-If the validation result is `False`, the constructor will exit the program using `sys.exit(validation)`.
+- `__init__(self)`
+The constructor method for the Surveyor class. Left open for future development.
 
 ### Other Class Features:
 The Surveyor class may have additional methods and features not explicitly mentioned in the provided code. These methods could include survey-related functions like data collection, processing, and analysis.
@@ -38,10 +25,12 @@ The `Surveyor` class is meant to be used as a utility for conducting surveys on 
 Users can initialize the `Surveyor` class with their EDR system name and corresponding credentials to begin the survey process.
 The class may provide additional functionalities for configuring survey parameters, executing surveys, and generating survey reports.
 
-# survey (function)
-The survey method is part of the Surveyor class and is used for conducting surveys on various targets, such as systems, logs, or networks, to collect relevant data and information.
+# process_telemetry (function)
+The process_telemetry method is part of the Surveyor class and is used for conducting surveys on various targets using EDR data.
 
 ### Parameters:
+- `edr` (str, required): EDR platform you'll be querying against.
+- `creds` (dict, required): 
 - `prefix` (str, optional): A string used as a prefix for the survey operation.
 - `hostname` (str, optional): The hostname of the target to be surveyed.
 - `days` (int, optional): The number of days of data to survey.
@@ -50,16 +39,11 @@ The survey method is part of the Surveyor class and is used for conducting surve
 - `namespace` (str, optional): The namespace or scope of the survey.
 - `limit` (int, optional): The maximum number of items to include in the survey results.
 - `ioc_list` (list, optional): A list of indicators of compromise (IOCs) to search for during the survey.
-- `ioc_source` (str, optional): The source of the IOCs specified in ioc_list.
 - `ioc_type` (str, optional): The type or category of IOCs to search for during the survey.
 - `query` (str, optional): A custom query or search string to filter the survey results.
 - `output` (str, optional): The output filename for the survey results (`csv`).
 - `output_format` (str, optional): Specify output file format, `json` or `csv`.
-- `definition` (dict, optional): A dictionary containing survey definitions. (Note: Takes in raw definition file contents)
 - `definitions` (list, optional): A list of absolute paths to survey definition files. (Note: Takes in a list of absolute paths to definition files)
-- `def_source` (str, optional): The source of the survey definitions specified in definitions.
-- `sigma_rule` (str, optional): A single Sigma rule file to process during the survey.
-- `sigma_rules_str` (str, optional): A string containing multiple Sigma rule files to process during the survey. (comma-separated)
 - `sigma_rules` (list, optional): A list of Sigma rule file paths to process during the survey.
 - `no_file` (bool, optional): If True, the survey will not use any file-based inputs or outputs.
 - `no_progress` (bool, optional): If True, the survey progress will not be displayed during execution.
@@ -96,11 +80,11 @@ credentials = {
     "org_key": "A1234Z",
 }
 
-surveyor = Surveyor(edr=edr_name, creds=credentials)
-
 # Perform a survey using the initialized surveyor instance
 
-survey_results = surveyor.survey(
+survey_results = surveyor.process_telemetry(
+    edr=edr_name,
+    creds=credentials,
     query="powershell.exe",
     limit=25,
     days=7
@@ -132,10 +116,10 @@ Command-Line Arguments:
 - `--iocsource`: Source of the IOCs specified in --iocfile.
 - `--sigmarule`: Sigma rule file to process (must be in YAML format).
 - `--sigmadir`: Directory containing multiple sigma rule files.
-- `--edr`: Specify the EDR to be queried. Choices: ['cbc', 'cbr', 'cortex', 'dfe', 's1']. (Required)
+- `--edr`: Specify the EDR to be queried. Choices: ['cbc', 'cbr', 'cortex', 'dfe', 's1']. (Required- flag is not required, just type in the edr platform like such `s1`)
+-  `--creds`: Absolute path to the credential file. (Required)
 
 Optional Output Arguments:
-- `--creds`: Absolute path to the credential file.
 - `--output or -o`: Specify the output file for the survey results. The default is to create survey.csv in the current directory.
 - `--no-file`: Write results to STDOUT instead of the output CSV.
 - `--no-progress`: Suppress the progress bar.
@@ -161,7 +145,6 @@ VMware Carbon Black Enterprise EDR Options:
 (Optional - Only for VMware Carbon Black Enterprise EDR surveys)
 
 - `--device-group`: Name of the device group to query. (Type: list)
-- `--dv`: Use Deep Visibility for queries. (Action: store_true, Default: False)
 - `--device-policy`: Name of the device policy to query. (Type: list)
 
 VMware Carbon Black Response Options:
@@ -174,14 +157,13 @@ Microsoft Defender for Endpoints Options:
 
 Notes:
 This script is a command-line utility designed to perform surveys using various EDR systems based on the specified parameters.
-Users can choose the EDR system (--edr) and configure survey options and parameters accordingly.
+Users can choose the EDR system  by inputting on of the following: [cbc', 'cbr', 'cortex', 'dfe', 's1'] and configure survey options and parameters accordingly.
 The script relies on the Surveyor class to conduct the actual surveys and collect the data.
-The Surveyor class is initialized with the specified EDR system (--edr) and its corresponding credentials (--creds).
 Survey parameters are built based on the provided command-line arguments using the build_survey function.
 The survey results will be stored in a CSV file (default: survey.csv) or displayed on the STDOUT if the --no-file option is used.
 Progress during the survey will be displayed with a progress bar by default (--no-progress suppresses it).
 Example Usage:
 
-```python surveyor.py --edr s1 --creds /path/to/credentials.ini --query "example.com" --days 7 --limit 1000 --output survey_results.csv```
+```python surveyor.py --query "example.com" --days 7 --limit 1000 --output survey_results.csv s1 --creds /path/to/credentials.ini```
 
 In this example, the script will conduct a survey on the EDR system 's1' (SentinelOne) for the target 'example.com' for the past 7 days. It will limit the survey results to 1000 entries and store the results in the 'survey_results.csv' file. The credentials are supplied through a ini file located at '/path/to/credentials.ini'.

@@ -20,11 +20,11 @@ from typing import Optional, Tuple
 current_version = '2.5'
 
 class Surveyor:
-    table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
-    table_template_str = f'{{:<{table_template[0]}}} ' \
-                            f'{{:<{table_template[1]}}} ' \
-                            f'{{:<{table_template[2]}}} ' \
-                            f'{{:<{table_template[3]}}}'
+    _table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
+    _table_template_str = f'{{:<{_table_template[0]}}} ' \
+                            f'{{:<{_table_template[1]}}} ' \
+                            f'{{:<{_table_template[2]}}} ' \
+                            f'{{:<{_table_template[3]}}}'
     _log: logging.Logger = None
     _use_tqdm: bool = True
     _log_dir = str = "logs"
@@ -154,13 +154,9 @@ class Surveyor:
         else:
             output_file = None
             no_progress = True
-            self.table_template: Tuple[int, int, int, int, int, int] = (30, 30, 30, 30, 30, 30)
-            self.table_template_str = f'{{:<{self.table_template[0]}}} ' \
-                                    f'{{:<{self.table_template[1]}}} ' \
-                                    f'{{:<{self.table_template[2]}}} ' \
-                                    f'{{:<{self.table_template[3]}}}'
+
             if not raw: 
-                print(self.table_template_str.format(*header))
+                print(self._table_template_str.format(*header))
 
         try:
             self._results_collector = [header] #Add header to results collector.
@@ -342,7 +338,7 @@ class Surveyor:
                 if self._writer and self._output_format == 'csv':
                     self._writer.writerow(row)
                 else:
-                    print(self.table_template_str.format(*row))
+                    print(self._table_template_str.format(*row))
 
 if __name__ == "__main__":
     Surveyor().process_telemetry(**build_survey(sys.argv))
