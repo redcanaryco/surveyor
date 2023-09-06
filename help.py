@@ -18,17 +18,17 @@ def any_item_in_list(values_list, check_list):
 
 EDR_SUPPORTED_ARGUMENTS = {
     "cbc": {
-        "cred_check_logic": lambda a: True if set(['url','token','org_key']).issubset(set(a)) else False,
+        "cred_check_logic": lambda a: True if set(['url','token','org_key']) == set(a) else False,
         "credential_requirements": "url, token, and org_key",
         "product_arguments": ['device_group', 'device_policy']
     },
     "cbr": {
-        "cred_check_logic": lambda a: True if set(['url','token']).issubset(set(a)) else False,
+        "cred_check_logic": lambda a: True if set(['url','token']) == set(a) else False,
         "credential_requirements": "url and token",
         "product_arguments": ['sensor_group']
     },
     "cortex": {
-        "cred_check_logic":  lambda a: True if set(['api_key','url', 'api_key_id','auth_type']).issubset(set(a)) else False,
+        "cred_check_logic":  lambda a: True if set(['api_key','url', 'api_key_id','auth_type']) == set(a) else False,
         "credential_requirements": "api_key, url, api_key_id, and auth_type",
         "product_arguments": None
     },
@@ -120,93 +120,95 @@ def product_arg_builder(args) -> dict:
     
     return product_args
 
-def build_survey(args) -> dict:
-    import argparse
-    parser = argparse.ArgumentParser(args)
-    parser.add_argument("--prefix", help="Output filename prefix.", type=str)
-    days_minutes = parser.add_mutually_exclusive_group()
-    days_minutes.add_argument("--days", help="Number of days to search.", type=int)
-    days_minutes.add_argument("--minutes", help="Number of minutes to search.", type=int)
-    parser.add_argument("--limit",help="""
-                Number of results to return. Cortex XDR: Default: 1000, Max: Default
-                Microsoft Defender for Endpoint: Default/Max: 100000
-                SentinelOne (PowerQuery): Default/Max: 1000
-                SentinelOne (Deep Visibility): Default/Max: 20000
-                VMware Carbon Black EDR: Default/Max: None
-                VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
-                
-                Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
-                """
-                , type=int)
+def build_survey(args=None) -> dict:
+    if args == None:
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--prefix", help="Output filename prefix.", type=str)
+        days_minutes = parser.add_mutually_exclusive_group()
+        days_minutes.add_argument("--days", help="Number of days to search.", type=int)
+        days_minutes.add_argument("--minutes", help="Number of minutes to search.", type=int)
+        parser.add_argument("--limit",help="""
+                    Number of results to return. Cortex XDR: Default: 1000, Max: Default
+                    Microsoft Defender for Endpoint: Default/Max: 100000
+                    SentinelOne (PowerQuery): Default/Max: 1000
+                    SentinelOne (Deep Visibility): Default/Max: 20000
+                    VMware Carbon Black EDR: Default/Max: None
+                    VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
+                    
+                    Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
+                    """
+                    , type=int)
 
-    parser.add_argument("--hostname", help="Target specific host by name.", type=str)
-    parser.add_argument("--username", help="Target specific username.", type=str)
+        parser.add_argument("--hostname", help="Target specific host by name.", type=str)
+        parser.add_argument("--username", help="Target specific username.", type=str)
 
-    # different ways you can survey the EDR
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--query", "-q", help="A single query to execute.", type=str)
-    mode.add_argument("--deffile", help="Definition file to process (must end in .json).", type=str)
-    mode.add_argument("--defdir", help="Directory containing multiple definition files.", type=os.path.abspath, metavar='DIR')
-    mode.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=os.path.abspath, metavar='FILE')
-    mode.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=os.path.abspath, metavar='DIR')
-    mode.add_argument("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype", type=os.path.abspath, metavar='FILE')
-    mode.add_argument("--iocdir", help='Directory containing multiple IOC files of the same type [ipaddr, domain, md5] (file must be in TXT format).', type=os.path.abspath, metavar='DIR')
+        # different ways you can survey the EDR
+        mode = parser.add_mutually_exclusive_group(required=True)
+        mode.add_argument("--query", "-q", help="A single query to execute.", type=str)
+        mode.add_argument("--deffile", help="Definition file to process (must end in .json).", type=os.path.abspath, metavar='FILE')
+        mode.add_argument("--defdir", help="Directory containing multiple definition files.", type=os.path.abspath, metavar='DIR')
+        mode.add_argument("--sigmarule", help="Sigma rule file to process (must be in YAML format).", type=os.path.abspath, metavar='FILE')
+        mode.add_argument("--sigmadir", help='Directory containing multiple sigma rule files.', type=os.path.abspath, metavar='DIR')
+        mode.add_argument("--iocfile", help="IOC file to process. One IOC per line. REQUIRES --ioctype", type=os.path.abspath, metavar='FILE')
+        mode.add_argument("--iocdir", help='Directory containing multiple IOC files of the same type [ipaddr, domain, md5] (file must be in TXT format).', type=os.path.abspath, metavar='DIR')
 
-    # optional output
-    parser.add_argument("--ioctype", help="One of: ipaddr, domain, md5", choices=['ipaddr', 'domain', 'md5'])
-    parser.add_argument("--output", "-o", help="Specify the output file for the results. The default is create survey.csv in the current directory.")
-    parser.add_argument("--output-format", help="Specify the output file for the results. The default is create survey.csv in the current directory.", choices=['csv', 'json'], default='csv')
-    parser.add_argument("--no-file", help="Write results to STDOUT instead of the output CSV", default=False)
-    parser.add_argument("--no-progress", help="Suppress progress bar", default=False)
+        # optional output
+        parser.add_argument("--ioctype", help="One of: ipaddr, domain, md5", choices=['ipaddr', 'domain', 'md5'])
+        parser.add_argument("--output", "-o", help="Specify the output file for the results. The default is create survey.csv in the current directory.")
+        parser.add_argument("--output-format", help="Specify the output file for the results. The default is create survey.csv in the current directory.", choices=['csv', 'json'], default='csv')
+        parser.add_argument("--no-file", help="Write results to STDOUT instead of the output CSV", default=False)
+        parser.add_argument("--no-progress", help="Suppress progress bar", default=False)
 
-    # logging options
-    parser.add_argument("--log-dir", help="Specify the logging directory.", type=str, default='logs')
+        # logging options
+        parser.add_argument("--log-dir", help="Specify the logging directory.", type=str, default='logs')
 
-    # required
-    subparsers = parser.add_subparsers(dest='edr',help="Specify EDR to be queried must be one of 'cbc', 'cbr', 'cortex', 'dfe', 's1'", required=True)
+        # required
+        subparsers = parser.add_subparsers(dest='edr',help="Specify EDR to be queried must be one of 'cbc', 'cbr', 'cortex', 'dfe', 's1'", required=True)
 
-    # CbC options
-    cbc_group = subparsers.add_parser('cbc', help='Optional VMware Cb Enterprise EDR Parameters')
-    cbc_group.add_argument("--device-group", help="Name of device group to query", type=str, nargs='+', default=None)
-    cbc_group.add_argument("--device-policy", help="Name of device policy to query", type=str, nargs='+', default=None)
-    cbc_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
-    cbc_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
+        # CbC options
+        cbc_group = subparsers.add_parser('cbc', help='Optional VMware Cb Enterprise EDR Parameters')
+        cbc_group.add_argument("--device-group", help="Name of device group to query", type=str, nargs='+', default=None)
+        cbc_group.add_argument("--device-policy", help="Name of device policy to query", type=str, nargs='+', default=None)
+        cbc_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
+        cbc_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
 
-    # CbR Options
-    cbr_group = subparsers.add_parser('cbr', help='Optional VMware Cb Response Parameters')
-    cbr_group.add_argument("--sensor-group", help="Name of sensor group to query", type=str, nargs='+', default=None)
-    cbr_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
-    cbr_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
-    
-    
-    # Cortex options
-    cortex_group = subparsers.add_parser('cortex', help='Optional Cortex XDR Parameters')
-    cortex_group.add_argument("--auth-type", help="ID of SentinelOne site to query", type=str, default='standard')
-    cortex_group.add_argument("--tenant-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
-    cortex_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    cortex_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
-    
-    # DFE options
-    dfe_group = subparsers.add_parser('dfe', help='Optional Microsoft Defender for Endpoints Parameters')
-    dfe_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    dfe_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
+        # CbR Options
+        cbr_group = subparsers.add_parser('cbr', help='Optional VMware Cb Response Parameters')
+        cbr_group.add_argument("--sensor-group", help="Name of sensor group to query", type=str, nargs='+', default=None)
+        cbr_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=False)
+        cbr_group.add_argument("--profile", help="The credentials profile to use.", type=str, default='default')
+        
+        
+        # Cortex options
+        cortex_group = subparsers.add_parser('cortex', help='Optional Cortex XDR Parameters')
+        cortex_group.add_argument("--auth-type", help="ID of SentinelOne site to query", type=str, default='standard')
+        cortex_group.add_argument("--tenant-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
+        cortex_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
+        cortex_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
+        
+        # DFE options
+        dfe_group = subparsers.add_parser('dfe', help='Optional Microsoft Defender for Endpoints Parameters')
+        dfe_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
+        dfe_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
 
-    # S1 options
-    s1_group = subparsers.add_parser('s1', help='Optional S1 parameters')
-    s1_group.add_argument("--site-ids", help="ID of SentinelOne site to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--account-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--account-names", help="Name of SentinelOne account to query", type=str, nargs='+', default=[])
-    s1_group.add_argument("--dv", help="Use Deep Visibility for queries", action='store_true', default=False)
-    s1_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
-    s1_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
-    s1_group.add_argument(
-        "--bypass",
-        help="Bypass authorization verification if account IDs, Site IDs, or Account Names are not to be taken into account.",
-        action='store_true',
-        default=False
-    )
+        # S1 options
+        s1_group = subparsers.add_parser('s1', help='Optional S1 parameters')
+        s1_group.add_argument("--site-ids", help="ID of SentinelOne site to query", type=str, nargs='+', default=[])
+        s1_group.add_argument("--account-ids", help="ID of SentinelOne account to query", type=str, nargs='+', default=[])
+        s1_group.add_argument("--account-names", help="Name of SentinelOne account to query", type=str, nargs='+', default=[])
+        s1_group.add_argument("--dv", help="Use Deep Visibility for queries", action='store_true', default=False)
+        s1_group.add_argument("--creds", help="Absolute path to credential file", type=os.path.realpath, default=None, required=True)
+        s1_group.add_argument("--profile", help="The credentials profile to use.", type=str, required=True)
+        s1_group.add_argument(
+            "--bypass",
+            help="Bypass authorization verification if account IDs, Site IDs, or Account Names are not to be taken into account.",
+            action='store_true',
+            default=False
+        )
 
-    args = parser.parse_args()
+        args = parser.parse_args()
+
     product_args = product_arg_builder(args)
     creds = credential_builder(args)
 

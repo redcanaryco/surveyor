@@ -5,6 +5,11 @@ sys.path.append(os.getcwd())
 from unittest.mock import patch
 from help import check_credentials_structure,check_product_args_structure, build_survey
 
+class DictToClass:
+    def __init__(self, dictionary):
+        for key, value in dictionary.items():
+            setattr(self, key, value)
+
 @pytest.mark.parametrize("edr, product_args",
                          [
                             ("cbc", {
@@ -131,11 +136,220 @@ def test_check_invalid_credentials_structure(edr, creds) -> dict:
     with pytest.raises(ValueError):
         results = check_credentials_structure(edr, creds)
 
-"""@pytest.mark.parametrize("args,expected_output",
-                        [
-                        (['--query', 'test', 's1', '--creds', '', '--profile', 'testing'], {})
-                        ]
+@pytest.mark.parametrize(
+    "input_arguments, output_surveyor_arguments",
+    [
+        (
+            {
+                'prefix': None,
+                'days': None,
+                'minutes': None,
+                'limit': None,
+                'hostname': None,
+                'username': None,
+                'query': 'ProcessCmd RegExp “schtasks” AND processName != “Manages scheduled tasks”',
+                'deffile': None,
+                'defdir': None,
+                'sigmarule': None,
+                'sigmadir': None,
+                'iocfile': None,
+                'iocdir': None,
+                'ioctype': None,
+                'output': None,
+                'output_format': 'csv',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'edr': 's1',
+                'site_ids': [],
+                'account_ids': [],
+                'account_names': [],
+                'dv': False,
+                'creds': 's1.ini',
+                'profile': 'test',
+                'bypass': False
+            },
+            {
+                'query': 'ProcessCmd RegExp “schtasks” AND processName != “Manages scheduled tasks”',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'output_format': 'csv',
+                'edr': 's1',
+                'product_args': {'deep_visibility': False},
+                'creds': {
+                    'profile': 'test',
+                    'site_ids': [],
+                    'account_ids': [],
+                    'account_names': [],
+                    'creds_file': 's1.ini',
+                    'bypass': False
+                }
+            }
+        ),
+        (
+            {
+                'prefix': None,
+                'days': None,
+                'minutes': None,
+                'limit': None,
+                'hostname': None,
+                'username': None,
+                'query': 'python.exe',
+                'deffile': None,
+                'defdir': None,
+                'sigmarule': None,
+                'sigmadir': None,
+                'iocfile': None,
+                'iocdir': None,
+                'ioctype': None,
+                'output': None,
+                'output_format': 'csv',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'edr': 'cbc',
+                'device_group': None,
+                'device_policy': None,
+                'creds': None,
+                'profile': 'default'
+            },
+            {
+                'query': 'python.exe',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'output_format': 'csv',
+                'edr': 'cbc',
+                'product_args': {},
+                'creds': {
+                    'profile': 'default'
+                }
+            }
+        ),
+        (
+            {
+                'prefix': None,
+                'days': None,
+                'minutes': None,
+                'limit': None,
+                'hostname': None,
+                'username': None,
+                'query': 'python.exe',
+                'deffile': None,
+                'defdir': None,
+                'sigmarule': None,
+                'sigmadir': None,
+                'iocfile': None,
+                'iocdir': None,
+                'ioctype': None,
+                'output': None,
+                'output_format': 'csv',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'edr': 'cbr',
+                'sensor_group': None,
+                'creds': None,
+                'profile': 'default'
+            },
+            {
+                'query': 'python.exe',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'output_format': 'csv',
+                'edr': 'cbr',
+                'product_args': {},
+                'creds': {
+                    'profile': 'default'
+                }
+            }
+        ),
+        (
+            {
+                'prefix': None,
+                'days': None,
+                'minutes': None,
+                'limit': None,
+                'hostname': None,
+                'username': None,
+                'query': 'DeviceEvents',
+                'deffile': None,
+                'defdir': None,
+                'sigmarule': None,
+                'sigmadir': None,
+                'iocfile': None,
+                'iocdir': None,
+                'ioctype': None,
+                'output': None,
+                'output_format': 'csv',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'edr': 'dfe',
+                'creds': 'microsoft.ini',
+                'profile': 'test'
+            },
+            {
+                'query': 'DeviceEvents',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'output_format': 'csv',
+                'edr': 'dfe',
+                'product_args': {},
+                'creds': {
+                    'profile': 'test',
+                    'creds_file': 'microsoft.ini'
+                }
+            }
+        ),
+        (
+            {
+                'prefix': None,
+                'days': None,
+                'minutes': None,
+                'limit': None,
+                'hostname': None,
+                'username': None,
+                'query': 'dataset = xdr_data | fields os_actor_process_file_size as osapfs | filter to_string(osapfs) = "12345"',
+                'deffile': None,
+                'defdir': None,
+                'sigmarule': None,
+                'sigmadir': None,
+                'iocfile': None,
+                'iocdir': None,
+                'ioctype': None,
+                'output': None,
+                'output_format': 'csv',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'edr': 'cortex',
+                'auth_type': 'standard',
+                'tenant_ids': [],
+                'creds': 'cortex.ini',
+                'profile': 'test'
+            },
+            {
+                'query': 'dataset = xdr_data | fields os_actor_process_file_size as osapfs | filter to_string(osapfs) = "12345"',
+                'no_file': False,
+                'no_progress': False,
+                'log_dir': 'logs',
+                'output_format': 'csv',
+                'edr': 'cortex',
+                'product_args': {},
+                'creds': {
+                    'profile': 'test',
+                    'auth_type': 'standard',
+                    'tenant_ids': [],
+                    'creds_file': 'cortex.ini'
+                }
+            }
+        ),
+    ]
 )
-def test_check_valid_build_surveys(args, expected_output) -> dict:
-    results = build_survey(args)
-    assert 1 == 1 """
+def test_check_valid_build_surveys(input_arguments, output_surveyor_arguments) -> dict:
+    results = build_survey(DictToClass(input_arguments))
+    assert results == output_surveyor_arguments

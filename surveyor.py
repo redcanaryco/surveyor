@@ -341,4 +341,4 @@ class Surveyor:
                     print(self._table_template_str.format(*row))
 
 if __name__ == "__main__":
-    Surveyor().process_telemetry(**build_survey(sys.argv))
+    Surveyor().process_telemetry(**build_survey())
