@@ -45,7 +45,7 @@ class DefenderForEndpoints(Product):
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
-    _json: bool # output raw json
+    _json: bool = False# output raw json
     _limit: int = -1
     _tenantId: Optional[str] = None 
     _appId: Optional[str] = None
@@ -61,6 +61,7 @@ class DefenderForEndpoints(Product):
         self._appId = kwargs['appId'] if 'appId' in kwargs else None
         self._appSecret = kwargs['appSecret'] if 'appSecret' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         if 100000 >= int(kwargs.get('limit', -1)) > self._limit:
             self._limit = int(kwargs['limit'])
@@ -177,8 +178,7 @@ class DefenderForEndpoints(Product):
             "Accept": 'application/json'
         }
 
-    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
-        self._json = json
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query.rstrip() 
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
@@ -193,9 +193,8 @@ class DefenderForEndpoints(Product):
 
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json:bool) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         query_base = self.build_query(base_query)
-        self._json = json
 
         try:
             for search_field, terms in criteria.items():
@@ -203,11 +202,11 @@ class DefenderForEndpoints(Product):
                     if isinstance(terms, list):
                         for query_entry in terms:
                             query_entry += f" {query_base}" if query_base != '' else ''
-                            self.process_search(tag, {}, json, query_entry)
+                            self.process_search(tag, {}, query_entry)
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
-                        self.process_search(tag, {}, json, query_entry)
+                        self.process_search(tag, {}, query_entry)
 
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
@@ -226,7 +225,7 @@ class DefenderForEndpoints(Product):
 
                     query += f"| project Timestamp, {', '.join(PARAMETER_MAPPING[search_field]['projections'])}"
 
-                    self.process_search(tag, {}, json, query)
+                    self.process_search(tag, {}, query)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have...")
 

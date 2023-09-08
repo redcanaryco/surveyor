@@ -23,6 +23,7 @@ class CbResponse(Product):
         self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         super().__init__(self.product, **kwargs)
 
@@ -59,8 +60,8 @@ class CbResponse(Product):
         
         return query_base
 
-    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
-        if json:
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
+        if self._json:
             results = dict()
         else:
             #raw_results = list()
@@ -72,7 +73,7 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                if json:
+                if self._json:
                     results.update(proc)
                 else:
                     result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
@@ -102,8 +103,8 @@ class CbResponse(Product):
         '''
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
-        if json:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
+        if self._json:
             results = dict()
         else:
             results = set()
@@ -128,7 +129,7 @@ class CbResponse(Product):
                 self.log.debug(f'Query: {query}')
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
-                    if json:
+                    if self._json:
                         results.update(proc)
                     else:
                         result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,

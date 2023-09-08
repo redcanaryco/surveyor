@@ -56,6 +56,7 @@ class CbEnterpriseEdr(Product):
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
         
         super().__init__(self.product, **kwargs)
 
@@ -108,8 +109,8 @@ class CbEnterpriseEdr(Product):
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-    def perform_query(self, tag: Tag, base_query: dict, json: bool, query: str) -> set[Result]:
-        if json:
+    def perform_query(self, tag: Tag, base_query: dict, query: str) -> set[Result]:
+        if self._json:
             results = dict()
         else:
             #raw_results= list()
@@ -127,7 +128,7 @@ class CbEnterpriseEdr(Product):
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
                 deets = proc.get_details()
-                if json:
+                if self._json:
                     results.update(deets)
                 else:
                     hostname = deets['device_name'] if 'device_name' in deets else 'None'
@@ -166,12 +167,12 @@ class CbEnterpriseEdr(Product):
         '''
         return results
 
-    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:        
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
         results = self.perform_query(tag, base_query, query)
         
         self._add_results(list(results), tag)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         results: list = []
 
         for search_field, terms in criteria.items():

@@ -153,7 +153,7 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 
     ctx.ensure_object(dict)
 
-    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
+    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, limit, ioc_file, ioc_type, query, output,
                                def_dir, def_file, sigma_rule, sigma_dir, json, no_file, no_progress, log_dir, dict())
 
     if ctx.invoked_subcommand is None:
@@ -278,7 +278,8 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     # build arguments required for product class
     # must products only require the profile name
     kwargs = {
-        'profile': opt.profile
+        'profile': opt.profile,
+        'json': opt.json
     }
 
     if len(opt.product_args) > 0:
@@ -286,7 +287,6 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
     if opt.limit:
         kwargs['limit'] = str(opt.limit)
-
 
     kwargs['tqdm_echo'] = str(not opt.no_progress)
 
@@ -361,7 +361,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
         if opt.query:
             # if a query is specified run it directly
             log_echo(f"Running Custom Query: {opt.query}", log)
-            product.process_search(Tag('query'), base_query, opt.json, opt.query)
+            product.process_search(Tag('query'), base_query, opt.query)
 
             for tag, results in product.get_results().items():
                 _write_results(writer, results, opt.query, "query", tag, log)
@@ -411,7 +411,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
                 ioc_list = [x.strip() for x in data]
 
-                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query, opt.json)
+                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query)
 
                 for tag, results in product.get_results().items():
                     _write_results(writer, results, opt.ioc_file, 'ioc', tag, log)
@@ -425,7 +425,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 with open(definitions, 'r') as file:
                     programs = json.load(file)
                     for program, criteria in programs.items():
-                        product.nested_process_search(Tag(program, data=source), criteria, base_query, opt.json)
+                        product.nested_process_search(Tag(program, data=source), criteria, base_query)
 
                         if product.has_results():
                             # write results as they become available
@@ -449,7 +449,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
                 program = f"{rule['title']} - {rule['id']}"
                 source = 'Sigma Rule'
 
-                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query, opt.json)
+                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query)
 
                 if product.has_results():
                     # write results as they become available

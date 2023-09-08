@@ -90,7 +90,7 @@ class SentinelOne(Product):
     _query_base: Optional[str] = None
     _pq: bool  # Run queries using PowerQuery instead of DeepVisibility
     _raw: bool = False
-    _json: bool # output raw json
+    _json: bool = False # output raw json
 
     def __init__(self, pq: bool = False, **kwargs):
   
@@ -104,7 +104,7 @@ class SentinelOne(Product):
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
-        self._json = False
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
         
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
@@ -489,8 +489,7 @@ class SentinelOne(Product):
         for i in range(0, len(l), n):
             yield l[i:i + n]
 
-    def process_search(self, tag: Tag, base_query: dict, json_output: bool, query: str) -> None:
-        self._json = json_output
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         build_query, from_date, to_date = self.build_query(base_query)
         self._query_base = build_query
         self._echo(f'Built Query: {query}')
@@ -505,8 +504,7 @@ class SentinelOne(Product):
     def parameter_mapping(self) -> dict[str, list[str]]:
         return PARAMETER_MAPPING_PQ if self._pq else PARAMETER_MAPPING_DV
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json_output: bool) -> None:
-        self._json = json_output
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         query_base, from_date, to_date = self.build_query(base_query)
         self._query_base = query_base
         try:

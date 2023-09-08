@@ -56,7 +56,7 @@ class CortexXDR(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
-    _json: bool # output raw json
+    _json: bool = False # output raw json
     _limit: int = 1000 # Max is 1000 results otherwise have to get the results via stream
     _raw: bool = False
 
@@ -70,6 +70,7 @@ class CortexXDR(Product):
         self._url =  kwargs['url'] if 'url' in kwargs else ''
         self._auth_type = kwargs['auth_type'] if 'auth_type' in kwargs else "standard"
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         if self._limit >= int(kwargs.get('limit',0)) > 0:
             self._limit = int(kwargs['limit'])
@@ -194,8 +195,7 @@ class CortexXDR(Product):
         # therefore we return the relative time separately
         return query_base, relative_time_ms
 
-    def process_search(self, tag: Tag, base_query: dict, json: bool, query: str) -> None:
-        self._json = json
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         self._base_query, relative_time_ms = self.build_query(base_query)
 
         if tag not in self._queries:
@@ -204,8 +204,7 @@ class CortexXDR(Product):
         full_query = Query(relative_time_ms, None, None, None, query)
         self._queries[tag].append(full_query)
 
-    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict, json: bool) -> None:
-        self._json = json
+    def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
         self._base_query, relative_time_ms = self.build_query(base_query)
 
         try:
