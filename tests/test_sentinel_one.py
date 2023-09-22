@@ -227,7 +227,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne, mocker):
     assert Query(sdate, edate, 'dst.ip.address', 'in', '("127.0.0.1")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'src.process.cmdline', 'in', '("MiniDump")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'src.process.publisher', 'in', '("Microsoft")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'url.address', 'in', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'event.dns.request', 'in', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'tgt.file.internalName', 'in', '("powershell")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'url.address', 'in', '("https://google.com")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'tgt.file.path', 'in', '("current_date.txt")', None) in s1_product._queries[Tag('field_translation')]
