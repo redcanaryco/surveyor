@@ -1,4 +1,4 @@
-{{
+{
     "AweRay (AweSun)": {
         "process_name": ["aweray_remote*.exe"],
         "domain": ["asapi.aweray.net", 
@@ -183,7 +183,8 @@
         "domain": ["*.level.io"],
         "digsig_publisher": ["Level Software, Inc."],
         "process_name": ["level-windows-amd64.exe",
-                        "level.exe"]
+                        "level.exe",
+	                "level-remote-control-ffmpeg.exe"]
     },
     "FixMe": {
         "domain": ["fixme.it"],
@@ -376,5 +377,4 @@
         "process_name": ["superops.exe", "superopsticket.exe"],
         "domain": ["serv.superopsalpha.com", "*.superops.ai", "*.superopsalpha.com", "*.superopsbeta.com"]
     }
-}
 }

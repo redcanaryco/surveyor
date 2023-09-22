@@ -236,12 +236,6 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     if opt.days and opt.minutes:
         ctx.fail('--days and --minutes are mutually exclusive')
 
-    if (opt.sigma_rule or opt.sigma_dir) and product_str == 'cortex':
-        ctx.fail('Neither --sigmarule nor --sigmadir are supported by product "cortex"')
-
-    if (opt.sigma_rule or opt.sigma_dir) and product_str == 's1' and opt.product_args['pq']:
-        ctx.fail('Neither --sigmarule nor --sigmadir are supported by SentinelOne PowerQuery')
-
     if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
         ctx.fail('Supplied --sigmarule is not a file')
 
@@ -428,7 +422,8 @@ def survey(ctx, product_str: str = 'cbr') -> None:
 
         # if there's sigma rules to be processed
         if len(sigma_rules) > 0:
-            translated_rules = sigma_translation(product_str, sigma_rules)
+            pq_check = True if 'pq' in opt.product_args and opt.product_args['pq'] else False
+            translated_rules = sigma_translation(product_str, sigma_rules, pq_check)
             if len(translated_rules['queries']) != len(sigma_rules):
                 log.warning(f"Only {len(translated_rules['queries'])} out of {len(sigma_rules)} were able to be translated.")
             for rule in tqdm(translated_rules['queries'], desc="Processing sigma rules", disable=opt.no_progress):
