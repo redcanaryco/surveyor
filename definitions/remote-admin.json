@@ -183,7 +183,8 @@
         "domain": ["*.level.io"],
         "digsig_publisher": ["Level Software, Inc."],
         "process_name": ["level-windows-amd64.exe",
-                        "level.exe"]
+                        "level.exe",
+	                "level-remote-control-ffmpeg.exe"]
     },
     "FixMe": {
         "domain": ["fixme.it"],
