@@ -45,6 +45,7 @@ class DefenderForEndpoints(Product):
     product: str = 'dfe'
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
+    _json: bool = False# output raw json
     _limit: int = -1
     _tenantId: Optional[str] = None 
     _appId: Optional[str] = None
@@ -60,6 +61,7 @@ class DefenderForEndpoints(Product):
         self._appId = kwargs['appId'] if 'appId' in kwargs else None
         self._appSecret = kwargs['appSecret'] if 'appSecret' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         if 100000 >= int(kwargs.get('limit', -1)) > self._limit:
             self._limit = int(kwargs['limit'])
@@ -114,41 +116,46 @@ class DefenderForEndpoints(Product):
         return response.json()['access_token']
 
     def _post_advanced_query(self, data: dict, headers: dict) -> list[Result]:
-        #raw_results = list()
-        results = set()
+        if self._json:
+            results = dict()
+        else:
+            results = set()
+            #raw_results = list()
 
         try:
             url = "https://api.securitycenter.microsoft.com/api/advancedqueries/run"
             response = requests.post(url, data=json.dumps(data).encode('utf-8'), headers=headers)
 
             if response.status_code == 200:
-                for res in response.json()["Results"]:
-                    
-                    # Raw Feature (Inactive)
-                    '''
-                    if self._raw:
-                        raw_results.append(res)
-                    '''
-                    hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
-                    if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
-                        username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
-                        username = 'Unknown'
-                    
-                    if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
-                        cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
-                    else:
-                        cmdline = 'Unknown'
-                    
-                    if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
-                        proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
-                    else:
-                        proc_name = 'Unknown'
+                if self._json:
+                    results = response.json()["Results"]
+                else:
+                    for res in response.json()["Results"]:
+                        # Raw Feature (Inactive)
+                        '''
+                        if self._raw:
+                            raw_results.append(res)
+                        '''
+                        hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                        if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
+                            username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                            username = 'Unknown'
+                        
+                        if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
+                            cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
+                        else:
+                            cmdline = 'Unknown'
+                        
+                        if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
+                            proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
+                        else:
+                            proc_name = 'Unknown'
 
-                    timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
+                        timestamp = res['Timestamp'] if 'Timestamp' in res else 'Unknown'
 
-                    result = Result(hostname, username, proc_name, cmdline,
-                                    (timestamp,))
-                    results.add(result)
+                        result = Result(hostname, username, proc_name, cmdline,
+                                        (timestamp,))
+                        results.add(result)
             else:
                 self._echo(f"Received status code: {response.status_code} (message: {response.json()})")
         except KeyboardInterrupt:
@@ -172,7 +179,7 @@ class DefenderForEndpoints(Product):
         }
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        query = query.rstrip()
+        query = query.rstrip() 
         
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
@@ -199,8 +206,8 @@ class DefenderForEndpoints(Product):
                     else:
                         query_entry = terms
                         query_entry += f" {query_base}" if query_base != '' else ''
-
                         self.process_search(tag, {}, query_entry)
+
                 else:
                     all_terms = ', '.join(f"'{term}'" for term in terms)
                     if search_field in PARAMETER_MAPPING:

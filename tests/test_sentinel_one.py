@@ -123,7 +123,7 @@ def test_process_search(s1_product : SentinelOne):
     s1_product.log = logging.getLogger('pytest_surveyor')
     s1_product._queries = {}
 
-    s1_product.process_search(Tag('test_query'), {}, 'FileName containsCIS "svchost.exe"')
+    s1_product.process_search(Tag('test_query'), {}, json, 'FileName containsCIS "svchost.exe"')
 
     assert len(s1_product._queries[Tag('test_query')]) == 1
     assert s1_product._queries[Tag('test_query')][0].parameter is None
@@ -140,7 +140,7 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     s1_product._pq = False
 
     for program, criteria in programs.items():
-        s1_product.nested_process_search(Tag(program), criteria, {})
+        s1_product.nested_process_search(Tag(program), criteria, {}, json)
     
     assert len(s1_product._queries) == 4
 
@@ -203,7 +203,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     s1_product._pq = True
 
     for program, criteria in programs.items():
-        s1_product.nested_process_search(Tag(program), criteria, {})
+        s1_product.nested_process_search(Tag(program), criteria, {}, json)
     
     assert len(s1_product._queries) == 4
 
@@ -268,7 +268,7 @@ def test_nested_process_search_unsupported_field(s1_product : SentinelOne):
     s1_product._pq = False
     s1_product.log = logging.getLogger('pytest_surveyor')
 
-    s1_product.nested_process_search(Tag('unsupported_field'), criteria, {})
+    s1_product.nested_process_search(Tag('unsupported_field'), criteria, {}, json)
 
     assert len(s1_product._queries) == 0
 

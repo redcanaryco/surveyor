@@ -91,6 +91,7 @@ class SentinelOne(Product):
     _query_base: Optional[str] = None
     _pq: bool  # Run queries using PowerQuery instead of DeepVisibility
     _raw: bool = False
+    _json: bool = False # output raw json
 
     def __init__(self, pq: bool = False, **kwargs):
   
@@ -104,6 +105,7 @@ class SentinelOne(Product):
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
         
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
@@ -646,46 +648,49 @@ class SentinelOne(Product):
                 events = self._get_dv_events(query_id, p_bar_needed=p_bar_needed, cancel_event=cancel_event)
             self.log.debug(f'Got {len(events)} events')
 
-            self._results[merged_tag] = list()
-            
-            for event in events:
-                if self._pq:
-                    hostname = event[0]
-                    username = event[1]
-                    path = event[2]
-                    command_line = event[3]
-                    additional_data = (event[8], event[9], event[10], event[11],'None','None','None','None','None','None','None','None','None','None','None','None')
-                else:
-                    hostname = event['endpointName']
-                    username = event['srcProcUser']
-                    path = event['srcProcImagePath']
-                    srcprocstorylineid = event['srcProcStorylineId'] if 'srcProcStorylineId' in event else 'None'
-                    srcprocdisplayname = event['srcProcDisplayName'] if 'srcProcDisplayName' in event else 'None'
-                    tgtprocdisplayname = event['tgtProcDisplayName'] if 'tgtProcDisplayName' in event else 'None'
-                    tgtfilepath = event['tgtFilePath'] if 'tgtFilePath' in event else 'None'
-                    tgtfilesha1 = event['fileSha1'] if 'fileSha1' in event else 'None'
-                    tgtfilesha256 = event['fileSha256'] if 'fileSha256' in event else 'None'
-                    scrprocparentimagepath = event['srcProcParentImagePath'] if 'srcProcParentImagePath' in event else 'None'
-                    tgtprocimagepath = event['tgtProcImagePath'] if 'tgtProcImagePath' in event else 'None'
-                    url = event['networkUrl'] if 'networkUrl' in event else 'None'
-                    srcip = event['srcIp'] if 'srcIp' in event else 'None'
-                    dstip = event['dstIp'] if 'dstIp' in event else 'None'
-                    dnsrequest = event['dnsRequest'] if 'dnsRequest' in event else 'None'
-                    command_line = event['srcProcCmdLine']
-                    additional_data = (event['eventTime'], event['siteId'], event['siteName'], srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'])
+            if self._json:
+                self._results[merged_tag] = dict()
+                self._results[merged_tag] = events
+            else:
+                self._results[merged_tag] = list()
 
-                result = Result(hostname, username, path, command_line, additional_data)
-                
-                # Raw Feature (Inactive)
-                '''
-                if self._raw:
-                    self._results[merged_tag].append(event)
-                else:
+                for event in events:
+                    if self._pq:
+                        hostname = event[0]
+                        username = event[1]
+                        path = event[2]
+                        command_line = event[3]
+                        additional_data = (event[8], event[9], event[10], event[11],'None','None','None','None','None','None','None','None','None','None','None','None')
+                    else:
+                        hostname = event['endpointName']
+                        username = event['srcProcUser']
+                        path = event['srcProcImagePath']
+                        srcprocstorylineid = event['srcProcStorylineId'] if 'srcProcStorylineId' in event else 'None'
+                        srcprocdisplayname = event['srcProcDisplayName'] if 'srcProcDisplayName' in event else 'None'
+                        tgtprocdisplayname = event['tgtProcDisplayName'] if 'tgtProcDisplayName' in event else 'None'
+                        tgtfilepath = event['tgtFilePath'] if 'tgtFilePath' in event else 'None'
+                        tgtfilesha1 = event['fileSha1'] if 'fileSha1' in event else 'None'
+                        tgtfilesha256 = event['fileSha256'] if 'fileSha256' in event else 'None'
+                        scrprocparentimagepath = event['srcProcParentImagePath'] if 'srcProcParentImagePath' in event else 'None'
+                        tgtprocimagepath = event['tgtProcImagePath'] if 'tgtProcImagePath' in event else 'None'
+                        url = event['networkUrl'] if 'networkUrl' in event else 'None'
+                        srcip = event['srcIp'] if 'srcIp' in event else 'None'
+                        dstip = event['dstIp'] if 'dstIp' in event else 'None'
+                        dnsrequest = event['dnsRequest'] if 'dnsRequest' in event else 'None'
+                        command_line = event['srcProcCmdLine']
+                        additional_data = (event['eventTime'], event['siteId'], event['siteName'], srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'])
+
+                    result = Result(hostname, username, path, command_line, additional_data)
+
+                    # Raw Feature (Inactive)
+                    '''
+                    if self._raw:
+                        self._results[merged_tag].append(event)
+                    else:
+                        self._results[merged_tag].append(result)
+                    '''
+                    
                     self._results[merged_tag].append(result)
-                '''
-
-                self._results[merged_tag].append(result)
-
         except Exception as e:
             self.log.error(e)
 

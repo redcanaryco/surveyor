@@ -56,6 +56,7 @@ class CortexXDR(Product):
     _session: requests.Session
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
+    _json: bool = False # output raw json
     _limit: int = 1000 # Max is 1000 results otherwise have to get the results via stream
     _raw: bool = False
 
@@ -69,6 +70,7 @@ class CortexXDR(Product):
         self._url =  kwargs['url'] if 'url' in kwargs else ''
         self._auth_type = kwargs['auth_type'] if 'auth_type' in kwargs else "standard"
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         if self._limit >= int(kwargs.get('limit',0)) > 0:
             self._limit = int(kwargs['limit'])
@@ -311,26 +313,29 @@ class CortexXDR(Product):
 
                 self._results[tag] = list()
                 for event in events:
-                    hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
-
-                    # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
-                    username = event['action_process_username'] if 'action_process_username' in event else \
-                        event['actor_primary_username']
-                    path = event['action_process_image_path'] if 'action_process_image_path' in event else \
-                        event['actor_process_image_path']
-                    commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
-                        event['actor_process_command_line']
-                    additional_data = (event['_time'], event['event_id'])
-
-                    '''
-                    if self._raw:
-                        self._results[tag].append(event)
+                    if self._json:
+                        self._results[tag].update(events)
                     else:
+                        hostname = event['agent_hostname'] if 'agent_hostname' in event else ''
+
+                        # If the event is not a process execution, we need to see what process initiated the filemod, regmod, netconn, etc.
+                        username = event['action_process_username'] if 'action_process_username' in event else \
+                            event['actor_primary_username']
+                        path = event['action_process_image_path'] if 'action_process_image_path' in event else \
+                            event['actor_process_image_path']
+                        commandline = event['action_process_command_line'] if 'action_process_command_line' in event else \
+                            event['actor_process_command_line']
+                        additional_data = (event['_time'], event['event_id'])
+
+                        '''
+                        if self._raw:
+                            self._results[tag].append(event)
+                        else:
+                            result = Result(hostname, username, path, commandline, additional_data)
+                            self._results[tag].append(result)
+                        '''
                         result = Result(hostname, username, path, commandline, additional_data)
                         self._results[tag].append(result)
-                    '''
-                    result = Result(hostname, username, path, commandline, additional_data)
-                    self._results[tag].append(result)
                         
         self._queries.clear()
 

@@ -103,7 +103,7 @@ def test_process_search(cbc_product : CbEnterpriseEdr, mocker):
     cbc_product._device_policy = None
     cbc_product._results = {}
     mocker.patch.object(cbc_product, 'perform_query')
-    cbc_product.process_search(Tag('test_field'), {}, 'process_name:cmd.exe')
+    cbc_product.process_search(Tag('test_field'), {}, json, 'process_name:cmd.exe')
     cbc_product.perform_query.assert_called_once_with(Tag('test_field'), {}, 'process_name:cmd.exe')
 
 
@@ -134,7 +134,7 @@ def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
     ]
 
     for program, criteria in programs.items():
-        cbc_product.nested_process_search(Tag(program), criteria, {})
+        cbc_product.nested_process_search(Tag(program), criteria, {}, json)
     cbc_product.perform_query.assert_has_calls(expected_calls, any_order=True)
 
 

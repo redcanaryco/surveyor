@@ -23,6 +23,7 @@ class CbResponse(Product):
         self._sensor_group = kwargs['sensor_group'] if 'sensor_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
+        self._json = kwargs['json'] if 'json' in kwargs else self._json
 
         super().__init__(self.product, **kwargs)
 
@@ -60,8 +61,11 @@ class CbResponse(Product):
         return query_base
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
-        #raw_results = list()
-        results = set()
+        if self._json:
+            results = dict()
+        else:
+            #raw_results = list()
+            results = set()
 
         query = query + self.build_query(base_query)
         self._echo(query)
@@ -69,7 +73,10 @@ class CbResponse(Product):
         try:
             # noinspection PyUnresolvedReferences
             for proc in self._conn.select(Process).where(query):
-                result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                if self._json:
+                    results.update(proc)
+                else:
+                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
                 
                 # Raw Feature (Inactive)
@@ -97,7 +104,10 @@ class CbResponse(Product):
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:
-        results = set()
+        if self._json:
+            results = dict()
+        else:
+            results = set()
 
         try:
             for search_field, terms in criteria.items():
@@ -119,12 +129,12 @@ class CbResponse(Product):
                 self.log.debug(f'Query: {query}')
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
-                    result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
-                                    (proc.start,))
-                    results.add(result)
-                    if self._limit > 0 and len(results)+1 > self._limit:
-                        break
-                    
+                    if self._json:
+                        results.update(proc)
+                    else:
+                        result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
+                                        (proc.start,))
+                        results.add(result)
         except Exception as e:
             self._echo(f'Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)
