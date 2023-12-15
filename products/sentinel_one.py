@@ -104,9 +104,7 @@ class SentinelOne(Product):
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
-        print(kwargs)
-        print(self._account_ids)
-        print(self._site_ids)
+
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
             self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
