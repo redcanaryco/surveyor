@@ -30,6 +30,7 @@ PARAMETER_MAPPING: dict[str, str] = {
     'ipaddr': 'action_remote_ip',
     'cmdline': 'action_process_command_line',
     'digsig_publisher': 'action_file_signature_vendor',
+    'domain': 'action_external_hostname',
     'modload': 'action_module_path',
     'filemod': 'action_file_path',
     'regmod': 'action_registry_key_name',
