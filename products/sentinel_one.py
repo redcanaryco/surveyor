@@ -95,16 +95,16 @@ class SentinelOne(Product):
     def __init__(self, pq: bool = False, **kwargs):
   
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
-        self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
-        self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
-        self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
+        self._site_ids = kwargs.get('site_id', []) or list()
+        self._account_ids = kwargs.get('account_id', []) or list()
+        self._account_names = kwargs.get('account_name', []) or list()
         self._url = kwargs['url'] if 'url' in kwargs else ''
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
-        
+
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
             self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
@@ -264,16 +264,18 @@ class SentinelOne(Product):
                     for item in response:
                         for site in item['sites']:
                             temp_site_ids.append(site['id'])
-
-                            if self._pq and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+ 
+                            if self._pq:
+                                if site['id'] not in self._site_ids:
+                                    self._site_ids.append(site['id'])
 
                                 if site['accountId'] not in self._account_ids:
-                                    # PowerQuery won't honor Site ID filters unless the parent account ID is also
+                                    # PowerQuery won't honor Site ID filters unless the parent accousnt ID is also
                                     # included in the request body
                                     self._account_ids.append(site['accountId'])
                             elif site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+                                self._site_ids.append(site['id']) 
+
                     counter = 0
                     temp_list = []
                 i += 1
