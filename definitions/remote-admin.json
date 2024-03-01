@@ -411,15 +411,5 @@
     "Remcos":{
         "process_name":["remcos*.exe"],
         "digsig_publisher":["BreakingSecurity.net"]
-    },
-    "ZeroTier":{
-        "domain": ["my.zerotier.com",
-                    "zerotier.com"],
-        "process_name": ["zerotier_desktop_ui.exe",
-                        "zerotier-one_*.exe",
-                        "ZeroTierOne.msi"],
-        "filemod_name": ["ZeroTierOne.msi"],
-        "cmdline": ["ZeroTierOne.msi"],
-        "digsig_publisher": ["ZeroTier, Inc."]
     }
 }
