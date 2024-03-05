@@ -68,7 +68,8 @@
         "digsig_publisher": ["Yakhnovets Denis Aleksandrovich IP"]
     },
     "Microsoft RDP": { 
-        "process_name": ["termsrv.exe","Microsoft Remote Desktop"]
+        "process_name": ["termsrv.exe",
+                        "Microsoft Remote Desktop"]
     },
     "Microsoft TSC": { 
         "process_name": ["mstsc.exe"]
@@ -337,7 +338,9 @@
     },
     "Xeox": {
         "domain":["*.xeox.com", "xeox.com"],
-        "process_name":["xeox_service_windows.exe", "xeox-agent_x64.exe", "xeox-agent_x86.exe"],
+        "process_name":["xeox_service_windows.exe", 
+                        "xeox-agent_x64.exe", 
+                        "xeox-agent_x86.exe"],
         "digsig_publisher": ["hs2n Informationstechnologie GmbH"],
         "internal_name": ["XEOX Agent for Windows"]
     },
@@ -351,7 +354,9 @@
         "digsig_publisher": ["Instant Housecall", "Specialist Sign-in.exe"],
         "process_name": ["InstantHousecall.exe"],
         "internal_name": ["InstantHousecall.exe"],
-        "domain": ["secure.instanthousecall.com", "*.instanthousecall.com", "instanthousecall.com"]
+        "domain": ["secure.instanthousecall.com", 
+                "*.instanthousecall.com", 
+                "instanthousecall.com"]
     },
     "ISL Online":{
         "digsig_publisher":["ISL Online Ltd"],
@@ -363,18 +368,48 @@
         "digsig_publisher": ["Parallels International GmbH"]
     },
     "Pilixo": {
-        "digsig_publisher": ["Pilixo Cloud Solutions", "PILIXO INTERNATIONAL LLC"],
-        "domain": ["*.pilixo.com", "pilixo.com", "download.pilixo.com"],
+        "digsig_publisher": ["Pilixo Cloud Solutions", 
+                            "PILIXO INTERNATIONAL LLC"],
+        "domain": ["*.pilixo.com", 
+                "pilixo.com", 
+                "download.pilixo.com"],
         "process_name": ["Pilixo_Installer*.exe"]
     },
     "RemotePC": {
-        "digsig_publisher": ["IDrive, Inc", "IDrive Incorporated"],
-        "domain": ["remotepc.com", "www.remotepc.com"],
-        "process_name": ["idrive.RemotePCAgent", "Idrive.File-Transfer"]
+        "digsig_publisher": ["IDrive, Inc", 
+                            "IDrive Incorporated"],
+        "domain": ["remotepc.com", 
+                "www.remotepc.com"],
+        "process_name": ["idrive.RemotePCAgent", 
+                        "Idrive.File-Transfer"]
     },
     "SuperOps": {
         "digsig_publisher": ["Superops Inc"],
-        "process_name": ["superops.exe", "superopsticket.exe"],
-        "domain": ["serv.superopsalpha.com", "*.superops.ai", "*.superopsalpha.com", "*.superopsbeta.com"]
+        "process_name": ["superops.exe", 
+                        "superopsticket.exe"],
+        "domain": ["serv.superopsalpha.com", 
+                "*.superops.ai", 
+                "*.superopsalpha.com", 
+                "*.superopsbeta.com"]
+    },
+    "Rocket Remote Desktop":{
+        "digsig_publisher": ["Rocket Remote Desktop"],
+        "process_name":["RDConsole.exe", 
+                        "RocketRemoteDesktop_Setup.exe"]
+    },
+    "GetScreen":{
+        "digsig_publisher":["Get Skrin Softver"],
+        "process_name":["GetScreen.exe", 
+                        "GetScreen.me"]
+    },
+    "ManageEngine":{
+        "digsig_publisher":["ManageEngine Remote Access Plus", 
+                            "Zoho Corporation Pvt. Ltd."],
+        "process_name":["ManageEngine_Remote_Access_Plus.exe", 
+                        "InstallShield Setup.exe"]
+    },
+    "Remcos":{
+        "process_name":["remcos*.exe"],
+        "digsig_publisher":["BreakingSecurity.net"]
     }
 }
