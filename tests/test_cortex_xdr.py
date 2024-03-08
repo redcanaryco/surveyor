@@ -65,16 +65,20 @@ def test_build_query_with_min(cortex_product : CortexXDR):
 
     assert timestamp == 5 * 60 * 1000
 
-def test_build_query_with_unsupported_field(cortex_product : CortexXDR):
+def test_build_query_with_unsupported_field(cortex_product : CortexXDR, mocker):
     filters = {
       "useless key": "asdfasdasdf"
     }
 
-    cortex_product.log = logging.getLogger('pytest_surveyor')
+    mocked_echo = mocker.patch.object(cortex_product, '_echo')
 
     result, timestamp = cortex_product.build_query(filters)
 
     assert result == ''
+
+    mocked_echo.assert_has_calls([
+        mocker.call('Query filter useless key is not supported by product cortex', logging.WARNING)
+    ])
 
 def test_process_search(cortex_product : CortexXDR):
     cortex_product._queries = {}
@@ -89,52 +93,67 @@ def test_process_search(cortex_product : CortexXDR):
     assert cortex_product._queries[Tag('test_query')][0].full_query == 'FieldA=ValueB'
     assert cortex_product._queries[Tag('test_query')][0].relative_time_ms == 14 * 24 * 60 * 60 * 1000
 
-def test_nested_process_search(cortex_product : CortexXDR):
+def test_nested_process_search(cortex_product : CortexXDR, mocker):
     cortex_product._queries = {}
-    cortex_product.log = logging.getLogger('pytest_surveyor')
+    mocked_echo = mocker.patch.object(cortex_product, '_echo')
 
-    with open(os.path.join(os.getcwd(), 'tests','data','cortex_surveyor_testing.json')) as f:
+
+    with open(os.path.join(os.getcwd(), 'tests','data','test_def_file.json')) as f:
         programs = json.load(f)
     
     for program, criteria in programs.items():
         cortex_product.nested_process_search(Tag(program), criteria, {})
-    
+
     assert len(cortex_product._queries) == 4
 
-    assert len(cortex_product._queries[Tag('field_translation')]) == 12
+    assert len(cortex_product._queries[Tag('field_translation')]) == 13
     relative_ts = 14 * 24 * 60 * 60 * 1000
-    assert Query(relative_ts, 'action_process_image_name', 'contains', '"cmd.exe"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_remote_ip', 'contains', '"8.8.8.8"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_process_command_line', 'contains', '"grep"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_file_signature_vendor', 'contains', '"Microsoft Corporation"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_module_path', 'contains', '"asdf.dll"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_file_path', 'contains', '"helloworld.txt"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_registry_key_name', 'contains', '"HKCU"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_process_image_md5', 'contains', '"asdfasdfasdf"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_process_image_sha256', 'contains', '"qwerqwerqwer"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_process_image_name', 'contains', '"notepad.exe"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_remote_ip', 'contains', '"127.0.0.1"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_process_command_line', 'contains', '"MiniDump"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_file_signature_vendor', 'contains', '"Microsoft"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_module_path', 'contains', '"pcwutl.dll"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_file_path', 'contains', '"current_date.txt"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_registry_key_name', 'contains', '"HKLM"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_process_image_md5', 'contains', '"asdfasdfasdfasdf"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_process_image_sha256', 'contains', '"zxcvzxcvzxcv"') in cortex_product._queries[Tag('field_translation')]
     assert Query(relative_ts, 'action_remote_port', 'contains', '"80"') in cortex_product._queries[Tag('field_translation')]
-    assert Query(relative_ts, 'action_file_md5', 'contains', '"zxcvzxcvzxcv"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_file_md5', 'contains', '"tyuityuityuityui"') in cortex_product._queries[Tag('field_translation')]
     assert Query(relative_ts, 'action_file_sha256', 'contains', '"poiupoiupoiu"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'actor_process_image_name', 'contains', '"cmd.exe"') in cortex_product._queries[Tag('field_translation')]
 
     assert len(cortex_product._queries[Tag('multiple_values')]) == 1
-    assert Query(relative_ts, 'action_process_image_name', 'in', '("*svchost.exe*", "*services.exe*")') in cortex_product._queries[Tag('multiple_values')]
+    assert Query(relative_ts, 'action_process_image_name', 'in', '("*svchost.exe*", "*cmd.exe*")') in cortex_product._queries[Tag('multiple_values')]
 
     assert len(cortex_product._queries[Tag('single_query')]) == 1
-    assert Query(relative_ts, None, None, None, 'FieldA=ValueB') in cortex_product._queries[Tag('single_query')]
+    assert Query(relative_ts, None, None, None, 'single_query_string_here') in cortex_product._queries[Tag('single_query')]
 
     assert len(cortex_product._queries[Tag('multiple_query')]) == 2
-    assert Query(relative_ts, None, None, None, 'FieldA=ValueB') in cortex_product._queries[Tag('multiple_query')]
-    assert Query(relative_ts, None, None, None, 'FieldC=ValueD') in cortex_product._queries[Tag('multiple_query')]
+    assert Query(relative_ts, None, None, None, 'first_query_string') in cortex_product._queries[Tag('multiple_query')]
+    assert Query(relative_ts, None, None, None, 'second_query_string') in cortex_product._queries[Tag('multiple_query')]
 
-def test_nested_process_search_unsupported_field(cortex_product : CortexXDR):
+    mocked_echo.assert_has_calls([
+        mocker.call('Query filter domain is not supported by product cortex', logging.WARNING),
+        mocker.call('Query filter sha1 is not supported by product cortex', logging.WARNING),
+        mocker.call('Query filter internal_name is not supported by product cortex', logging.WARNING),
+        mocker.call('Query filter url is not supported by product cortex', logging.WARNING),
+        mocker.call('Query filter process_file_description is not supported by product cortex', logging.WARNING)        
+    ], any_order=True)
+
+def test_nested_process_search_unsupported_field(cortex_product : CortexXDR, mocker):
     criteria = {'foo': 'bar'}
     cortex_product._queries = {}
     cortex_product.log = logging.getLogger('pytest_surveyor')
+
+    mocker.patch.object(cortex_product, '_echo')
 
     cortex_product.nested_process_search(Tag('unsupported_field'), criteria, {})
 
     assert len(cortex_product._queries) == 1
     assert cortex_product._queries[Tag('unsupported_field')] == []
+    cortex_product._echo.assert_has_calls([
+        mocker.call('Query filter foo is not supported by product cortex', logging.WARNING)
+    ])
 
 def test_process_queries_full_query(cortex_product : CortexXDR, mocker):
     cortex_product._queries = {}
