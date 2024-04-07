@@ -1,18 +1,11 @@
 {
 
     "mlflow": {
-        "process_name": ["python*.exe",
-                         "python*",
-                         "pip*"],
-
         "cmdline": ["mlflow"],
         "domain": ["mlflow.org"]
     },
     "h2o.ai": {
-        "process_name": ["python*.exe",
-                         "python*",
-                         "pip*",
-                         "java*",
+        "process_name": ["java*",
                          "hadoop*"],
         "cmdline": ["h2o-driver.jar", "h2odriver.jar", "h2o", "/h2o_"],
         "domain": ["h2o.ai", "h2o-release.s3.amazonaws.com"],
@@ -22,10 +15,7 @@
 		]
     },
     "ray.io": {
-        "process_name": ["python*.exe",
-                         "python*",
-                         "pip*",
-                         "gcs_server", "raylet"],
+        "process_name": ["gcs_server", "raylet"],
         "cmdline": ["ray", "gcs_server", "ray/_private/log_monitor.py", "ray/_private/runtime_env/agent/main.py", "ray/autoscaler/_private/monitor.py", "ray/_private/workers/default_worker.py", "ray/dashboard/dashboard.py", "ray/raylet/raylet"],
         "domain": ["ray.io"]
     }
