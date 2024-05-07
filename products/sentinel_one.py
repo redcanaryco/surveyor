@@ -60,7 +60,7 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'url': ['url.address'],
     'cmdline': ['src.process.cmdline'],
     'digsig_publisher': ['src.process.publisher'],
-    'domain': ['url.address'],
+    'domain': ['event.dns.request'],
     'filemod': ['tgt.file.path'],
     'internal_name': ['tgt.file.internalName'],
     'modload': ['module.path'],
@@ -85,25 +85,26 @@ class SentinelOne(Product):
     _account_ids: Optional[list] = [] # Account ID(s) for SentinelOne
     _site_ids: list = [] # Site ID(s) for SentinelOne
     _session: requests.Session
+    _dv_wait: int = 60
     _queries: dict[Tag, list[Query]] = dict()
     _last_request: float = 0.0
     _query_base: Optional[str] = None
-    _pq: bool # Run queries using PowerQuery instead of Deep Visibility
+    _pq: bool  # Run queries using PowerQuery instead of DeepVisibility
     _raw: bool = False
 
     def __init__(self, pq: bool = False, **kwargs):
   
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
-        self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
-        self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
-        self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
+        self._site_ids = kwargs.get('site_id', []) or list()
+        self._account_ids = kwargs.get('account_id', []) or list()
+        self._account_names = kwargs.get('account_name', []) or list()
         self._url = kwargs['url'] if 'url' in kwargs else ''
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
-        
+
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
             self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
@@ -263,16 +264,18 @@ class SentinelOne(Product):
                     for item in response:
                         for site in item['sites']:
                             temp_site_ids.append(site['id'])
-
-                            if self._pq and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+ 
+                            if self._pq:
+                                if site['id'] not in self._site_ids:
+                                    self._site_ids.append(site['id'])
 
                                 if site['accountId'] not in self._account_ids:
-                                    # PowerQuery won't honor Site ID filters unless the parent account ID is also
+                                    # PowerQuery won't honor Site ID filters unless the parent accousnt ID is also
                                     # included in the request body
                                     self._account_ids.append(site['accountId'])
                             elif site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+                                self._site_ids.append(site['id']) 
+
                     counter = 0
                     temp_list = []
                 i += 1
@@ -511,7 +514,6 @@ class SentinelOne(Product):
                     self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                logging.WARNING)
                     continue
-
                 parameter = self.parameter_mapping[search_field]
 
                 if tag not in self._queries:
@@ -525,6 +527,13 @@ class SentinelOne(Product):
                             else:
                                 search_value = terms[0]
                             self._queries[tag].append(Query(from_date, to_date, None, None, None, search_value))
+                        elif (sum(len(i) for i in terms)+300) / 8192 >= 0.75: # chunk terms if query is suspected to contain more than 8192 total characters (current PQ limitation)
+                            char_num = int((sum(len(i) for i in terms)) / 6144) + 1 # divide total characters of terms by 75% of limit to identify chunk number
+                            chunk_quantity = int(len(terms) / char_num) # determine number of terms per chunk to evenly split list of terms
+                            chunked_terms = list(self.divide_chunks(terms, chunk_quantity))
+                            for chunk in chunked_terms:
+                                search_value = '(' + ', '.join(f'"{x}"' for x in chunk) + ')'
+                                self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
                         else:
                             search_value = '(' + ', '.join(f'"{x}"' for x in terms) + ')'
                             self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
@@ -571,19 +580,10 @@ class SentinelOne(Product):
                         full_query = f'{query.parameter} {query.operator} {query.search_value}'
                         query_text.append((tag, full_query))
         else:
-            # key is a tuple of the query operator and parameter
-            # value is a list of Tuples where each tuple contains the query tag and search value
-            combined_queries = dict[Tuple[str, str], list[Tuple[Tag, str]]]()
 
             for tag, queries in self._queries.items():
                 for query in queries:
-                    if query.operator in ('contains', 'containscis', 'contains anycase'):
-                        key = (cast(str, query.operator), cast(str, query.parameter))
-                        if key not in combined_queries:
-                            combined_queries[key] = list()
-
-                        combined_queries[key].append((tag, cast(str, query.search_value)))
-                    elif query.full_query is not None:
+                    if query.full_query is not None:
                         query_text.append((tag, query.full_query))
                     elif query.operator == 'raw':
                         full_query = f'({query.search_value})'
@@ -591,18 +591,6 @@ class SentinelOne(Product):
                     else:
                         full_query = f'{query.parameter} {query.operator} {query.search_value}'
                         query_text.append((tag, full_query))
-
-            # merge combined queries and add them to query_text
-            data: list[Tuple[Tag, str]]
-            for (operator, parameter), data in combined_queries.items():
-                if operator in ('contains', 'containscis', 'contains anycase'):
-                    full_query = f'{parameter} in contains anycase ({", ".join(x[1] for x in data)})'
-
-                    tag = Tag(','.join(tag[0].tag for tag in data),
-                              ','.join(tag[0].data if tag[0].data else '' for tag in data))
-                    query_text.append((tag, full_query))
-                else:
-                    raise NotImplementedError(f'Combining operator "{operator}" queries is not support')
 
         return query_text
 
@@ -624,19 +612,19 @@ class SentinelOne(Product):
             if not self._pq:
                 params.update({
                     "isVerbose": False,
-                    "queryType": ['events'],  # options: 'events', 'procesState'
+                    "queryType": ['events'],  # options: 'events', 'procesState' (deprecated)
                 })
-
-            self.log.debug(f'Query params: {params}')
 
             if not self._pq:
                 # ensure we do not submit more than one request every 60 seconds to comply with rate limit
                 seconds_sice_last_request = time.time() - self._last_request
-                if seconds_sice_last_request < 60:
-                    sleep_seconds = 60 - seconds_sice_last_request
+                if seconds_sice_last_request < self._dv_wait:
+                    sleep_seconds = self._dv_wait - seconds_sice_last_request
                     self.log.debug(f'Sleeping for {sleep_seconds}')
 
                     cancel_event.wait(ceil(sleep_seconds))
+
+            self.log.debug(f'Query params: {params}')
 
             # start deep visibility API call
             url = '/web/api/v2.1/dv/events/pq' if self._pq else '/web/api/v2.1/dv/init-query'
@@ -725,60 +713,69 @@ class SentinelOne(Product):
         # execute queries in chunks
         # do not chunk if processing an IOC file
         ioc_hunt = list(self._queries.keys())
-        chunk_size = 1 if self._pq or (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
+        chunk_size = 1 if (len(ioc_hunt) == 1 and ioc_hunt[0].tag.startswith('IOC - ')) else 10
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=25 if self._pq else 1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
             futures = list[Future]()
 
-            # merge queries into one large query and execute it
-            for i in range(0, len(query_text), chunk_size):
-                # do not chain more than 10 ORs in a S1QL query
-                merged_tags = set[Tag]()
-                merged_query = ''
-                for tag, query_str in query_text[i:i + chunk_size]:
-                    # combine queries with ORs
-                    if merged_query:
-                        merged_query += ' OR '
+            tag_buckets: dict[str, list[Tuple[Tag, str]]] = {}
+            # group built queries by tag
+            for item in query_text:
+                tag_value = item[0].tag
+                if tag_value in tag_buckets:
+                    tag_buckets[tag_value].append(item)
+                else:
+                    tag_buckets[tag_value] = [item]
+            
+            
+            # merge queries into one large query by tag groupings and execute it
+            for items in tag_buckets.values():
+                for i in range(0, len(items), chunk_size):
+                    # do not chain more than 10 ORs in a S1QL query
+                    merged_query = ''
+                    for item in items[i:i + chunk_size]:
+                        if merged_query:
+                            merged_query += ' OR '
+                        
+                        merged_query += item[1]
 
-                    merged_query += query_str
+                    merged_tag = item[0]
 
-                    # add tags to set to de-duplicate
-                    merged_tags.add(tag)
+                    if self._query_base is not None and len(self._query_base):
+                        # add base_query filter to merged query string
+                        merged_query = f'{self._query_base} AND ({merged_query})'
 
-                # merge all query tags into a single string
-                merged_tag = Tag(','.join(tag.tag for tag in merged_tags),
-                                 ','.join(str(tag.data) for tag in merged_tags))
+                    if self._pq:
+                        # PQ seems to not honor site IDs provided in POST request body
+                        if len(self._site_ids):
+                            # restrict query to specified sites
+                            merged_query = f'({merged_query}) AND ('
+                            first = True
+                            for site_id in self._site_ids:
+                                if not first:
+                                    merged_query += ' OR '
+                                else:
+                                    first = False
 
-                if self._query_base is not None and len(self._query_base):
-                    # add base_query filter to merged query string
-                    merged_query = f'{self._query_base} AND ({merged_query})'
+                                merged_query += f'site.id = {site_id}'
+                            merged_query += ')'
 
-                if self._pq:
-                    # PQ seems to not honor site IDs provided in POST request body
-                    if len(self._site_ids):
-                        # restrict query to specified sites
-                        merged_query = f'({merged_query}) AND ('
-                        first = True
-                        for site_id in self._site_ids:
-                            if not first:
-                                merged_query += ' OR '
-                            else:
-                                first = False
-
-                            merged_query += f'site.id = {site_id}'
-                        merged_query += ')'
-
-                    merged_query += ' | group count() by endpoint.name, src.process.user, ' \
-                                    'src.process.image.path, src.process.cmdline, src.process.name, ' \
-                                    'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
-                                    'site.id, site.name, src.process.storyline.id'
-
-                futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
-                                               cancel_event, not self._pq))
+                        merged_query += ' | group count() by endpoint.name, src.process.user, ' \
+                                        'src.process.image.path, src.process.cmdline, src.process.name, ' \
+                                        'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
+                                        'site.id, site.name, src.process.storyline.id'
+                    
+                    self.log.debug(f'Appending query to executor: {merged_query}')
+                    futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
+                                                cancel_event, not self._pq))
+                    if not self._pq:
+                        # ensure we do not submit more than one request every 60 seconds to comply with rate limit
+                            self.log.debug(f'Sleeping for {self._dv_wait} seconds')
+                            cancel_event.wait(self._dv_wait)
 
             p_bar = tqdm(desc='Running queries',
-                         disable=not self._tqdm_echo,
-                         total=len(futures))
+                    disable=not self._tqdm_echo,
+                    total=len(futures))
 
             try:
                 completed_futures = set[Future]()
