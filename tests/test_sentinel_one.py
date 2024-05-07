@@ -414,26 +414,34 @@ def test_process_queries_pq(s1_product : SentinelOne, mocker):
              'OR src.process.name contains svchost.exe OR src.process.name contains notepad.exe OR src.process.name contains ' + 
              'explorer.exe OR src.process.name contains firefox.exe OR src.process.name contains chrome.exe ' + 
              '| group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' + 
-             'site.id, site.name, src.process.storyline.id', 
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type', 
              ANY, ANY, Tag('valueA', data=None), ANY, False),
         call('src.process.name contains iexplore.exe | group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' +
-             'site.id, site.name, src.process.storyline.id', ANY, ANY, Tag('valueA', data=None), ANY, False),
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type',  ANY, ANY, Tag('valueA', data=None), ANY, False),
         call('event.dns.request contains google.com OR event.dns.request contains microsoft.com OR event.dns.request contains amazon.com OR event.dns.request contains bing.com ' + 
              'OR event.dns.request contains yahoo.com OR event.dns.request contains github.com OR event.dns.request contains virustotal.com OR event.dns.request contains facebook.com ' + 
              'OR event.dns.request contains twitter.com OR event.dns.request contains spotify.com ' + 
              '| group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' +
-             'site.id, site.name, src.process.storyline.id',
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type', 
              ANY, ANY, Tag('valueB', data=None), ANY, False),
         call('event.dns.request contains apple.com | group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' +
-             'site.id, site.name, src.process.storyline.id', ANY, ANY, Tag('valueB', data=None), ANY, False)
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type',  ANY, ANY, Tag('valueB', data=None), ANY, False)
     ])
 
 def test_process_queries_pq_single_site_id(s1_product : SentinelOne, mocker):
@@ -455,9 +463,11 @@ def test_process_queries_pq_single_site_id(s1_product : SentinelOne, mocker):
     mocked_run_query.assert_has_calls([
         call('(src.process.name contains powershell.exe) AND (site.id = 12345) ' + 
              '| group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' + 
-             'site.id, site.name, src.process.storyline.id', 
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type', 
              ANY, ANY, Tag('valueA', data=None), ANY, False)
     ])
 
@@ -480,8 +490,10 @@ def test_process_queries_pq_multiple_site_ids(s1_product : SentinelOne, mocker):
     mocked_run_query.assert_has_calls([
         call('(src.process.name contains powershell.exe) AND (site.id = 12345 OR site.id = 67890) ' + 
              '| group count() by endpoint.name, src.process.user, ' +
-             'src.process.image.path, src.process.cmdline, src.process.name, ' +
-             'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' + 
-             'site.id, site.name, src.process.storyline.id', 
+             'src.process.image.path, src.process.cmdline, event.time, ' +
+             'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
+             'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
+             'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
+             'dst.ip.address, event.dns.request, event.type', 
              ANY, ANY, Tag('valueA', data=None), ANY, False)
     ])
