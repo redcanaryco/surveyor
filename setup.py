@@ -36,7 +36,7 @@ setup(
         'Programming Language :: Python',
     ],
     install_requires=[
-        'cbapi==1.7.0', 'click', 'requests', 'tqdm', 'carbon-black-cloud-sdk'
+        'cbapi==1.7.10', 'click', 'requests', 'tqdm', 'carbon-black-cloud-sdk'
     ],
     extras_require={
         "sigma": [
