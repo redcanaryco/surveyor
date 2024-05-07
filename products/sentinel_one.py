@@ -97,16 +97,16 @@ class SentinelOne(Product):
     def __init__(self, pq: bool = False, **kwargs):
   
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
-        self._site_ids = kwargs['site_ids'] if 'site_ids' in kwargs else []
-        self._account_ids = kwargs['account_ids'] if 'account_ids' in kwargs else []
-        self._account_names = kwargs['account_names'] if 'account_names' in kwargs else []
+        self._site_ids = kwargs.get('site_id', []) or list()
+        self._account_ids = kwargs.get('account_id', []) or list()
+        self._account_names = kwargs.get('account_name', []) or list()
         self._url = kwargs['url'] if 'url' in kwargs else ''
         self._token = kwargs['token'] if 'token' in kwargs else None
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else None
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
         limit = (kwargs['limit']) if 'limit' in kwargs else 0
         self._pq = pq # This supports command-line options, will default to Power Query
-        
+
         # Will check for passed-in arguments; if none are present, it will default to Deep Visibility. Non-command line.
         if 'deep_visibility' in kwargs:
             self._pq = False if kwargs.get('deep_visibility', "False") == "True" else True
@@ -266,16 +266,18 @@ class SentinelOne(Product):
                     for item in response:
                         for site in item['sites']:
                             temp_site_ids.append(site['id'])
-
-                            if self._pq and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+ 
+                            if self._pq:
+                                if site['id'] not in self._site_ids:
+                                    self._site_ids.append(site['id'])
 
                                 if site['accountId'] not in self._account_ids:
-                                    # PowerQuery won't honor Site ID filters unless the parent account ID is also
+                                    # PowerQuery won't honor Site ID filters unless the parent accousnt ID is also
                                     # included in the request body
                                     self._account_ids.append(site['accountId'])
                             elif site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id'])
+                                self._site_ids.append(site['id']) 
+
                     counter = 0
                     temp_list = []
                 i += 1
@@ -649,14 +651,24 @@ class SentinelOne(Product):
             self.log.debug(f'Got {len(events)} events')
 
             self._results[merged_tag] = list()
-            
             for event in events:
                 if self._pq:
                     hostname = event[0]
                     username = event[1]
                     path = event[2]
+                    srcprocdisplayname = event[8]
+                    tgtprocdisplayname = event[9]
+                    tgtfilepath = event[10]
+                    tgtfilesha1 = event[11]
+                    tgtfilesha256 = event[12]
+                    scrprocparentimagepath = event[13]
+                    tgtprocimagepath = event[14]
+                    url = event[15]
+                    srcip = event[16]
+                    dstip = event[17]
+                    dnsrequest = event[18]
                     command_line = event[3]
-                    additional_data = (event[8], event[9], event[10], event[11],'None','None','None','None','None','None','None','None','None','None','None','None')
+                    additional_data = (event[4], event[5], event[6], event[7], srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event[19])
                 else:
                     hostname = event['endpointName']
                     username = event['srcProcUser']
@@ -761,9 +773,11 @@ class SentinelOne(Product):
                             merged_query += ')'
 
                         merged_query += ' | group count() by endpoint.name, src.process.user, ' \
-                                        'src.process.image.path, src.process.cmdline, src.process.name, ' \
-                                        'src.process.publisher, url.address, tgt.file.internalName, src.process.startTime, ' \
-                                        'site.id, site.name, src.process.storyline.id'
+                                        'src.process.image.path, src.process.cmdline, event.time, ' \
+                                        'site.id, site.name, src.process.storyline.id, src.process.displayname, ' \
+                                        'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' \
+                                        'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' \
+                                        'dst.ip.address, event.dns.request, event.type'
                     
                     self.log.debug(f'Appending query to executor: {merged_query}')
                     futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
