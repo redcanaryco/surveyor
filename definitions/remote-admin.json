@@ -1,13 +1,15 @@
 {
     "AweRay (AweSun)": {
-        "process_name": ["aweray_remote*.exe"],
+        "process_name": ["aweray_remote*.exe",
+                         "AweSun.exe"],
         "domain": ["asapi.aweray.net", 
                    "asapi-us.aweray.net"],
         "digsig_publisher": ["AWERAY PTE. LTD."]
     },
     "Ammyy Admin": { 
         "process_name": ["aa_v*.exe"],
-        "domain": ["ammyy.com"]
+        "domain": ["ammyy.com"],
+        "digsig_publisher": ["Ammyy LLC"]
     },
     "AeroAdmin" : {
         "process_name": ["AeroAdmin.exe"],
@@ -27,7 +29,8 @@
         "digsig_publisher": ["AOMEI International Network Limited"]
     },
     "Atera": {
-        "process_name": ["atera_agent.exe"]
+        "process_name": ["atera_agent.exe"],
+        "digsig_publisher": ["Atera Networks Ltd"]
     },
     "BeyondTrust (Bomgar)": {
         "process_name": ["bomgar-scc.exe",
@@ -60,7 +63,8 @@
                          "g2printh.exe",
                          "g2svc.exe",
                          "g2tray.exe",
-                         "gopcsrv.exe"]
+                         "gopcsrv.exe"],
+        "digsig_publisher": ["LogMeIn, Inc."]
     },
     "LiteManager": {
         "process_name": ["ROMServer.exe", 
@@ -68,7 +72,8 @@
         "digsig_publisher": ["Yakhnovets Denis Aleksandrovich IP"]
     },
     "Microsoft RDP": { 
-        "process_name": ["termsrv.exe","Microsoft Remote Desktop"]
+        "process_name": ["termsrv.exe",
+                        "Microsoft Remote Desktop"]
     },
     "Microsoft TSC": { 
         "process_name": ["mstsc.exe"]
@@ -92,10 +97,13 @@
     },
     "RAdmin": { 
         "process_name": ["radmin3.exe",
-                         "famitrfc.exe"]
+                         "famitrfc.exe",
+                         "rserver3.exe"],
+        "digsig_publisher": ["Famatech Corp."]
     },
     "RemoteUtilities": {
-        "process_name": ["rutserv.exe"],
+        "process_name": ["rutserv.exe",
+                         "rutview.exe"],
         "domain": ["remoteutilities.com"],
         "digsig_publisher": ["Remote Utilities LLC"]
     },
@@ -115,12 +123,18 @@
     },
     "TeamViewer Desktop": { 
         "process_name": ["teamviewer_desktop.exe",
-                         "teamviewer"]
+                         "teamviewer.exe"],
+        "digsig_publisher": ["TeamViewer Germany GmbH",
+                             "TeamViewer GmbH",
+                             "TeamViewer"]
     },
     "TeamViewer Service": { 
         "process_name": ["teamviewer.exe",
                          "teamviewer_service.exe",
-                         "teamviewerhost"]
+                         "teamviewerhost"],
+        "digsig_publisher": ["TeamViewer Germany GmbH",
+                             "TeamViewer GmbH",
+                             "TeamViewer"]
     },
     "VNC": {
         "process_name": ["winvnc.exe", 
@@ -155,7 +169,8 @@
     },
     "Desktop Central": {
 		"process_name": ["dcagentservice.exe"],
-        "domain": ["desktopcentral.manageengine.com"]
+        "domain": ["desktopcentral.manageengine.com"],
+        "digsig_publisher": ["ZOHO Corporation Private Limited"] 
 	},
     "UltraView": {
         "process_name": ["UltraViewer_Desktop.exe",
@@ -166,11 +181,12 @@
     },
     "NinjaRMM": {
         "process_name": ["NinjaRMMAgent.exe",
-                        "NinjaRMMAgenPatcher.exe"],
+                        "NinjaRMMAgenPatcher.exe",
+                        "ninjarmm-cli.exe"],
         "digsig_publisher": ["NinjaRMM, LLC"],
         "domain": ["resources.ninjarmm.com"]
     },
-    "FleetDesk.io": {
+    "FleetDeck.io": {
         "process_name": ["fleetdeck_agent.exe",
                         "fleetdeck_agent_svc.exe",
                         "fleetdeck_installer.exe",
@@ -264,7 +280,9 @@
                         "SolarWinds-Dameware-DRS*.exe",
                         "DameWare Mini Remote Control*.exe",
                         "SolarWinds-Dameware-MRC*.exe"],
-        "internal_name": ["DWRCST"]
+        "internal_name": ["DWRCST"],
+        "digsig_publisher": ["SolarWinds, Inc.",
+                             "Solarwinds Worldwide, LLC"]
     },
     "N-Able Advanced Monitoring Agent": {
         "process_name": ["Agent_*_RW.exe",
@@ -326,7 +344,8 @@
         "process_name": ["TightVNCViewerPortable*.exe",
                         "tvnviewer.exe",
                         "tvnserver.exe"],
-        "digsig_publisher": ["GlavSoft LLC."]
+        "digsig_publisher": ["GlavSoft LLC.",
+                             "GlavSoft LLC"]
     },
     "ShowMyPC": {
         "domain": ["showmypc.com"],
@@ -337,7 +356,9 @@
     },
     "Xeox": {
         "domain":["*.xeox.com", "xeox.com"],
-        "process_name":["xeox_service_windows.exe", "xeox-agent_x64.exe", "xeox-agent_x86.exe"],
+        "process_name":["xeox_service_windows.exe", 
+                        "xeox-agent_x64.exe", 
+                        "xeox-agent_x86.exe"],
         "digsig_publisher": ["hs2n Informationstechnologie GmbH"],
         "internal_name": ["XEOX Agent for Windows"]
     },
@@ -351,30 +372,65 @@
         "digsig_publisher": ["Instant Housecall", "Specialist Sign-in.exe"],
         "process_name": ["InstantHousecall.exe"],
         "internal_name": ["InstantHousecall.exe"],
-        "domain": ["secure.instanthousecall.com", "*.instanthousecall.com", "instanthousecall.com"]
+        "domain": ["secure.instanthousecall.com", 
+                "*.instanthousecall.com", 
+                "instanthousecall.com"]
     },
     "ISL Online":{
         "digsig_publisher":["ISL Online Ltd"],
         "process_name": ["ISLLight.exe", "ISLLightClient.exe"],
         "internal_name": ["ISL Light"],
-        "domain": ["*islonline.net"]
+        "domain": ["*.islonline.net"]
     },
     "Parallels Access": {
+        "process_name": ["TSClient.exe"],
         "digsig_publisher": ["Parallels International GmbH"]
     },
     "Pilixo": {
-        "digsig_publisher": ["Pilixo Cloud Solutions", "PILIXO INTERNATIONAL LLC"],
-        "domain": ["*.pilixo.com", "pilixo.com", "download.pilixo.com"],
+        "digsig_publisher": ["Pilixo Cloud Solutions", 
+                            "PILIXO INTERNATIONAL LLC"],
+        "domain": ["*.pilixo.com", 
+                "pilixo.com", 
+                "download.pilixo.com"],
         "process_name": ["Pilixo_Installer*.exe"]
     },
     "RemotePC": {
-        "digsig_publisher": ["IDrive, Inc", "IDrive Incorporated"],
-        "domain": ["remotepc.com", "www.remotepc.com"],
-        "process_name": ["idrive.RemotePCAgent", "Idrive.File-Transfer"]
+        "digsig_publisher": ["IDrive, Inc", 
+                            "IDrive Incorporated"],
+        "domain": ["remotepc.com", 
+                "www.remotepc.com"],
+        "process_name": ["idrive.RemotePCAgent", 
+                        "Idrive.File-Transfer",
+                        "RemotePC.exe",
+                        "RemotePCService.exe"]
     },
     "SuperOps": {
         "digsig_publisher": ["Superops Inc"],
-        "process_name": ["superops.exe", "superopsticket.exe"],
-        "domain": ["serv.superopsalpha.com", "*.superops.ai", "*.superopsalpha.com", "*.superopsbeta.com"]
+        "process_name": ["superops.exe", 
+                        "superopsticket.exe"],
+        "domain": ["serv.superopsalpha.com", 
+                "*.superops.ai", 
+                "*.superopsalpha.com", 
+                "*.superopsbeta.com"]
+    },
+    "Rocket Remote Desktop":{
+        "digsig_publisher": ["Rocket Remote Desktop"],
+        "process_name":["RDConsole.exe", 
+                        "RocketRemoteDesktop_Setup.exe"]
+    },
+    "GetScreen":{
+        "digsig_publisher":["Get Skrin Softver"],
+        "process_name":["GetScreen.exe", 
+                        "GetScreen.me"]
+    },
+    "ManageEngine":{
+        "digsig_publisher":["ManageEngine Remote Access Plus", 
+                            "Zoho Corporation Pvt. Ltd."],
+        "process_name":["ManageEngine_Remote_Access_Plus.exe", 
+                        "InstallShield Setup.exe"]
+    },
+    "Remcos":{
+        "process_name":["remcos*.exe"],
+        "digsig_publisher":["BreakingSecurity.net"]
     }
 }
