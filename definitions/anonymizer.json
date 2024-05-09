@@ -9,7 +9,7 @@
         "process_name": ["tbear.exe",
                          "tbear.maintenance.exe"]
     }
-    "Brave": {
+    "Brave":{
         "process_name": ["brave.exe"],
         "digsig_publisher": ["Brave Software, Inc."]
     }
