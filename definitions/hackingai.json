@@ -14,7 +14,7 @@
     },
     "ray.io": {
         "process_name": ["gcs_server", "raylet"],
-        "cmdline": ["ray", "gcs_server", "ray/_private/log_monitor.py", "ray/_private/runtime_env/agent/main.py", "ray/autoscaler/_private/monitor.py", "ray/_private/workers/default_worker.py", "ray/dashboard/dashboard.py", "ray/raylet/raylet"],
+        "cmdline": ["gcs_server", "ray/_private/log_monitor.py", "ray/_private/runtime_env/agent/main.py", "ray/autoscaler/_private/monitor.py", "ray/_private/workers/default_worker.py", "ray/dashboard/dashboard.py", "ray/raylet/raylet"],
         "domain": ["ray.io"]
     }
 }
