@@ -5,8 +5,6 @@
         "domain": ["mlflow.org"]
     },
     "h2o.ai": {
-        "process_name": ["java*",
-                         "hadoop*"],
         "cmdline": ["h2o-driver.jar", "h2odriver.jar", "h2o", "/h2o_"],
         "domain": ["h2o.ai", "h2o-release.s3.amazonaws.com"],
 		"ipaddr":[
