@@ -304,8 +304,7 @@
                         "TakeControl.exe",
                         "BASupSysInf.exe",
                         "BASupAppSrvc.exe",
-                        "BASupAppElev.exe",
-                        "BASupApp.exe"],
+                        "BASupAppElev.exe"],
         "domain": ["beanywhere.com"]
     },
     "Splashtop (Beta)": {
