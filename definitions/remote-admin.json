@@ -419,8 +419,8 @@
     },
     "GetScreen":{
         "digsig_publisher":["Get Skrin Softver"],
-        "process_name":["GetScreen.exe", 
-                        "GetScreen.me"]
+        "process_name":["GetScreen.exe"], 
+        "domain":["GetScreen.me"]
     },
     "ManageEngine":{
         "digsig_publisher":["ManageEngine Remote Access Plus", 
