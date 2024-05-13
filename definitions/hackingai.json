@@ -1,0 +1,20 @@
+{
+
+    "mlflow": {
+        "cmdline": ["mlflow"],
+        "domain": ["mlflow.org"]
+    },
+    "h2o.ai": {
+        "cmdline": ["h2o-driver.jar", "h2odriver.jar", "h2o", "/h2o_"],
+        "domain": ["h2o.ai", "h2o-release.s3.amazonaws.com"],
+		"ipaddr":[
+			"228.246.114.236",
+			"ff05:0:3ff6:72ec:0:0:3ff6:72ec"
+		]
+    },
+    "ray.io": {
+        "process_name": ["gcs_server", "raylet"],
+        "cmdline": ["gcs_server", "ray/_private/log_monitor.py", "ray/_private/runtime_env/agent/main.py", "ray/autoscaler/_private/monitor.py", "ray/_private/workers/default_worker.py", "ray/dashboard/dashboard.py", "ray/raylet/raylet"],
+        "domain": ["ray.io"]
+    }
+}
