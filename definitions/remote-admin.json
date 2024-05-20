@@ -95,6 +95,11 @@
                         "pcmonitorsrv.exe"],
         "digsig_publisher": ["MMSoft Design Ltd."]
     },
+    "Quick Assist": {
+        "process_name": ["quickassist.exe"],
+        "domain": ["*.support.services.microsoft.com"],
+        "cmdline": ["ms-quick-assist"]
+    },
     "RAdmin": { 
         "process_name": ["radmin3.exe",
                          "famitrfc.exe",
