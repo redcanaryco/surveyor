@@ -1,5 +1,5 @@
 click~=8.0.4
-requests~=2.31.0
+requests~=2.32.2
 cbapi~=1.7.10
 setuptools~=60.6.0
 tqdm~=4.66.1
