@@ -34,4 +34,9 @@
                          "bash",
                          "zsh"]
     }
+    "AutoHotKey": { 
+        "process_name": ["autohotkey.exe",
+                        "AutoHotkeyU32.exe",
+                        "AutoHotkeyA32.exe",
+                        "AutoHotkeyU64.exe"]      
 }
