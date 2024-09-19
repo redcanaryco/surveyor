@@ -185,6 +185,7 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
             backend = SentinelOneBackend()
     elif product == 'dfe':
         supports_json_ouput = False
+        plugins.get_plugin_by_id('microsoft365defender').install()
         from sigma.backends.kusto import KustoBackend # type: ignore
         from sigma.pipelines.microsoft365defender import microsoft_365_defender_pipeline 
         backend = KustoBackend(microsoft_365_defender_pipeline())
