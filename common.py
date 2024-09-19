@@ -187,7 +187,7 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
         supports_json_ouput = False
         plugins.get_plugin_by_id('microsoft365defender').install()
         from sigma.backends.kusto import KustoBackend # type: ignore
-        from sigma.pipelines.microsoft365defender import microsoft_365_defender_pipeline 
+        from sigma.pipelines.microsoft365defender import microsoft_365_defender_pipeline # type: ignore 
         backend = KustoBackend(microsoft_365_defender_pipeline())
     elif product == 'cortex':
         plugins.get_plugin_by_id('cortexxdr').install()
@@ -200,25 +200,25 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
         if product == "dfe":
             rule_collection = [SigmaCollection.load_ruleset([i]) for i in sigma_rules] # load each file as a separate rule collection for DFE
         else:
-            rule_collection = SigmaCollection.load_ruleset(sigma_rules)
+            rule_collection = SigmaCollection.load_ruleset(sigma_rules) # type: ignore
     elif not any(are_files): # if none of the items in the list are files, assume YML formatted strings
         if product == 'dfe':
             rule_collection = [SigmaCollection.from_yaml(i) for i in sigma_rules] # load each YML string as a separate rule collection for DFE
         else:
-            rule_collection = SigmaCollection.merge([SigmaCollection.from_yaml(i) for i in sigma_rules])
+            rule_collection = SigmaCollection.merge([SigmaCollection.from_yaml(i) for i in sigma_rules]) # type: ignore
     else:
         logging.error("There appears to be a mix of files and YML strings. Cannot process a mixed list of values. Aborting.")
         return {'queries': []}
 
     if supports_json_ouput:
-        return backend.convert(rule_collection, "json")
+        return backend.convert(rule_collection, "json") # type: ignore
     else:
         results: dict = {"queries":[]}
         for r in rule_collection:
             results['queries'].append({
-                'query': backend.convert_rule(r)[0] if product != 'dfe' else backend.convert(r)[0],
-                'id': r.id if product != 'dfe' else r.rules[0].id,
-                'title': r.title if product != 'dfe' else r.rules[0].title,
-                'description': r.description if product != 'dfe' else r.rules[0].description
+                'query': backend.convert_rule(r)[0] if product != 'dfe' else backend.convert(r)[0], # type: ignore
+                'id': r.id if product != 'dfe' else r.rules[0].id, # type: ignore
+                'title': r.title if product != 'dfe' else r.rules[0].title, # type: ignore
+                'description': r.description if product != 'dfe' else r.rules[0].description # type: ignore
             })
         return results
