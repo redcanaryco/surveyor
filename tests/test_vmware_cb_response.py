@@ -42,17 +42,20 @@ def test_build_query_with_supported_field(cbr_product : CbResponse):
     assert result == ' hostname:workstation1 username:admin start:-1440m start:-10m (group:"accounting dept")'
 
 
-def test_build_query_with_unsupported_field(cbr_product : CbResponse):
+def test_build_query_with_unsupported_field(cbr_product : CbResponse, mocker):
     filters = {
       "useless key": "asdfasdasdf"
     }
 
     cbr_product._sensor_group = None
-    cbr_product.log = logging.getLogger('pytest_surveyor')
+    mocked_logger = mocker.patch.object(cbr_product, '_echo')
 
     result = cbr_product.build_query(filters)
 
     assert result == ''
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter useless key is not supported by product cbr', logging.WARNING)
+    ], any_order = True)
 
 
 def test_process_search(cbr_product : CbResponse, mocker):
@@ -82,7 +85,7 @@ def test_process_search_limit_option(cbr_product : CbResponse, mocker):
 
 
 def test_nested_process_search(cbr_product : CbResponse, mocker):
-    with open(os.path.join(os.getcwd(), 'tests', 'data', 'cbr_surveyor_testing.json')) as f:
+    with open(os.path.join(os.getcwd(), 'tests', 'data', 'test_def_file.json')) as f:
         programs = json.load(f)
     
     cbr_product.log = logging.getLogger('pytest_surveyor')
@@ -90,6 +93,7 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
     cbr_product._results = {}
     cbr_product._conn = mocker.Mock()
     mocker.patch.object(cbr_product._conn, 'select')
+    mocked_logger = mocker.patch.object(cbr_product, '_echo')
 
     expected_calls = [
         mocker.call('(process_name:notepad.exe)'),
@@ -98,23 +102,25 @@ def test_nested_process_search(cbr_product : CbResponse, mocker):
         mocker.call('(digsig_publisher:Microsoft)'),
         mocker.call('(domain:raw.githubusercontent.com)'),
         mocker.call('(internal_name:powershell)'),
-        mocker.call('(url:https://google.com)'),
         mocker.call('(filemod:current_date.txt)'),
         mocker.call('(modload:pcwutl.dll)'),
         mocker.call('(md5:asdfasdfasdfasdf)'),
         mocker.call('(sha1:qwerqwerqwerqwer)'),
         mocker.call('(sha256:zxcvzxcvzxcv)'),
-        mocker.call('(process_name:svchost.exe OR process_name:cmd.exe)'),
-        mocker.call('(process_name:rundll.exe)'),
-        mocker.call('((cmdline:-enc) OR (modload:malware.dll))'),
         mocker.call('(regmod:HKLM)'),
-        mocker.call('(ipport:80)')
+        mocker.call('(ipport:80)'),
+        mocker.call('(filewrite_md5:tyuityuityuityui)'),
+        mocker.call('(filewrite_sha256:poiupoiupoiu)'),
+        mocker.call('(parent_name:cmd.exe)'),
+        mocker.call('(process_name:svchost.exe OR process_name:cmd.exe)'),
+        mocker.call('(single_query_string_here)'),
+        mocker.call('((first_query_string) OR (second_query_string))')
     ]
 
     for program, criteria in programs.items():
         cbr_product.nested_process_search(Tag(program), criteria, {})
     cbr_product._conn.select.return_value.where.assert_has_calls(expected_calls, any_order=True)
-
+    mocked_logger.assert_not_called()
 
 def test_nested_process_search_limit_option(cbr_product : CbResponse, mocker):
     cbr_product.log = logging.getLogger('pytest_surveyor')
