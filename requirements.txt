@@ -3,4 +3,4 @@ requests~=2.32.3
 cbapi~=1.7.10
 setuptools~=60.6.0
 tqdm~=4.66.1
-carbon-black-cloud-sdk~=1.5.2
+carbon-black-cloud-sdk~=1.5.6
