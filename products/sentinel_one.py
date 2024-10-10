@@ -533,10 +533,10 @@ class SentinelOne(Product):
                             chunked_terms = list(self.divide_chunks(terms, chunk_quantity))
                             for chunk in chunked_terms:
                                 search_value = '(' + ', '.join(f'"{x}"' for x in chunk) + ')'
-                                self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
+                                self._queries[tag].append(Query(from_date, to_date, param, 'contains', search_value))
                         else:
                             search_value = '(' + ', '.join(f'"{x}"' for x in terms) + ')'
-                            self._queries[tag].append(Query(from_date, to_date, param, 'in', search_value))
+                            self._queries[tag].append(Query(from_date, to_date, param, 'contains', search_value))
                 else:
                     # play nice with 100 item limit per search field
                     chunked_terms = list(self.divide_chunks(terms, 100))
