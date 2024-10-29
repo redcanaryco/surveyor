@@ -1,41 +1,193 @@
 {
-    "AT": {
-        "process_name": ["at.exe"]
-    },
-    "Task Scheduler": {
-        "process_name": ["schtasks.exe"]
-    },
-    "net": {
-        "process_name": ["net.exe"]
-    },
-    "utilman": {
-        "process_name": ["utilman.exe"]
-    },
-    "mshta": {
-        "process_name": ["mshta.exe"]
-    },
-    "vssadmin": {
-        "process_name": ["vssadmin.exe"]
-    },
-    "wmic": {
-        "process_name": ["wmic.exe"]
-    },
-    "whoami": {
-        "process_name": ["whoami.exe"]
-    },
-    "mmc": {
-        "process_name": ["mmc.exe"]
-    },
-    "systeminfo": {
-        "process_name": ["systeminfo.exe"]
-    },
-    "installutil": {
-        "process_name": ["installutil.exe"]
-    },
-    "rundll32": {
-        "process_name": ["rundll32.exe"]
-    },
-    "Regsvcs": {
-        "process_name": ["regsvcs.exe"]
-    }
+"Atbroker": {
+    "process_name": ["Atbroker.exe"]
+},
+"Bash.exe": {
+    "process_name": ["Bash.exe"]
+},
+"CertReq.exe": {
+    "process_name": ["CertReq.exe"]
+},
+"Cmdkey.exe": {
+    "process_name": ["Cmdkey.exe"]
+},
+"Dllhost.exe": {
+    "process_name": ["Dllhost.exe"]
+},
+"Finger.exe": {
+    "process_name": ["Finger.exe"]
+},
+"GfxDownloadWrapper.exe": {
+    "process_name": ["GfxDownloadWrapper.exe"]
+},
+"Gpscript.exe": {
+    "process_name": ["Gpscript.exe"]
+},
+"Hh.exe": {
+    "process_name": ["Hh.exe"]
+},
+"IMEWDBLD.exe": {
+    "process_name": ["IMEWDBLD.exe"]
+},
+"Mavinject.exe": {
+    "process_name": ["Mavinject.exe"]
+},
+"Msbuild.exe": {
+    "process_name": ["Msbuild.exe"]
+},
+"Odbcconf.exe": {
+    "process_name": ["Odbcconf.exe"]
+},
+"Pcalua.exe": {
+    "process_name": ["Pcalua.exe"]
+},
+"Pcwrun.exe": {
+    "process_name": ["Pcwrun.exe"]
+},
+"Pktmon.exe": {
+    "process_name": ["Pktmon.exe"]
+},
+"Pnputil.exe": {
+    "process_name": ["Pnputil.exe"]
+},
+"Psr.exe": {
+    "process_name": ["Psr.exe"]
+},
+"Rasautou.exe": {
+    "process_name": ["Rasautou.exe"]
+},
+"Regasm.exe": {
+    "process_name": ["Regasm.exe"]
+},
+"Register-cimprovider.exe": {
+    "process_name": ["Register-cimprovider.exe"]
+},
+"Rpcping.exe": {
+    "process_name": ["Rpcping.exe"]
+},
+"Runonce.exe": {
+    "process_name": ["Runonce.exe"]
+},
+"Scriptrunner.exe": {
+    "process_name": ["Scriptrunner.exe"]
+},
+"Stordiag.exe": {
+    "process_name": ["Stordiag.exe"]
+},
+"SyncAppvPublishingServer.exe": {
+    "process_name": ["SyncAppvPublishingServer.exe"]
+},
+"Ttdinject.exe": {
+    "process_name": ["Ttdinject.exe"]
+},
+"Tttracer.exe": {
+    "process_name": ["Tttracer.exe"]
+},
+"Wlrmdr.exe": {
+    "process_name": ["Wlrmdr.exe"]
+},
+"WorkFolders.exe": {
+    "process_name": ["WorkFolders.exe"]
+},
+"wuauclt.exe": {
+    "process_name": ["wuauclt.exe"]
+},
+"adplus.exe": {
+    "process_name": ["adplus.exe"]
+},
+"Appvlp.exe": {
+    "process_name": ["Appvlp.exe"]
+},
+"DefaultPack.EXE": {
+    "process_name": ["Wlrmdr.exe"]
+},
+"Msdeploy.exe": {
+    "process_name": ["Msdeploy.exe"]
+},
+"msxsl.exe": {
+    "process_name": ["msxsl.exe"]
+},
+"Sqldumper.exe": {
+    "process_name": ["Sqldumper.exe"]
+},
+"Sqlps.exe": {
+    "process_name": ["Sqlps.exe"]
+},
+"SQLToolsPS.exe": {
+    "process_name": ["SQLToolsPS.exe"]
+
+},
+
+"task scheduler": {
+    "process_name": ["schtasks.exe"]
+},
+"services":{
+    "process_name": ["sc.exe"]
+},
+"net": {
+    "process_name": ["net.exe", "net1.exe"]
+},
+"utilman": {
+    "process_name": ["utilman.exe"]
+},
+"vssadmin": {
+    "process_name": ["vssadmin.exe"]
+},
+"task_manager":{
+    "process_name": ["taskmgr.exe"]
+},
+"wmic": {
+    "process_name": ["wmic.exe"]
+},
+"whoami": {
+    "process_name": ["whoami.exe"]
+},
+"ping":{
+    "process_name": ["ping.exe"]
+},
+"nslookup":{
+    "process_name":["nslookup.exe"]
+}, 
+"ipconfig":{
+    "process_name":["ipconfig.exe"]
+},
+"netstat":{
+    "process_name":["netstat.exe"]
+},
+"Linux Subsystem": {
+    "process_name":["wsl.exe"]
+}, 
+"mmc": {
+    "process_name": ["mmc.exe"]
+},
+"systeminfo": {
+    "process_name": ["systeminfo.exe"]
+},
+"installutil": {
+    "process_name": ["installutil.exe"]
+},
+"rundll32": {
+    "process_name": ["rundll32.exe"]
+},
+"regsvcs": {
+    "process_name": ["regsvcs.exe"]
+},
+"regsvr32":{
+    "process_name": ["regsvr32.exe"]
+},
+"registry":{
+    "process_name":["regedit.exe", "regini.exe", "reg.exe"]
+}, 
+"findstr":{
+    "process_name":["findstr.exe"]
+}, 
+"event viewer":{
+    "process_name":["eventvwr.exe"]
+}, 
+"gpupdate":{
+    "process_name":["gpupdate.exe"]
+}, 
+"certutil":{
+    "process_name":["certutil.exe"]
+}
 }

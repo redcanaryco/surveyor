@@ -1,5 +1,6 @@
 click~=8.0.4
-cbapi~=1.7.0
-requests~=2.27.1
-setuptools~=60.6.0
-tqdm~=4.63.0
+requests~=2.32.3
+cbapi~=1.7.10
+setuptools~=75.2.0
+tqdm~=4.66.6
+carbon-black-cloud-sdk~=1.5.6

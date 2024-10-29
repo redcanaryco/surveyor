@@ -1,19 +1,21 @@
 import os
-from typing import Iterator, Type
+from typing import Type, Iterable, Generator, Optional
 
 from common import Product
-
 
 # import all files in the 'products' folder
 # this is required so that Product.__subclasses__() can resolve all implemented subclasses
 for module in os.listdir(os.path.join(os.path.dirname(__file__), 'products')):
     if module == '__init__.py' or module[-3:] != '.py':
         continue
-    __import__('products.' + module[:-3], locals(), globals())
+
+    sub_module = module[:-3]
+
+    __import__('products.' + sub_module, locals(), globals())
     del module
 
 
-def _get_subclasses() -> list[Type[Product]]:
+def _get_subclasses() -> Generator[Type[Product], None, None]:
     """
     Retrieve all subclasses of the "Product" class.
     """
@@ -39,8 +41,8 @@ def get_product_instance(product: str, **kwargs) -> Product:
     raise ValueError(f'Product {product} is not implemented')
 
 
-def get_products() -> Iterator[str]:
+def get_products() -> Iterable[Optional[str]]:
     """
     Get a list of all implemented product strings.
     """
-    return (subclass.product for subclass in _get_subclasses())
+    return [subclass.product for subclass in _get_subclasses()] + ['cbr']

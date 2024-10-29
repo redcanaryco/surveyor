@@ -11,12 +11,12 @@ import datetime
 import json
 import logging
 import os
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Any
 
 import click
 from tqdm import tqdm
 
-from common import Tag, Result
+from common import Tag, Result, sigma_translation
 from help import log_echo
 from load import get_product_instance, get_products
 
@@ -24,10 +24,10 @@ from load import get_product_instance, get_products
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "-what-am-i-doing"])
 
 # Application version
-current_version = "2.0"
+current_version = "2.5.0"
 
 
-def _list_products(ctx, _, value):
+def _list_products(ctx, _, value) -> None:
     """
     Print all implemented products to STDOUT.
     """
@@ -46,13 +46,13 @@ table_template_str = f'{{:<{table_template[0]}}} ' \
                      f'{{:<{table_template[3]}}}'
 
 
-def _write_results(output: Optional[csv.writer], results: list[Result], program: str, source: str,
-                   tag: Tag, log: logging.Logger, use_tqdm: bool = False):
+def _write_results(output: Optional[Any], results: list[Result], program: str, source: str,
+                   tag: Tag, log: logging.Logger, use_tqdm: bool = False) -> None:
     """
     Helper function for writing search results to CSV or STDOUT.
     """
     if output:
-        if isinstance(tag, Tuple):
+        if isinstance(tag, tuple):
             tag = tag[0]
 
         if len(results) > 0:
@@ -85,12 +85,15 @@ class ExecutionOptions:
     days: Optional[int]
     minutes: Optional[int]
     username: Optional[str]
+    limit: Optional[int]
     ioc_file: Optional[str]
     ioc_type: Optional[str]
     query: Optional[str]
     output: Optional[str]
     def_dir: Optional[str]
     def_file: Optional[str]
+    sigma_rule: Optional[str]
+    sigma_dir: Optional[str]
     no_file: bool
     no_progress: bool
     log_dir: str
@@ -104,6 +107,17 @@ class ExecutionOptions:
 @click.option("--profile", help="The credentials profile to use.", type=click.STRING)
 @click.option("--days", help="Number of days to search.", type=click.INT)
 @click.option("--minutes", help="Number of minutes to search.", type=click.INT)
+@click.option("--limit",help="""
+              Number of results to return. Cortex XDR: Default: 1000, Max: Default
+              Microsoft Defender for Endpoint: Default/Max: 100000
+              SentinelOne (PowerQuery): Default/Max: 1000
+              SentinelOne (Deep Visibility): Default/Max: 20000
+              VMware Carbon Black EDR: Default/Max: None
+              VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
+              
+              Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
+              """
+              , type=click.INT)
 @click.option("--hostname", help="Target specific host by name.", type=click.STRING)
 @click.option("--username", help="Target specific username.")
 # different ways you can survey the EDR
@@ -112,6 +126,8 @@ class ExecutionOptions:
 @click.option("--query", help="A single query to execute.")
 @click.option("--iocfile", 'ioc_file', help="IOC file to process. One IOC per line. REQUIRES --ioctype")
 @click.option("--ioctype", 'ioc_type', help="One of: ipaddr, domain, md5")
+@click.option("--sigmarule", 'sigma_rule', help="Sigma rule file to process (must be in YAML format).", type=click.STRING)
+@click.option("--sigmadir", 'sigma_dir', help='Directory containing multiple sigma rule files.', type=click.STRING)
 # optional output
 @click.option("--output", "--o", help="Specify the output file for the results. "
                                       "The default is create survey.csv in the current directory.")
@@ -123,17 +139,30 @@ class ExecutionOptions:
 @click.option("--log-dir", 'log_dir', help="Specify the logging directory.", type=click.STRING, default='logs')
 @click.pass_context
 def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days: Optional[int], minutes: Optional[int],
-        username: Optional[str],
+        username: Optional[str], limit: Optional[int],
         ioc_file: Optional[str], ioc_type: Optional[str], query: Optional[str], output: Optional[str],
         def_dir: Optional[str], def_file: Optional[str], no_file: bool, no_progress: bool,
-        log_dir: str):
+        sigma_rule: Optional[str], sigma_dir: Optional[str],
+        log_dir: str) -> None:
 
     ctx.ensure_object(dict)
-    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, ioc_file, ioc_type, query, output,
-                               def_dir, def_file, no_file, no_progress, log_dir, dict())
+    ctx.obj = ExecutionOptions(prefix, hostname, profile, days, minutes, username, limit, ioc_file, ioc_type, query, output,
+                               def_dir, def_file, sigma_rule, sigma_dir, no_file, no_progress, log_dir, dict())
 
     if ctx.invoked_subcommand is None:
         survey(ctx, 'cbr')
+
+
+# Cortex options
+@cli.command('cortex', help="Query Cortex XDR")
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.pass_context
+def cortex(ctx, creds: Optional[str]) -> None:
+    ctx.obj.product_args = {
+        'creds_file': creds
+    }
+
+    survey(ctx, 'cortex')
 
 
 # S1 options
@@ -142,45 +171,56 @@ def cli(ctx, prefix: Optional[str], hostname: Optional[str], profile: str, days:
 @click.option("--account-id", help="ID of SentinelOne account to query", multiple=True, default=None)
 @click.option("--account-name", help="Name of SentinelOne account to query", multiple=True, default=None)
 @click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
+@click.option("--dv", 'dv', help="Use Deep Visibility for queries", is_flag=True, required=False)
 @click.pass_context
-def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str]):
+def s1(ctx, site_id: Optional[Tuple], account_id: Optional[Tuple], account_name: Optional[Tuple], creds: Optional[str],
+       dv: bool) -> None:
     ctx.obj.product_args = {
         'creds_file': creds,
-        'site_id': list(site_id),
-        'account_id': list(account_id),
-        'account_name': list(account_name)
+        'site_id': list(site_id) if site_id else None,
+        'account_id': list(account_id) if account_id else None,
+        'account_name': list(account_name) if account_name else None,
+        'pq': not dv
     }
 
     survey(ctx, 's1')
 
 
+# CbC options
 @cli.command('cbc', help="Query VMware Cb Enterprise EDR")
+@click.option("--device-group", help="Name of device group to query", multiple=True, default=None)
+@click.option("--device-policy", help="Name of device policy to query", multiple=True, default=None)
 @click.pass_context
-def cbth(ctx):
+def cbc(ctx, device_group: Optional[Tuple], device_policy: Optional[Tuple]) -> None:
+    ctx.obj.product_args = {
+        'device_group': list(device_group) if device_group else None,
+        'device_policy': list(device_policy) if device_policy else None
+    }
+
     survey(ctx, 'cbc')
 
 
+# CbR Options
 @cli.command('cbr', help="Query VMware Cb Response")
+@click.option("--sensor-group", help="Name of sensor group to query", multiple=True, default=None)
 @click.pass_context
-def cbr(ctx):
+def cbr(ctx, sensor_group: Optional[Tuple]) -> None:
+    ctx.obj.product_args = {
+        'sensor_group': list(sensor_group) if sensor_group else None
+    }
     survey(ctx, 'cbr')
 
 
-@cli.command('cbr', help="Query Cb Response")
-@click.pass_context
-def response_alternate(ctx):
-    survey(ctx, 'cbr')
-
-
+# DFE options
 @cli.command('dfe', help="Query Microsoft Defender for Endpoints")
-@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True))
+@click.option("--creds", 'creds', help="Path to credential file", type=click.Path(exists=True), required=True)
 @click.pass_context
-def dfe(ctx, creds: Optional[str]):
+def dfe(ctx, creds: Optional[str]) -> None:
     ctx.obj.product_args = {'creds_file': creds}
     survey(ctx, 'dfe')
 
 
-def survey(ctx, product: str = 'cbr'):
+def survey(ctx, product_str: str = 'cbr') -> None:
     ctx.ensure_object(ExecutionOptions)
     opt: ExecutionOptions = ctx.obj
 
@@ -188,7 +228,7 @@ def survey(ctx, product: str = 'cbr'):
         ctx.fail("--iocfile requires --ioctype")
 
     if opt.ioc_file and not os.path.isfile(opt.ioc_file):
-        ctx.fail(f'Supplied --iocfile is not a file')
+        ctx.fail('Supplied --iocfile is not a file')
 
     if (opt.output or opt.prefix) and opt.no_file:
         ctx.fail('--output and --prefix cannot be used with --no-file')
@@ -196,9 +236,15 @@ def survey(ctx, product: str = 'cbr'):
     if opt.days and opt.minutes:
         ctx.fail('--days and --minutes are mutually exclusive')
 
+    if opt.sigma_rule and not os.path.isfile(opt.sigma_rule):
+        ctx.fail('Supplied --sigmarule is not a file')
+
+    if opt.sigma_dir and not os.path.isdir(opt.sigma_dir):
+        ctx.fail('Supplied --sigmadir is not a directory')
+
     # instantiate a logger
     log = logging.getLogger('surveyor')
-    logging.debug(f'Product: {product}')
+    logging.debug(f'Product: {product_str}')
 
     # configure logging
     root = logging.getLogger()
@@ -210,7 +256,7 @@ def survey(ctx, product: str = 'cbr'):
     os.makedirs(opt.log_dir, exist_ok=True)
 
     # create logging file handler
-    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product}.log'
+    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product_str}.log'
     handler = logging.FileHandler(os.path.join(opt.log_dir, log_file_name))
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(log_format))
@@ -225,11 +271,15 @@ def survey(ctx, product: str = 'cbr'):
     if len(opt.product_args) > 0:
         kwargs.update(opt.product_args)
 
-    kwargs['tqdm_echo'] = not opt.no_progress
+    if opt.limit:
+        kwargs['limit'] = str(opt.limit)
+
+
+    kwargs['tqdm_echo'] = str(not opt.no_progress)
 
     # instantiate a product class instance based on the product string
     try:
-        product = get_product_instance(product, **kwargs)
+        product = get_product_instance(product_str, **kwargs)
     except ValueError as e:
         log.exception(e)
         ctx.fail(str(e))
@@ -240,6 +290,9 @@ def survey(ctx, product: str = 'cbr'):
     # base_query stores the filters applied to the product query
     # initial query is retrieved from product instance
     base_query = product.base_query()
+
+    # placeholder for sigma rules if --sigmarule or --sigmadir is selected
+    sigma_rules = list()
 
     # add filters specified by user
     if opt.username is not None:
@@ -262,6 +315,8 @@ def survey(ctx, product: str = 'cbr'):
 
     if not opt.no_file:
         # determine output file name
+        if opt.output and opt.prefix:
+            log.debug("Output arg takes precendence so prefix arg will be ignored")
         if opt.output:
             file_name = opt.output
         elif opt.prefix:
@@ -306,30 +361,40 @@ def survey(ctx, product: str = 'cbr'):
                     ctx.fail("The deffile doesn't exist. Please try again.")
             definition_files.append(opt.def_file)
 
+        # add sigma_rule to list
+        if opt.sigma_rule:
+            sigma_rules.append(opt.sigma_rule)
+
         # if --defdir add all files to list
         if opt.def_dir:
             if not os.path.exists(opt.def_dir):
                 ctx.fail("The defdir doesn't exist. Please try again.")
             else:
-                for root, dirs, files in os.walk(opt.def_dir):
+                for root_dir, dirs, files in os.walk(opt.def_dir):
                     for filename in files:
                         if os.path.splitext(filename)[1] == '.json':
-                            definition_files.append(os.path.join(root, filename))
+                            definition_files.append(os.path.join(root_dir, filename))
+
+        # if --sigma_dir, add all files to sigma_rules list
+        if opt.sigma_dir:
+            for root_dir, dirs, files in os.walk(opt.sigma_dir):
+                for filename in files:
+                    if os.path.splitext(filename)[1] == '.yml':
+                        sigma_rules.append(os.path.join(root_dir, filename))
 
         # run search based on IOC file
         if opt.ioc_file:
             with open(opt.ioc_file) as ioc_file:
+                basename = os.path.basename(opt.ioc_file)
                 data = ioc_file.readlines()
-                log_echo(f"Processing IOC file: {ioc_file}", log)
+                log_echo(f"Processing IOC file: {opt.ioc_file}", log)
 
-                for ioc in data:
-                    ioc = ioc.strip()
-                    base_query.update({opt.ioc_type: ioc})
-                    product.process_search(Tag(ioc), base_query, opt.query)
-                    del base_query[opt.ioc_type]
+                ioc_list = [x.strip() for x in data]
+
+                product.nested_process_search(Tag(f"IOC - {opt.ioc_file}", data=basename), {opt.ioc_type: ioc_list}, base_query)
 
                 for tag, results in product.get_results().items():
-                    _write_results(writer, results, ioc, 'ioc', tag, log)
+                    _write_results(writer, results, opt.ioc_file, 'ioc', tag, log)
 
         # run search against definition files and write to csv
         if opt.def_file is not None or opt.def_dir is not None:
@@ -345,7 +410,7 @@ def survey(ctx, product: str = 'cbr'):
                         if product.has_results():
                             # write results as they become available
                             for tag, nested_results in product.get_results(final_call=False).items():
-                                _write_results(writer, nested_results, program, tag.data, tag, log,
+                                _write_results(writer, nested_results, program, str(tag.data), tag, log,
                                                use_tqdm=True)
 
                             # ensure results are only written once
@@ -353,7 +418,32 @@ def survey(ctx, product: str = 'cbr'):
 
             # write any remaining results
             for tag, nested_results in product.get_results().items():
-                _write_results(writer, nested_results, tag.tag, tag.data, tag, log)
+                _write_results(writer, nested_results, tag.tag, str(tag.data), tag, log)
+
+        # if there's sigma rules to be processed
+        if len(sigma_rules) > 0:
+            pq_check = True if 'pq' in opt.product_args and opt.product_args['pq'] else False
+            translated_rules = sigma_translation(product_str, sigma_rules, pq_check)
+            if len(translated_rules['queries']) != len(sigma_rules):
+                log.warning(f"Only {len(translated_rules['queries'])} out of {len(sigma_rules)} were able to be translated.")
+            for rule in tqdm(translated_rules['queries'], desc="Processing sigma rules", disable=opt.no_progress):
+                program = f"{rule['title']} - {rule['id']}"
+                source = 'Sigma Rule'
+
+                product.nested_process_search(Tag(program, data=source), {'query': [rule['query']]}, base_query)
+
+                if product.has_results():
+                    # write results as they become available
+                    for tag, nested_results in product.get_results(final_call=False).items():
+                        _write_results(writer, nested_results, program, str(tag.data), tag, log,
+                                       use_tqdm=True)
+
+                    # ensure results are only written once
+                    product.clear_results()
+
+            # write any remaining results
+            for tag, nested_results in product.get_results().items():
+                _write_results(writer, nested_results, tag.tag, str(tag.data), tag, log)
 
         if output_file:
             log_echo(f"\033[95mResults saved: {output_file.name}\033[0m", log)
@@ -380,7 +470,7 @@ def create_generic_product_command(name: str) -> Callable:
 for product_name in get_products():
     dir_res = dir()
     if product_name not in dir_res:
-        cli.command(name=product_name, help=f'Query {product_name}')(create_generic_product_command(product_name))
+        cli.command(name=product_name, help=f'Query {product_name}')(create_generic_product_command(str(product_name)))
 
 if __name__ == "__main__":
     cli()
