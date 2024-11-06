@@ -106,7 +106,7 @@ def test_nested_process_search(cortex_product : CortexXDR, mocker):
 
     assert len(cortex_product._queries) == 4
 
-    assert len(cortex_product._queries[Tag('field_translation')]) == 13
+    assert len(cortex_product._queries[Tag('field_translation')]) == 14
     relative_ts = 14 * 24 * 60 * 60 * 1000
     assert Query(relative_ts, 'action_process_image_name', 'contains', '"notepad.exe"') in cortex_product._queries[Tag('field_translation')]
     assert Query(relative_ts, 'action_remote_ip', 'contains', '"127.0.0.1"') in cortex_product._queries[Tag('field_translation')]

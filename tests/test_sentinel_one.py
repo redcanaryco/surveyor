@@ -226,7 +226,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne, mocker):
     assert Query(sdate, edate, 'src.process.name', 'contains', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'dst.ip.address', 'contains', '("127.0.0.1")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'src.process.cmdline', 'contains', '("MiniDump")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.publisher', 'contains', '("Microsoft Publisher")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.publisher', 'contains', '("Microsoft")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'event.dns.request', 'contains', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'tgt.file.internalName', 'contains', '("powershell")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'url.address', 'contains', '("https://google.com")', None) in s1_product._queries[Tag('field_translation')]
