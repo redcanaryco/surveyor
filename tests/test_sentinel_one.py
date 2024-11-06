@@ -223,33 +223,32 @@ def test_nested_process_search_pq(s1_product : SentinelOne, mocker):
     assert len(s1_product._queries[Tag('field_translation')]) == 22
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
-    assert Query(sdate, edate, 'src.process.name', 'in', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'dst.ip.address', 'in', '("127.0.0.1")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.cmdline', 'in', '("MiniDump")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.publisher', 'in', '("Microsoft")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'event.dns.request', 'in', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'tgt.file.internalName', 'in', '("powershell")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'url.address', 'in', '("https://google.com")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'tgt.file.path', 'in', '("current_date.txt")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'module.path', 'in', '("pcwutl.dll")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.displayName', 'in', '("Evil Stuff Here")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.image.md5', 'in', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.image.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.image.sha256', 'in', '("zxcvzxcvzxcv")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'tgt.file.md5', 'in', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'tgt.file.sha256', 'in', '("zxcvzxcvzxcv")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'tgt.file.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'module.md5', 'in', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'module.sha1', 'in', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'registry.keyPath', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'registry.value', 'in', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'dst.port.number', 'in', '("80")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.parent.name', 'in', '("cmd.exe")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.name', 'contains', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'dst.ip.address', 'contains', '("127.0.0.1")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.cmdline', 'contains', '("MiniDump")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.publisher', 'contains', '("Microsoft Publisher")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'event.dns.request', 'contains', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'tgt.file.internalName', 'contains', '("powershell")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'url.address', 'contains', '("https://google.com")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'tgt.file.path', 'contains', '("current_date.txt")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'module.path', 'contains', '("pcwutl.dll")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.displayName', 'contains', '("Evil Stuff Here")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.image.md5', 'contains', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.image.sha256', 'contains', '("zxcvzxcvzxcv")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.image.sha1', 'contains', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'tgt.file.md5', 'contains', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'tgt.file.sha256', 'contains', '("zxcvzxcvzxcv")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'tgt.file.sha1', 'contains', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'module.md5', 'contains', '("asdfasdfasdfasdf")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'module.sha1', 'contains', '("qwerqwerqwerqwer")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'registry.keyPath', 'contains', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'registry.value', 'contains', '("HKLM")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'dst.port.number', 'contains', '("80")', None) in s1_product._queries[Tag('field_translation')]
 
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
     edate = s1_product._queries[Tag('multiple_values')][0].end_date    
-    assert Query(sdate, edate, 'src.process.name', 'in', '("svchost.exe", "cmd.exe")', None) in s1_product._queries[Tag('multiple_values')]
+    assert Query(sdate, edate, 'src.process.name', 'contains', '("svchost.exe", "cmd.exe")', None) in s1_product._queries[Tag('multiple_values')]
     
     assert len(s1_product._queries[Tag('single_query')]) == 1
     sdate = s1_product._queries[Tag('single_query')][0].start_date
@@ -280,7 +279,7 @@ def test_nested_process_search_pq_over_max_char_limit(s1_product : SentinelOne):
     assert len(s1_product._queries[Tag('many_chars')]) == 3
     sdate = s1_product._queries[Tag('many_chars')][0].start_date
     edate = s1_product._queries[Tag('many_chars')][0].end_date
-    assert s1_product._queries[Tag('many_chars')] == [Query(sdate, edate, 'src.process.name', 'in', first_list, None), Query(sdate, edate, 'src.process.name', 'in', first_list, None), Query(sdate, edate, 'src.process.name', 'in', second_list, None)]
+    assert s1_product._queries[Tag('many_chars')] == [Query(sdate, edate, 'src.process.name', 'contains', first_list, None), Query(sdate, edate, 'src.process.name', 'contains', first_list, None), Query(sdate, edate, 'src.process.name', 'contains', second_list, None)]
 
 def test_nested_process_search_unsupported_field(s1_product : SentinelOne, mocker):
     criteria = {'foo': 'bar'}
