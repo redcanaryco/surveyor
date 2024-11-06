@@ -121,6 +121,7 @@ def test_nested_process_search(cortex_product : CortexXDR, mocker):
     assert Query(relative_ts, 'action_file_md5', 'contains', '"tyuityuityuityui"') in cortex_product._queries[Tag('field_translation')]
     assert Query(relative_ts, 'action_file_sha256', 'contains', '"poiupoiupoiu"') in cortex_product._queries[Tag('field_translation')]
     assert Query(relative_ts, 'actor_process_image_name', 'contains', '"cmd.exe"') in cortex_product._queries[Tag('field_translation')]
+    assert Query(relative_ts, 'action_external_hostname', 'contains', '"raw.githubusercontent.com"') in cortex_product._queries[Tag('field_translation')]
 
     assert len(cortex_product._queries[Tag('multiple_values')]) == 1
     assert Query(relative_ts, 'action_process_image_name', 'in', '("*svchost.exe*", "*cmd.exe*")') in cortex_product._queries[Tag('multiple_values')]
@@ -132,13 +133,12 @@ def test_nested_process_search(cortex_product : CortexXDR, mocker):
     assert Query(relative_ts, None, None, None, 'first_query_string') in cortex_product._queries[Tag('multiple_query')]
     assert Query(relative_ts, None, None, None, 'second_query_string') in cortex_product._queries[Tag('multiple_query')]
 
-    mocked_echo.assert_has_calls([
-        mocker.call('Query filter domain is not supported by product cortex', logging.WARNING),
+    assert sorted(mocked_echo.call_args_list) == sorted([
         mocker.call('Query filter sha1 is not supported by product cortex', logging.WARNING),
         mocker.call('Query filter internal_name is not supported by product cortex', logging.WARNING),
         mocker.call('Query filter url is not supported by product cortex', logging.WARNING),
-        mocker.call('Query filter process_file_description is not supported by product cortex', logging.WARNING)        
-    ], any_order=True)
+        mocker.call('Query filter process_file_description is not supported by product cortex', logging.WARNING)   
+    ])
 
 def test_nested_process_search_unsupported_field(cortex_product : CortexXDR, mocker):
     criteria = {'foo': 'bar'}
