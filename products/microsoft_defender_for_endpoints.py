@@ -130,8 +130,10 @@ class DefenderForEndpoints(Product):
                         raw_results.append(res)
                     '''
                     hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
+                    
                     if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
                         username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
+                    else:
                         username = 'Unknown'
                     
                     if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
