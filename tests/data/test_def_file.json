@@ -9,19 +9,23 @@
     "url": ["https://google.com"],
     "filemod":["current_date.txt"],
     "modload":["pcwutl.dll"],
+    "process_file_description": ["Evil Stuff Here"],
     "md5":["asdfasdfasdfasdf"],
     "sha1":["qwerqwerqwerqwer"],
     "sha256":["zxcvzxcvzxcv"],
     "regmod": ["HKLM"],
-    "ipport": ["80"]
+    "ipport": ["80"],
+    "filewrite_md5":["tyuityuityuityui"],
+    "filewrite_sha256":["poiupoiupoiu"],
+    "parent_name": ["cmd.exe"]
   },
   "multiple_values":{
     "process_name":["svchost.exe", "cmd.exe"]
   },
   "single_query":{
-    "query":["process_name:rundll.exe"]
+    "query":["single_query_string_here"]
   },
   "multiple_query":{
-    "query":["cmdline:-enc", "modload:malware.dll"]
+    "query":["first_query_string", "second_query_string"]
   }
 }

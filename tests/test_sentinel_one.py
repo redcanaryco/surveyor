@@ -97,16 +97,19 @@ def test_build_query_with_supported_field_pq(s1_product : SentinelOne):
 
     assert base == 'endpoint.name contains "workstation2" and src.process.user contains "admin1"'
 
-def test_build_query_unsupported_keys(s1_product : SentinelOne):
+def test_build_query_unsupported_keys(s1_product : SentinelOne, mocker):
     filters = {
         "useless key": "asdfasdfasdf"
     }
     s1_product._pq = False
-    s1_product.log = logging.getLogger('pytest_surveyor')
+    mocked_logger = mocker.patch.object(s1_product, '_echo')
 
     base, from_date, to_date = s1_product.build_query(filters)
 
     assert base == ''
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter useless key is not supported by product s1', logging.WARNING)
+    ])
 
 def test_divide_chunks(s1_product : SentinelOne):
     entries = ['a','b','c','d','e']
@@ -132,25 +135,26 @@ def test_process_search(s1_product : SentinelOne):
     assert s1_product._queries[Tag('test_query')][0].full_query == 'FileName containsCIS "svchost.exe"'
     assert s1_product._queries[Tag('test_query')][0].end_date - timedelta(days=14) == s1_product._queries[Tag('test_query')][0].start_date
 
-def test_nested_process_search_dv(s1_product : SentinelOne):
-    with open(os.path.join(os.getcwd(), 'tests', 'data', 's1_surveyor_testing.json')) as f:
+def test_nested_process_search_dv(s1_product : SentinelOne, mocker):
+    with open(os.path.join(os.getcwd(), 'tests', 'data', 'test_def_file.json')) as f:
         programs = json.load(f)
 
     s1_product._queries = {}
     s1_product._pq = False
+    mocked_logger = mocker.patch.object(s1_product, '_echo')
 
     for program, criteria in programs.items():
         s1_product.nested_process_search(Tag(program), criteria, {})
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 16
+    assert len(s1_product._queries[Tag('field_translation')]) == 17
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'ProcessName', 'containscis', '"notepad.exe"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'IP', 'containscis', '"127.0.0.1"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'CmdLine', 'containscis', '"MiniDump"', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'Publisher', 'containscis', '"Microsoft Publisher"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'Publisher', 'containscis', '"Microsoft"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'DNS', 'containscis', '"raw.githubusercontent.com"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'TgtFileInternalName', 'containscis', '"powershell"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'Url', 'containscis', '"https://google.com"', None) in s1_product._queries[Tag('field_translation')]
@@ -163,6 +167,7 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     assert Query(sdate, edate, 'DstPort', 'containscis', '"80"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'RegistryKeyPath', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'RegistryValue', 'containscis', '"HKLM"', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'SrcProcParentName', 'containscis', '"cmd.exe"', None) in s1_product._queries[Tag('field_translation')]
 
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
@@ -172,13 +177,19 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
     assert len(s1_product._queries[Tag('single_query')]) == 1
     sdate = s1_product._queries[Tag('single_query')][0].start_date
     edate = s1_product._queries[Tag('single_query')][0].end_date    
-    assert Query(sdate, edate, 'query', 'raw', 'FileName containscis "rundll.exe"', None) in s1_product._queries[Tag('single_query')]
+    assert Query(sdate, edate, 'query', 'raw', 'single_query_string_here', None) in s1_product._queries[Tag('single_query')]
     
     assert len(s1_product._queries[Tag('multiple_query')]) == 1
     sdate = s1_product._queries[Tag('multiple_query')][0].start_date
     edate = s1_product._queries[Tag('multiple_query')][0].end_date
-    assert Query(sdate, edate, 'query', 'raw', '(ProcessCmdLine contains "-enc") OR (ModulePath contains "malware.dll")', None) in s1_product._queries[Tag('multiple_query')]
+    assert Query(sdate, edate, 'query', 'raw', '(first_query_string) OR (second_query_string)', None) in s1_product._queries[Tag('multiple_query')]
 
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter filewrite_md5 is not supported by product s1', logging.WARNING),
+        mocker.call('Query filter filewrite_sha256 is not supported by product s1', logging.WARNING)
+    ], any_order = True)
+
+    
 def test_nested_process_search_dv_over_100_terms(s1_product : SentinelOne):
     list_o_terms = list(range(1, 106))
     first_list = '("' + '", "'.join([str(x) for x in list(range(1,101))]) + '")'
@@ -195,25 +206,27 @@ def test_nested_process_search_dv_over_100_terms(s1_product : SentinelOne):
     assert Query(sdate, edate, 'ProcessName', 'in contains anycase', first_list, None) in s1_product._queries[Tag('list_of_105_terms')]
     assert Query(sdate, edate, 'ProcessName', 'in contains anycase', second_list, None) in s1_product._queries[Tag('list_of_105_terms')]
 
-def test_nested_process_search_pq(s1_product : SentinelOne):
-    with open(os.path.join(os.getcwd(), 'tests', 'data', 's1_surveyor_testing.json')) as f:
+    
+def test_nested_process_search_pq(s1_product : SentinelOne, mocker):
+    with open(os.path.join(os.getcwd(), 'tests', 'data', 'test_def_file.json')) as f:
         programs = json.load(f)
 
     s1_product._queries = {}
     s1_product._pq = True
+    mocked_logger = mocker.patch.object(s1_product, '_echo')
 
     for program, criteria in programs.items():
         s1_product.nested_process_search(Tag(program), criteria, {})
     
     assert len(s1_product._queries) == 4
 
-    assert len(s1_product._queries[Tag('field_translation')]) == 21
+    assert len(s1_product._queries[Tag('field_translation')]) == 22
     sdate = s1_product._queries[Tag('field_translation')][0].start_date
     edate = s1_product._queries[Tag('field_translation')][0].end_date
     assert Query(sdate, edate, 'src.process.name', 'contains', '("notepad.exe")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'dst.ip.address', 'contains', '("127.0.0.1")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'src.process.cmdline', 'contains', '("MiniDump")', None) in s1_product._queries[Tag('field_translation')]
-    assert Query(sdate, edate, 'src.process.publisher', 'contains', '("Microsoft Publisher")', None) in s1_product._queries[Tag('field_translation')]
+    assert Query(sdate, edate, 'src.process.publisher', 'contains', '("Microsoft")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'event.dns.request', 'contains', '("raw.githubusercontent.com")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'tgt.file.internalName', 'contains', '("powershell")', None) in s1_product._queries[Tag('field_translation')]
     assert Query(sdate, edate, 'url.address', 'contains', '("https://google.com")', None) in s1_product._queries[Tag('field_translation')]
@@ -240,13 +253,19 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
     assert len(s1_product._queries[Tag('single_query')]) == 1
     sdate = s1_product._queries[Tag('single_query')][0].start_date
     edate = s1_product._queries[Tag('single_query')][0].end_date    
-    assert Query(sdate, edate, None, None, None, 'FileName containscis "rundll.exe"') in s1_product._queries[Tag('single_query')]
+    assert Query(sdate, edate, None, None, None, 'single_query_string_here') in s1_product._queries[Tag('single_query')]
     
     assert len(s1_product._queries[Tag('multiple_query')]) == 1
     sdate = s1_product._queries[Tag('multiple_query')][0].start_date
     edate = s1_product._queries[Tag('multiple_query')][0].end_date
-    assert Query(sdate, edate, None, None, None, '(ProcessCmdLine contains "-enc") or (ModulePath contains "malware.dll")') in s1_product._queries[Tag('multiple_query')]
+    assert Query(sdate, edate, None, None, None, '(first_query_string) or (second_query_string)') in s1_product._queries[Tag('multiple_query')]
 
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter filewrite_md5 is not supported by product s1', logging.WARNING),
+        mocker.call('Query filter filewrite_sha256 is not supported by product s1', logging.WARNING)
+    ], any_order = True)
+
+    
 def test_nested_process_search_pq_over_max_char_limit(s1_product : SentinelOne):
     list_o_terms = ['abcdefghijklmnopqrstuvwxyz'] * 251
     first_list = '("' + '", "'.join(['abcdefghijklmnopqrstuvwxyz']*125) + '")'
@@ -262,15 +281,18 @@ def test_nested_process_search_pq_over_max_char_limit(s1_product : SentinelOne):
     edate = s1_product._queries[Tag('many_chars')][0].end_date
     assert s1_product._queries[Tag('many_chars')] == [Query(sdate, edate, 'src.process.name', 'contains', first_list, None), Query(sdate, edate, 'src.process.name', 'contains', first_list, None), Query(sdate, edate, 'src.process.name', 'contains', second_list, None)]
 
-def test_nested_process_search_unsupported_field(s1_product : SentinelOne):
+def test_nested_process_search_unsupported_field(s1_product : SentinelOne, mocker):
     criteria = {'foo': 'bar'}
     s1_product._queries = {}
     s1_product._pq = False
-    s1_product.log = logging.getLogger('pytest_surveyor')
+    mocked_logger = mocker.patch.object(s1_product, '_echo')
 
     s1_product.nested_process_search(Tag('unsupported_field'), criteria, {})
 
     assert len(s1_product._queries) == 0
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter foo is not supported by product s1', logging.WARNING)
+    ])
 
 def test_get_query_text_handles_same_field_different_tag_dv(s1_product : SentinelOne):
     sdate = datetime.now(timezone.utc)
