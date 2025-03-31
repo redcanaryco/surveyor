@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 
 from typing import Generator, Optional
@@ -32,8 +32,8 @@ def _convert_relative_time(relative_time) -> str:
     """
     time_format = "%Y-%m-%dT%H:%M:%SZ"
     minus_minutes = relative_time.split(':')[1].split('m')[0].split('-')[1]
-    end_time = datetime.datetime.now()
-    start_time = end_time - datetime.timedelta(minutes=int(minus_minutes))
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(minutes=int(minus_minutes))
     device_timestamp = 'device_timestamp:[{0} TO {1}]'.format(start_time.strftime(time_format),
                                                               end_time.strftime(time_format))
     return device_timestamp

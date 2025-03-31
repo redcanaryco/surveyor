@@ -10,7 +10,7 @@ from threading import Event
 
 from tqdm import tqdm
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from typing import Optional, Tuple, Callable, Any, cast
 import re
@@ -321,7 +321,7 @@ class SentinelOne(Product):
         return {"Authorization": f"ApiToken {self._token}", "Content-Type": "application/json"}
 
     def build_query(self, filters: dict) -> Tuple[str, datetime, datetime]:
-        to_date = datetime.utcnow()
+        to_date = datetime.now(timezone.utc)
         from_date = to_date - timedelta(days=14)
 
         query_base = ''
@@ -707,7 +707,7 @@ class SentinelOne(Product):
         """
         Process all cached queries.
         """
-        start_date = datetime.utcnow()
+        start_date = datetime.now(timezone.utc)
         end_date = start_date
 
         # determine earliest start date

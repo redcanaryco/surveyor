@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 import click
 # regular expression that detects ANSI color codes
@@ -40,4 +40,4 @@ def datetime_to_epoch_millis(date: datetime) -> int:
     """
     Convert a datetime object to an epoch timestamp in milliseconds.
     """
-    return int((date - datetime.utcfromtimestamp(0)).total_seconds() * 1000)
+    return int((date - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds() * 1000)

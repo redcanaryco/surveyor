@@ -3,7 +3,7 @@ import sys
 import os
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, call, ANY
 sys.path.append(os.getcwd())
 from products.sentinel_one import SentinelOne, Query
@@ -295,7 +295,7 @@ def test_nested_process_search_unsupported_field(s1_product : SentinelOne, mocke
     ])
 
 def test_get_query_text_handles_same_field_different_tag_dv(s1_product : SentinelOne):
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = False
     s1_product._queries = {
@@ -306,7 +306,7 @@ def test_get_query_text_handles_same_field_different_tag_dv(s1_product : Sentine
     assert s1_product._get_query_text() == [(Tag('valueA', data=None), 'ProcessName containscis "svchost.exe"'), (Tag('valueB', data=None), 'ProcessName containscis "cmd.exe"')]
 
 def test_get_query_text_handles_different_fields_different_tag_dv(s1_product : SentinelOne):
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = False
     s1_product._queries = {
@@ -319,7 +319,7 @@ def test_get_query_text_handles_different_fields_different_tag_dv(s1_product : S
         (Tag('valueB', data=None), 'ModulePath containscis "evil.dll"')]
 
 def test_get_query_text_handles_parameters_pq(s1_product: SentinelOne):
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = True
     s1_product._queries = {
@@ -331,7 +331,7 @@ def test_get_query_text_handles_parameters_pq(s1_product: SentinelOne):
     ]
 
 def test_get_query_text_handles_full_query_pq(s1_product : SentinelOne):
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = True
     s1_product._queries = {
@@ -344,7 +344,7 @@ def test_get_query_text_handles_full_query_pq(s1_product : SentinelOne):
 
 def test_process_queries_dv(s1_product : SentinelOne, mocker):
     # test that queries are grouped by tag as expected
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = False
     s1_product._query_base = None
@@ -395,7 +395,7 @@ def test_process_queries_dv(s1_product : SentinelOne, mocker):
 
 def test_process_queries_pq(s1_product : SentinelOne, mocker):
     # test that queries are grouped by tag as expected
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = True
     s1_product._query_base = None
@@ -468,7 +468,7 @@ def test_process_queries_pq(s1_product : SentinelOne, mocker):
 
 def test_process_queries_pq_single_site_id(s1_product : SentinelOne, mocker):
     # test that queries are grouped by tag as expected
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = True
     s1_product._query_base = None
@@ -495,7 +495,7 @@ def test_process_queries_pq_single_site_id(s1_product : SentinelOne, mocker):
 
 def test_process_queries_pq_multiple_site_ids(s1_product : SentinelOne, mocker):
     # test that queries are grouped by tag as expected
-    sdate = datetime.now()
+    sdate = datetime.now(timezone.utc)
     edate = sdate - timedelta(days=7)
     s1_product._pq = True
     s1_product._query_base = None

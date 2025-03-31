@@ -7,7 +7,7 @@ if sys.version_info.major == 3 and sys.version_info.minor < 9:
 
 import csv
 import dataclasses
-import datetime
+from datetime import datetime, timezone
 import json
 import logging
 import os
@@ -256,7 +256,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     os.makedirs(opt.log_dir, exist_ok=True)
 
     # create logging file handler
-    log_file_name = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S') + f'.{product_str}.log'
+    log_file_name = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S') + f'.{product_str}.log'
     handler = logging.FileHandler(os.path.join(opt.log_dir, log_file_name))
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(log_format))
