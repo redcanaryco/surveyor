@@ -72,18 +72,21 @@ def test_build_query_with_min(cbc_product: CbEnterpriseEdr):
     assert datetime.strptime(timespan[1], time_format) - timedelta(minutes=30) == datetime.strptime(timespan[0], time_format)
 
 
-def test_build_query_with_unsupported_field(cbc_product : CbEnterpriseEdr):
+def test_build_query_with_unsupported_field(cbc_product : CbEnterpriseEdr, mocker):
     filters = {
       "useless key": "asdfasdasdf"
     }
 
     cbc_product._device_group = None
     cbc_product._device_policy = None
-    cbc_product.log = logging.getLogger('pytest_surveyor')
+    mocked_logger = mocker.patch.object(cbc_product, '_echo')
 
     result = cbc_product.build_query(filters)._raw_query
 
     assert result == None
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter useless key is not supported by product cbc', logging.WARNING)
+    ])
 
 
 def test_divide_chunks(cbc_product : CbEnterpriseEdr):
@@ -108,15 +111,17 @@ def test_process_search(cbc_product : CbEnterpriseEdr, mocker):
 
 
 def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
-    with open(os.path.join(os.getcwd(), 'tests', 'data', 'cbc_surveyor_testing.json')) as f:
+    with open(os.path.join(os.getcwd(), 'tests', 'data', 'test_def_file.json')) as f:
         programs = json.load(f)
     
-    cbc_product.log = logging.getLogger('pytest_surveyor')
     cbc_product._sensor_group = None
     cbc_product._results = {}
     cbc_product._conn = mocker.Mock()
     mocker.patch.object(cbc_product, 'perform_query')
+    cbc_product.log = logging.getLogger('pytest_surveyor')
 
+    mocked_logger = mocker.patch.object(cbc_product, '_echo')
+    
     expected_calls = [
         mocker.call(Tag('field_translation'), {}, '(process_name:notepad.exe)'),
         mocker.call(Tag('field_translation'), {}, '(netconn_ipv4:127.0.0.1)'),
@@ -124,18 +129,29 @@ def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
         mocker.call(Tag('field_translation'), {}, '(process_publisher:Microsoft)'),
         mocker.call(Tag('field_translation'), {}, '(netconn_domain:raw.githubusercontent.com)'),
         mocker.call(Tag('field_translation'), {}, '(process_internal_name:powershell)'),
+        mocker.call(Tag('field_translation'), {}, '(filemod_name:current_date.txt)'),
+        mocker.call(Tag('field_translation'), {}, '(modload_name:pcwutl.dll)'),
         mocker.call(Tag('field_translation'), {}, '(hash:asdfasdfasdfasdf)'),
         mocker.call(Tag('field_translation'), {}, '(hash:zxcvzxcvzxcv)'),
         mocker.call(Tag('field_translation'), {}, '(netconn_port:80)'),
         mocker.call(Tag('field_translation'), {}, '(regmod_name:HKLM)'),
+        mocker.call(Tag('field_translation'), {}, '(parent_name:cmd.exe)'),
         mocker.call(Tag('multiple_values'), {}, '(process_name:svchost.exe OR process_name:cmd.exe)'),
-        mocker.call(Tag('single_query'), {}, '(process_name:rundll.exe)'),
-        mocker.call(Tag('multiple_query'), {}, '((process_cmdline:-enc) OR (modload_name:malware.dll))')
+        mocker.call(Tag('single_query'), {}, '(single_query_string_here)'),
+        mocker.call(Tag('multiple_query'), {}, '((first_query_string) OR (second_query_string))')
     ]
 
     for program, criteria in programs.items():
         cbc_product.nested_process_search(Tag(program), criteria, {})
     cbc_product.perform_query.assert_has_calls(expected_calls, any_order=True)
+
+    mocked_logger.assert_has_calls([
+        mocker.call('Query filter url is not supported by product cbc', logging.WARNING),
+        mocker.call('Query filter process_file_description is not supported by product cbc', logging.WARNING),
+        mocker.call('Query filter filewrite_md5 is not supported by product cbc', logging.WARNING),
+        mocker.call('Query filter filewrite_sha256 is not supported by product cbc', logging.WARNING),
+        mocker.call('Query filter sha1 is not supported by product cbc', logging.WARNING),
+    ], any_order = True)
 
 
 def test_perform_query_with_limit_option(cbc_product : CbEnterpriseEdr, mocker):
@@ -150,6 +166,7 @@ def test_perform_query_with_limit_option(cbc_product : CbEnterpriseEdr, mocker):
 
     assert len(cbc_product.perform_query(Tag('test_tag'), {}, 'process_name:pwsh.exe')) == 2
 
+
 def test_perform_query_without_limit_option(cbc_product : CbEnterpriseEdr, mocker):
     cbc_product.log = logging.getLogger('pytest_surveyor')
     cbc_product._device_policy = None
@@ -160,6 +177,7 @@ def test_perform_query_without_limit_option(cbc_product : CbEnterpriseEdr, mocke
     cbc_product._conn.select.return_value = mocker.Mock(where = mocked_query_return)
 
     assert len(cbc_product.perform_query(Tag('test_tag'), {}, 'process_name:pwsh.exe')) == 3
+
 
 def mocked_query_return(full_query: str):
     return [

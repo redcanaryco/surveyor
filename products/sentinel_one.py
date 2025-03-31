@@ -49,7 +49,8 @@ PARAMETER_MAPPING_DV: dict[str, list[str]] = {
     'md5': ['Md5'],
     'sha1':['Sha1'],
     'sha256':['Sha256'],
-    'regmod':['RegistryKeyPath','RegistryValue']
+    'regmod':['RegistryKeyPath','RegistryValue'],
+    'parent_name': ['SrcProcParentName']
 }
 
 PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
@@ -68,7 +69,8 @@ PARAMETER_MAPPING_PQ: dict[str, list[str]] = {
     'md5': ['src.process.image.md5', 'tgt.file.md5', 'module.md5'],
     'sha256':['src.process.image.sha256','tgt.file.sha256'],
     'sha1':['src.process.image.sha1','tgt.file.sha1','module.sha1'],
-    'regmod':['registry.keyPath','registry.value']
+    'regmod':['registry.keyPath','registry.value'],
+    'parent_name': ['src.process.parent.name']
 }
 
 class SentinelOne(Product):
