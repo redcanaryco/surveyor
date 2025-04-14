@@ -1,4 +1,4 @@
-click~=8.0.4
+click~=8.1.8
 requests~=2.32.3
 cbapi~=2.0.0
 setuptools~=75.3.0
