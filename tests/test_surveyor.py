@@ -125,7 +125,7 @@ def test_def_dir(runner, mocker):
         with open(def_file_path2, 'w') as deffile:
             deffile.write("""{"ProgramB":{"process_name":["test2.exe"]}}""")
 
-        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {}), 
+        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {}),
                           mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {})]
         result = runner.invoke(cli, ["--defdir", temp_dir])
         assert "Processing definition files:" in result.output
@@ -147,7 +147,7 @@ def test_def_dir_with_base_query(runner, mocker):
         with open(def_file_path2, 'w') as deffile:
             deffile.write("""{"ProgramB":{"process_name":["test2.exe"]}}""")
 
-        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}), 
+        expected_calls = [mocker.call(Tag('ProgramA', 'test_deffile1'),{"process_name":["test1.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'}),
                           mocker.call(Tag('ProgramB', 'test_deffile2'),{"process_name":["test2.exe"]}, {'days':5, 'hostname':'workstation1', 'username':'admin'})]
         result = runner.invoke(cli, ["--defdir", temp_dir] + filter_args)
         assert "Processing definition files:" in result.output
@@ -363,7 +363,7 @@ detection:
 fields:
     - CommandLine
     - ParentCommandLine""")
-            
+
         sigma_file_path2 = os.path.join(temp_dir, "test_sigma_rule2.yml")
         with open(sigma_file_path2, 'w') as sigmafile:
             sigmafile.write("""title: Test sigma rule 2
@@ -379,7 +379,7 @@ fields:
     - CommandLine
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmadir", temp_dir])
-        
+
         expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {}),
                           mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {})]
         assert "Processing sigma rules" in result.output
@@ -405,7 +405,7 @@ detection:
 fields:
     - CommandLine
     - ParentCommandLine""")
-            
+
         sigma_file_path2 = os.path.join(temp_dir, "test_sigma_rule2.yml")
         with open(sigma_file_path2, 'w') as sigmafile:
             sigmafile.write("""title: Test sigma rule 2
@@ -421,7 +421,7 @@ fields:
     - CommandLine
     - ParentCommandLine""")
         result = runner.invoke(cli, ["--sigmadir", temp_dir] + filter_args)
-        
+
         expected_calls = [mocker.call(Tag('Test sigma rule - 5fd18e43-749c-4bae-93b6-d46e1f27062e', 'Sigma Rule'), {"query":["process_name:curl.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 }),
                           mocker.call(Tag('Test sigma rule 2 - 15ecb82d-b7c0-4e53-9bf3-deedb4c9908c', 'Sigma Rule'), {"query":["process_name:powershell.exe"]}, {'username':'admin', 'hostname':'workstation1','days':5 })]
         assert "Processing sigma rules" in result.output

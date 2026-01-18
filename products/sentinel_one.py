@@ -93,7 +93,7 @@ class SentinelOne(Product):
     _raw: bool = False
 
     def __init__(self, pq: bool = False, **kwargs):
-  
+
         self.profile = kwargs['profile'] if 'profile' in kwargs else 'default'
         self._site_ids = kwargs.get('site_id', []) or list()
         self._account_ids = kwargs.get('account_id', []) or list()
@@ -189,7 +189,7 @@ class SentinelOne(Product):
                         account_names.append(name.strip())
 
         # verify provided account IDs are valid
-        if account_ids:  
+        if account_ids:
             # create batch of 10 account IDs per call
             counter = 0
             temp_list = []
@@ -241,7 +241,7 @@ class SentinelOne(Product):
                 self.log.warning(f'Account names {",".join(diff)} not found')
 
         # ensure specified site IDs are valid and not already covered by the account_ids listed above
-        if site_ids:  
+        if site_ids:
             temp_site_ids = list()
             # create batches of 10 site_ids
             counter = 0
@@ -264,7 +264,7 @@ class SentinelOne(Product):
                     for item in response:
                         for site in item['sites']:
                             temp_site_ids.append(site['id'])
- 
+
                             if self._pq:
                                 if site['id'] not in self._site_ids:
                                     self._site_ids.append(site['id'])
@@ -274,7 +274,7 @@ class SentinelOne(Product):
                                     # included in the request body
                                     self._account_ids.append(site['accountId'])
                             elif site['accountId'] not in self._account_ids and site['id'] not in self._site_ids:
-                                self._site_ids.append(site['id']) 
+                                self._site_ids.append(site['id'])
 
                     counter = 0
                     temp_list = []
@@ -331,7 +331,7 @@ class SentinelOne(Product):
                 from_date = to_date - timedelta(minutes=value)
             elif key == 'hostname':
                 if self._pq:
-                    if query_base: 
+                    if query_base:
                         query_base += ' and '
                     query_base += f'endpoint.name contains "{value}"'
                 else:
@@ -360,7 +360,7 @@ class SentinelOne(Product):
                                 add_default_params: bool = True) -> list[dict]:
         """
         Get and return all paginated data from the response, making additional queries if necessary.
-        
+
         :param url: URL to make GET request to.
 
         :param params: Additional parameters for GET request
@@ -426,7 +426,7 @@ class SentinelOne(Product):
 
                 next_cursor = pagination_data['nextCursor']
                 params['cursor'] = next_cursor
-                
+
             return data
 
     def _get_dv_events(self, query_id: str, cancel_event: Event, p_bar_needed: bool = True) -> list[dict]:
@@ -542,7 +542,7 @@ class SentinelOne(Product):
                     chunked_terms = list(self.divide_chunks(terms, 100))
                     for chunk in chunked_terms:
                         search_value_orig = ', '.join(f'"{x}"' for x in chunk)
-                        
+
                         for param in parameter:
                             search_value = search_value_orig
                             if param == 'query':
@@ -687,7 +687,7 @@ class SentinelOne(Product):
                     additional_data = (event['eventTime'], event['siteId'], event['siteName'], srcprocstorylineid, srcprocdisplayname, scrprocparentimagepath, tgtprocdisplayname, tgtprocimagepath, tgtfilepath, tgtfilesha1, tgtfilesha256, url, srcip, dstip, dnsrequest, event['eventType'])
 
                 result = Result(hostname, username, path, command_line, additional_data)
-                
+
                 # Raw Feature (Inactive)
                 '''
                 if self._raw:
@@ -736,8 +736,8 @@ class SentinelOne(Product):
                     tag_buckets[tag_value].append(item)
                 else:
                     tag_buckets[tag_value] = [item]
-            
-            
+
+
             # merge queries into one large query by tag groupings and execute it
             for items in tag_buckets.values():
                 for i in range(0, len(items), chunk_size):
@@ -746,7 +746,7 @@ class SentinelOne(Product):
                     for item in items[i:i + chunk_size]:
                         if merged_query:
                             merged_query += ' OR '
-                        
+
                         merged_query += item[1]
 
                     merged_tag = item[0]
@@ -776,7 +776,7 @@ class SentinelOne(Product):
                                         'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' \
                                         'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' \
                                         'dst.ip.address, event.dns.request, event.type'
-                    
+
                     self.log.debug(f'Appending query to executor: {merged_query}')
                     futures.append(executor.submit(self._run_query, merged_query, start_date, end_date, merged_tag,
                                                 cancel_event, not self._pq))

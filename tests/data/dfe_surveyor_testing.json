@@ -1,26 +1,60 @@
 {
-  "field_translation":{
-    "process_name":["notepad.exe"],
-    "filemod":["current_date.txt"],
-    "ipaddr":["127.0.0.1"],
-    "cmdline":["MiniDump"],
-    "digsig_publisher":["Microsoft Publisher"],
-    "domain":["raw.githubusercontent.com"],
-    "internal_name":["powershell"],
-    "md5":["asdfasdfasdfasdf"],
-    "sha1":["qwerqwerqwerqwer"],
-    "sha256":["zxcvzxcvzxcv"],
-    "modload":["pcwutl.dll"],
-    "regmod":["HKLM"],
-    "ipport": ["80"]
-  }, 
-  "multiple_values":{
-    "process_name":["svchost.exe", "cmd.exe"]
+  "field_translation": {
+    "cmdline": [
+      "MiniDump"
+    ],
+    "digsig_publisher": [
+      "Microsoft Publisher"
+    ],
+    "domain": [
+      "raw.githubusercontent.com"
+    ],
+    "filemod": [
+      "current_date.txt"
+    ],
+    "internal_name": [
+      "powershell"
+    ],
+    "ipaddr": [
+      "127.0.0.1"
+    ],
+    "ipport": [
+      "80"
+    ],
+    "md5": [
+      "asdfasdfasdfasdf"
+    ],
+    "modload": [
+      "pcwutl.dll"
+    ],
+    "process_name": [
+      "notepad.exe"
+    ],
+    "regmod": [
+      "HKLM"
+    ],
+    "sha1": [
+      "qwerqwerqwerqwer"
+    ],
+    "sha256": [
+      "zxcvzxcvzxcv"
+    ]
   },
-  "single_query":{
-    "query":["DeviceProcessEvents | where FileName contains \"rundll.exe\""]
+  "multiple_query": {
+    "query": [
+      "DeviceProcessEvents | where ProcessCommandLine contains \"-enc\"",
+      "DeviceImageLoadEvents | where FileName contains \"malware.dll\""
+    ]
   },
-  "multiple_query":{
-    "query":["DeviceProcessEvents | where ProcessCommandLine contains \"-enc\"", "DeviceImageLoadEvents | where FileName contains \"malware.dll\""]
+  "multiple_values": {
+    "process_name": [
+      "svchost.exe",
+      "cmd.exe"
+    ]
+  },
+  "single_query": {
+    "query": [
+      "DeviceProcessEvents | where FileName contains \"rundll.exe\""
+    ]
   }
 }

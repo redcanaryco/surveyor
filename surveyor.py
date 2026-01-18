@@ -114,7 +114,7 @@ class ExecutionOptions:
               SentinelOne (Deep Visibility): Default/Max: 20000
               VMware Carbon Black EDR: Default/Max: None
               VMware Carbon Black Cloud Enterprise EDR: Default/Max: None
-              
+
               Note: Exceeding the maximum limits will automatically set the limit to its maximum value, where applicable.
               """
               , type=click.INT)
@@ -316,7 +316,7 @@ def survey(ctx, product_str: str = 'cbr') -> None:
     if not opt.no_file:
         # determine output file name
         if opt.output and opt.prefix:
-            log.debug("Output arg takes precendence so prefix arg will be ignored")
+            log.debug("Output arg takes precedence so prefix arg will be ignored")
         if opt.output:
             file_name = opt.output
         elif opt.prefix:

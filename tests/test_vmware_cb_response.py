@@ -30,7 +30,7 @@ def cbr_product():
 def test_build_query_with_supported_field(cbr_product : CbResponse):
     filters = {
         'hostname': 'workstation1',
-        'username': 'admin', 
+        'username': 'admin',
         'days': 1,
         'minutes': 10
     }
@@ -84,7 +84,7 @@ def test_process_search_limit_option(cbr_product : CbResponse, mocker):
 def test_nested_process_search(cbr_product : CbResponse, mocker):
     with open(os.path.join(os.getcwd(), 'tests', 'data', 'cbr_surveyor_testing.json')) as f:
         programs = json.load(f)
-    
+
     cbr_product.log = logging.getLogger('pytest_surveyor')
     cbr_product._sensor_group = None
     cbr_product._results = {}

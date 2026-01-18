@@ -1,80 +1,143 @@
 {
-    "BFG Miners": {
-        "process_name": ["bfgminer.exe"]
-    },
-    "minerd": {
-        "process_name": ["minerd.exe"]
-    },
-    "cgminer": {
-        "process_name": ["cgminer.exe"]
-    },
-    "rpcminer-cpu": {
-        "process_name": ["rpcminer-cpu.exe"]
-    },
-    "bitcoin-miner": {
-        "process_name": ["bitcoin-miner.exe"]
-    },
-    "btc": {
-        "process_name": ["btc.exe"]
-    },
-    "M6": {
-        "process_name": ["m6.exe"]
-    },
-    "Auroracoin": {
-        "process_name": ["Auroracoin-qt-2016.04.1.0.exe"]
-    },
-    "miner": {
-        "process_name": ["miner.exe", "miner.py"]
-    },
-    "Win64mrocli3": {
-        "process_name": ["Win64mrocli3.exe"]
-    },
-    "easyminer": {
-        "process_name": ["easyminer.exe"]
-    },
-    "50miner": {
-        "process_name": ["50miner.exe"]
-    },
-    "Cuda Miner": {
-        "process_name": ["cudaminer.exe"]
-    },
-    "UFASoft": {
-        "process_name": ["coin-miner.exe"]
-    },
-    "Bit Moose": {
-        "process_name": ["bitmoose-gui.exe"]
-    },
-    "XMRig": {
-        "process_name": ["xmrig.exe","xmrig"]
-    },
-    "XMRig-AMD": {
-        "process_name": ["xmrig-amd.exe", "xmrig-amd"]
-    },
-    "XMRig-NVIDIA": {
-        "process_name": ["xmrig-nvidia.exe", "xmrig-nvidia"]
-    },
-    "xmr-stak": {
-        "process_name": ["xmr-stak.exe", "xmr-stak"]
-    },
-    "xmr-stak-AMD": {
-        "process_name": ["xmr-stak-amd.exe", "xmr-stak-amd"]
-    },
-    "xmr-stak-NVIDIA": {
-        "process_name": ["xmr-stak-nvidia.exe","xmr-stak-nvidia"]
-    },
-    "xmr-stak-CPU": {
-        "process_name": ["xmr-stak-cpu.exe", "xmr-stak-cpu"]
-    },
-    "NsCpuCNMiner64": {
-        "process_name": ["NsCpuCNMiner64.exe", "NsCpuCNMiner64"]
-    },
-    "NsGpuCNMiner": {
-        "process_name": ["NsGpuCNMiner.exe", "NsGpuCNMiner"]
-    },
-    "CPUMiner": {
-        "process_name": ["cpuminer.exe", "cpuminer"]
-    },
-    "YAM": {
-        "process_name": ["yam"]
-    }
+  "50miner": {
+    "process_name": [
+      "50miner.exe"
+    ]
+  },
+  "Auroracoin": {
+    "process_name": [
+      "Auroracoin-qt-2016.04.1.0.exe"
+    ]
+  },
+  "BFG Miners": {
+    "process_name": [
+      "bfgminer.exe"
+    ]
+  },
+  "Bit Moose": {
+    "process_name": [
+      "bitmoose-gui.exe"
+    ]
+  },
+  "CPUMiner": {
+    "process_name": [
+      "cpuminer.exe",
+      "cpuminer"
+    ]
+  },
+  "Cuda Miner": {
+    "process_name": [
+      "cudaminer.exe"
+    ]
+  },
+  "M6": {
+    "process_name": [
+      "m6.exe"
+    ]
+  },
+  "NsCpuCNMiner64": {
+    "process_name": [
+      "NsCpuCNMiner64.exe",
+      "NsCpuCNMiner64"
+    ]
+  },
+  "NsGpuCNMiner": {
+    "process_name": [
+      "NsGpuCNMiner.exe",
+      "NsGpuCNMiner"
+    ]
+  },
+  "UFASoft": {
+    "process_name": [
+      "coin-miner.exe"
+    ]
+  },
+  "Win64mrocli3": {
+    "process_name": [
+      "Win64mrocli3.exe"
+    ]
+  },
+  "XMRig": {
+    "process_name": [
+      "xmrig.exe",
+      "xmrig"
+    ]
+  },
+  "XMRig-AMD": {
+    "process_name": [
+      "xmrig-amd.exe",
+      "xmrig-amd"
+    ]
+  },
+  "XMRig-NVIDIA": {
+    "process_name": [
+      "xmrig-nvidia.exe",
+      "xmrig-nvidia"
+    ]
+  },
+  "YAM": {
+    "process_name": [
+      "yam"
+    ]
+  },
+  "bitcoin-miner": {
+    "process_name": [
+      "bitcoin-miner.exe"
+    ]
+  },
+  "btc": {
+    "process_name": [
+      "btc.exe"
+    ]
+  },
+  "cgminer": {
+    "process_name": [
+      "cgminer.exe"
+    ]
+  },
+  "easyminer": {
+    "process_name": [
+      "easyminer.exe"
+    ]
+  },
+  "miner": {
+    "process_name": [
+      "miner.exe",
+      "miner.py"
+    ]
+  },
+  "minerd": {
+    "process_name": [
+      "minerd.exe"
+    ]
+  },
+  "rpcminer-cpu": {
+    "process_name": [
+      "rpcminer-cpu.exe"
+    ]
+  },
+  "xmr-stak": {
+    "process_name": [
+      "xmr-stak.exe",
+      "xmr-stak"
+    ]
+  },
+  "xmr-stak-AMD": {
+    "process_name": [
+      "xmr-stak-amd.exe",
+      "xmr-stak-amd"
+    ]
+  },
+  "xmr-stak-CPU": {
+    "process_name": [
+      "xmr-stak-cpu.exe",
+      "xmr-stak-cpu"
+    ]
+  },
+  "xmr-stak-NVIDIA": {
+    "process_name": [
+      "xmr-stak-nvidia.exe",
+      "xmr-stak-nvidia"
+    ]
+  }
 }

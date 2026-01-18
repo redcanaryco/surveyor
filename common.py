@@ -154,7 +154,7 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
         If true, translates into PowerQuery syntax
         Otherwise, uses DeepVisibility
     """
-    
+
     supports_json_ouput = True
 
     try:
@@ -187,7 +187,7 @@ def sigma_translation(product: str, sigma_rules: list, pq: bool = False) -> dict
         supports_json_ouput = False
         plugins.get_plugin_by_id('microsoft365defender').install()
         from sigma.backends.kusto import KustoBackend # type: ignore
-        from sigma.pipelines.microsoft365defender import microsoft_365_defender_pipeline # type: ignore 
+        from sigma.pipelines.microsoft365defender import microsoft_365_defender_pipeline # type: ignore
         backend = KustoBackend(microsoft_365_defender_pipeline())
     elif product == 'cortex':
         plugins.get_plugin_by_id('cortexxdr').install()

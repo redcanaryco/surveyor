@@ -110,7 +110,7 @@ def test_process_search(cbc_product : CbEnterpriseEdr, mocker):
 def test_nested_process_search(cbc_product : CbEnterpriseEdr, mocker):
     with open(os.path.join(os.getcwd(), 'tests', 'data', 'cbc_surveyor_testing.json')) as f:
         programs = json.load(f)
-    
+
     cbc_product.log = logging.getLogger('pytest_surveyor')
     cbc_product._sensor_group = None
     cbc_product._results = {}

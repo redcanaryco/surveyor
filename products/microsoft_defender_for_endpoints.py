@@ -10,20 +10,20 @@ from common import Product, Tag, Result
 PARAMETER_MAPPING: dict[str, dict[str, Union[str, list[str]]]] = {
     'process_name': {'table':'DeviceProcessEvents','field':'FolderPath',
                      'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
-    'filemod': {'table':'DeviceFileEvents','field':'FolderPath', 
+    'filemod': {'table':'DeviceFileEvents','field':'FolderPath',
                 'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
-    'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP', 
+    'ipaddr': {'table':'DeviceNetworkEvents','field':'RemoteIP',
                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
-    'ipport': {'table':'DeviceNetworkEvents','field':'RemotePort', 
+    'ipport': {'table':'DeviceNetworkEvents','field':'RemotePort',
                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
-    'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine', 
+    'cmdline': {'table':'DeviceProcessEvents','field':'ProcessCommandLine',
                 'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
-    'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer', 
+    'digsig_publisher': {'table':'DeviceFileCertificateInfo','field':'Signer',
                          'additional':'| join kind=inner DeviceProcessEvents on $left.SHA1 == $right.SHA1',
                          'projections':['DeviceName', 'AccountName','FolderPath','ProcessCommandLine']},
-    'domain': {'table':'DeviceNetworkEvents','field':'RemoteUrl', 
+    'domain': {'table':'DeviceNetworkEvents','field':'RemoteUrl',
                'projections':['DeviceName', 'InitiatingProcessAccountName','InitiatingProcessFolderPath','InitiatingProcessCommandLine']},
-    'internal_name': {'table':'DeviceProcessEvents','field':'ProcessVersionInfoInternalFileName', 
+    'internal_name': {'table':'DeviceProcessEvents','field':'ProcessVersionInfoInternalFileName',
                       'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
     'md5': {'table':'DeviceProcessEvents','field':'MD5',
             'projections':['DeviceName','AccountName','FolderPath','ProcessCommandLine']},
@@ -46,7 +46,7 @@ class DefenderForEndpoints(Product):
     creds_file: str  # path to credential configuration file
     _token: str  # AAD access token
     _limit: int = -1
-    _tenantId: Optional[str] = None 
+    _tenantId: Optional[str] = None
     _appId: Optional[str] = None
     _appSecret: Optional[str] = None
     _raw: bool = False
@@ -68,13 +68,13 @@ class DefenderForEndpoints(Product):
 
     def _authenticate(self) -> None:
         if not self._token:
-            
+
             if self._tenantId and self._appId and self._appSecret:
                 self._token = self._get_aad_token(self._tenantId, self._appId, self._appSecret)
-            
+
             elif not os.path.isfile(self.creds_file):
                 raise ValueError(f'Credential file {self.creds_file} does not exist')
-            
+
             elif os.path.isfile(self.creds_file):
 
                 config = configparser.ConfigParser()
@@ -123,24 +123,24 @@ class DefenderForEndpoints(Product):
 
             if response.status_code == 200:
                 for res in response.json()["Results"]:
-                    
+
                     # Raw Feature (Inactive)
                     '''
                     if self._raw:
                         raw_results.append(res)
                     '''
                     hostname = res['DeviceName'] if 'DeviceName' in res else 'Unknown'
-                    
+
                     if 'AccountName' in res or 'InitiatingProcessAccountName' in res:
                         username = res['AccountName'] if 'AccountName' in res else res['InitiatingProcessAccountName']
                     else:
                         username = 'Unknown'
-                    
+
                     if 'ProcessCommandLine' in res or 'InitiatingProcessCommandLine' in res:
                         cmdline = res['ProcessCommandLine'] if 'ProcessCommandLine' in res else res['InitiatingProcessCommandLine']
                     else:
                         cmdline = 'Unknown'
-                    
+
                     if 'FolderPath' in res or 'InitiatingProcessFolderPath' in res:
                         proc_name = res['FolderPath'] if 'FolderPath' in res else res['InitiatingProcessFolderPath']
                     else:
@@ -158,7 +158,7 @@ class DefenderForEndpoints(Product):
         except Exception as e:
             self._echo(f"There was an exception {e}")
             self.log.exception(e)
-        
+
         # Raw Feature (Inactive)
         '''
         if self._raw:
@@ -175,7 +175,7 @@ class DefenderForEndpoints(Product):
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         query = query.rstrip()
-        
+
         query += f" {self.build_query(base_query)}" if base_query != {} else ''
 
         if self._limit > 0 and 'limit' not in query:
@@ -211,7 +211,7 @@ class DefenderForEndpoints(Product):
                         self._echo(f'Query filter {search_field} is not supported by product {self.product}',
                                    logging.WARNING)
                         continue
-                
+
                     query = f"{PARAMETER_MAPPING[search_field]['table']} {query} "
 
                     query += f"{(PARAMETER_MAPPING[search_field]['additional'])} " if 'additional' in PARAMETER_MAPPING[search_field] else ''

@@ -9,7 +9,7 @@ assignees: ''
 
 ## Which category is the feature part of?
 - [ ] Definition File
-- [ ] Code/Logic Feature 
+- [ ] Code/Logic Feature
 - [ ] Other (please explain)
 
 ## Which product is the feature part of?
@@ -20,7 +20,7 @@ assignees: ''
 - [ ] SentinelOne
 - [ ] Cortex
 - [ ] Other
- 
+
 ## Use Cases
 
 ## Proposal
