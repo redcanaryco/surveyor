@@ -66,7 +66,7 @@ class CortexXDR(Product):
         self.creds_file = kwargs['creds_file'] if 'creds_file' in kwargs else ''
         self._tenant_ids = kwargs['tenant_ids'] if 'tenant_ids' in kwargs else []
         self._api_key = kwargs['api_key'] if 'api_key' in kwargs else ''
-        self._api_key_id = kwargs['api_key_id'] if 'api_key_id' in kwargs else ''   
+        self._api_key_id = kwargs['api_key_id'] if 'api_key_id' in kwargs else ''
         self._url =  kwargs['url'] if 'url' in kwargs else ''
         self._auth_type = kwargs['auth_type'] if 'auth_type' in kwargs else "standard"
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
@@ -78,10 +78,10 @@ class CortexXDR(Product):
 
     def _authenticate(self) -> None:
         if not (self._url and self._api_key and self._api_key_id and self._auth_type):
-            
+
             if not os.path.isfile(self.creds_file):
                 raise ValueError(f'Credential file {self.creds_file} does not exist')
-            
+
             elif os.path.isfile(self.creds_file):
                 config = configparser.ConfigParser()
                 config.read(self.creds_file)
@@ -332,7 +332,7 @@ class CortexXDR(Product):
                     '''
                     result = Result(hostname, username, path, commandline, additional_data)
                     self._results[tag].append(result)
-                        
+
         self._queries.clear()
 
     def get_results(self, final_call: bool = True) -> dict[Tag, list[Result]]:

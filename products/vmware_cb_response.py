@@ -54,9 +54,9 @@ class CbResponse(Product):
         if self._sensor_group:
             sensor_group = []
             for name in self._sensor_group:
-                sensor_group.append('group:"%s"' % name)            
+                sensor_group.append('group:"%s"' % name)
             query_base += ' (' + ' OR '.join(sensor_group) + ')'
-        
+
         return query_base
 
     def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
@@ -71,7 +71,7 @@ class CbResponse(Product):
             for proc in self._conn.select(Process).where(query):
                 result = Result(proc.hostname.lower(), proc.username.lower(), proc.path, proc.cmdline,
                                 (proc.start, proc.id))
-                
+
                 # Raw Feature (Inactive)
                 '''
                 if self._raw:
@@ -83,13 +83,13 @@ class CbResponse(Product):
 
                 if self._limit > 0 and len(results)+1 > self._limit:
                         break
-                
+
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
-        
+
         # Raw Feature (Inactive)
         '''
-        if self._raw: 
+        if self._raw:
             self._add_results(list(raw_results), tag)
         else:
             self._add_results(list(results), tag)
@@ -115,7 +115,7 @@ class CbResponse(Product):
                     query = '(' + ' OR '.join('%s:%s' % (search_field, term) for term in terms) + ')'
 
                 query += self.build_query(base_query)
-                
+
                 self.log.debug(f'Query: {query}')
                 # noinspection PyUnresolvedReferences
                 for proc in self._conn.select(Process).where(query):
@@ -124,7 +124,7 @@ class CbResponse(Product):
                     results.add(result)
                     if self._limit > 0 and len(results)+1 > self._limit:
                         break
-                    
+
         except Exception as e:
             self._echo(f'Error (see log for details): {e}', logging.ERROR)
             self.log.exception(e)

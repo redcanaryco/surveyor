@@ -1,25 +1,57 @@
 {
-  "field_translation":{
-    "process_name":["cmd.exe"],
-    "ipaddr":["8.8.8.8"],
-    "cmdline":["grep"],
-    "digsig_publisher":["Microsoft Corporation"],
-    "modload":["asdf.dll"],
-    "filemod":["helloworld.txt"],
-    "regmod":["HKCU"],
-    "md5": ["asdfasdfasdf"],
-    "sha256":["qwerqwerqwer"],
-    "ipport":["80"],
-    "filewrite_md5":["zxcvzxcvzxcv"],
-    "filewrite_sha256":["poiupoiupoiu"]
+  "field_translation": {
+    "cmdline": [
+      "grep"
+    ],
+    "digsig_publisher": [
+      "Microsoft Corporation"
+    ],
+    "filemod": [
+      "helloworld.txt"
+    ],
+    "filewrite_md5": [
+      "zxcvzxcvzxcv"
+    ],
+    "filewrite_sha256": [
+      "poiupoiupoiu"
+    ],
+    "ipaddr": [
+      "8.8.8.8"
+    ],
+    "ipport": [
+      "80"
+    ],
+    "md5": [
+      "asdfasdfasdf"
+    ],
+    "modload": [
+      "asdf.dll"
+    ],
+    "process_name": [
+      "cmd.exe"
+    ],
+    "regmod": [
+      "HKCU"
+    ],
+    "sha256": [
+      "qwerqwerqwer"
+    ]
   },
-  "multiple_values":{
-    "process_name":["svchost.exe", "services.exe"]
+  "multiple_query": {
+    "query": [
+      "FieldA=ValueB",
+      "FieldC=ValueD"
+    ]
   },
-  "single_query":{
-    "query":["FieldA=ValueB"]
+  "multiple_values": {
+    "process_name": [
+      "svchost.exe",
+      "services.exe"
+    ]
   },
-  "multiple_query":{
-    "query":["FieldA=ValueB", "FieldC=ValueD"]
+  "single_query": {
+    "query": [
+      "FieldA=ValueB"
+    ]
   }
 }

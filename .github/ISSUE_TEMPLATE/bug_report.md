@@ -27,7 +27,7 @@ A clear and concise description of what the bug is.
 ## Steps to reproduce
 
 ### What did you do?
-What is the command line you're running that is causing the error? 
+What is the command line you're running that is causing the error?
 Command line '...'
 
 ### Expected behavior

@@ -1,64 +1,102 @@
 {
-    "AutoIt": { 
-        "process_name": ["autoit.exe"]
-    },
-    "Powershell": { 
-        "process_name": ["powershell*.exe", "pwsh.exe", "posh.exe", "runscripthelper.exe"]
-    },
-    "PSExec": { 
-        "process_name": ["psexec*.exe",
-                         "psexesvc.exe"]
-    },
-    "Windows Shell": { 
-        "process_name": ["cmd.exe"]
-    },
-    "WScript": { 
-        "process_name": ["wscript.exe"]
-    },
-    "Jscript":{
-        "process_name": ["jscript.exe"]
-    },
-    "CScript": { 
-        "process_name": ["cscript.exe"]
-    },
-    "mshta": {
-        "process_name": ["mshta.exe"]
-    },
-    "hh":{
-        "process_name": ["hh.exe"]
-    }, 
-    "Diskshadow": {
-        "process_name":["diskshadow.exe"]
-    }, 
-    "PHP":{
-        "process_name":["php.exe", "php-cgi.exe"]
-    },
-    "Python": { 
-        "process_name": ["python*.exe",
-                         "python*"]
-    },
-    "Perl": { 
-        "process_name": ["perl*.exe",
-                         "perl*"]
-    },
-    "Linux Shell": { 
-        "process_name": ["sh.exe",
-                         "bash.exe",
-                         "zsh.exe",
-                         "sh",
-                         "bash",
-                         "zsh"]
-    },
-    "msbuild":{
-        "process_name":["msbuild.exe"]
-    }, 
-    "GPscript.exe":{
-        "process_name":["gpscript.exe"]
-    },
-    "AutoHotKey": { 
-        "process_name": ["autohotkey.exe",
-                        "AutoHotkeyU32.exe",
-                        "AutoHotkeyA32.exe",
-                        "AutoHotkeyU64.exe"]      
-    }
+  "AutoHotKey": {
+    "process_name": [
+      "autohotkey.exe",
+      "AutoHotkeyU32.exe",
+      "AutoHotkeyA32.exe",
+      "AutoHotkeyU64.exe"
+    ]
+  },
+  "AutoIt": {
+    "process_name": [
+      "autoit.exe"
+    ]
+  },
+  "CScript": {
+    "process_name": [
+      "cscript.exe"
+    ]
+  },
+  "Diskshadow": {
+    "process_name": [
+      "diskshadow.exe"
+    ]
+  },
+  "GPscript.exe": {
+    "process_name": [
+      "gpscript.exe"
+    ]
+  },
+  "Jscript": {
+    "process_name": [
+      "jscript.exe"
+    ]
+  },
+  "Linux Shell": {
+    "process_name": [
+      "sh.exe",
+      "bash.exe",
+      "zsh.exe",
+      "sh",
+      "bash",
+      "zsh"
+    ]
+  },
+  "PHP": {
+    "process_name": [
+      "php.exe",
+      "php-cgi.exe"
+    ]
+  },
+  "PSExec": {
+    "process_name": [
+      "psexec*.exe",
+      "psexesvc.exe"
+    ]
+  },
+  "Perl": {
+    "process_name": [
+      "perl*.exe",
+      "perl*"
+    ]
+  },
+  "Powershell": {
+    "process_name": [
+      "powershell*.exe",
+      "pwsh.exe",
+      "posh.exe",
+      "runscripthelper.exe"
+    ]
+  },
+  "Python": {
+    "process_name": [
+      "python*.exe",
+      "python*"
+    ]
+  },
+  "WScript": {
+    "process_name": [
+      "wscript.exe"
+    ]
+  },
+  "Windows Shell": {
+    "process_name": [
+      "cmd.exe"
+    ]
+  },
+  "hh": {
+    "process_name": [
+      "hh.exe"
+    ]
+  },
+  "msbuild": {
+    "process_name": [
+      "msbuild.exe"
+    ]
+  },
+  "mshta": {
+    "process_name": [
+      "mshta.exe"
+    ]
+  }
 }

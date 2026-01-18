@@ -51,7 +51,7 @@ def test_build_query_with_supported_fields(dfe_product : DefenderForEndpoints):
 
     assert dfe_product.build_query(filters) == '| where Timestamp > ago(7d) | where Timestamp > ago(10m) ' + \
                       '| where DeviceName contains "workstation1" | where AccountName contains "admin"'
-    
+
 def test_build_query_with_unsupported_field(dfe_product: DefenderForEndpoints, mocker):
     """
     Verify build_query() gracefully handles unsupported filter options

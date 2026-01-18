@@ -6,7 +6,7 @@ baseline their environments and identify abnormal activity.
 
 ## Current Version: 2.5.0
 
-Version 2.0 introduced breaking changes to the command line interface and support for SentinelOne. 
+Version 2.0 introduced breaking changes to the command line interface and support for SentinelOne.
 If you are looking for the prior version of Surveyor, see [past releases](https://github.com/redcanaryco/surveyor/releases).
 
 If you are new to version 2.X please see the [Getting started](https://github.com/redcanaryco/surveyor/wiki/Getting-started) page of the wiki

@@ -95,10 +95,10 @@ def test_nested_process_search(cortex_product : CortexXDR):
 
     with open(os.path.join(os.getcwd(), 'tests','data','cortex_surveyor_testing.json')) as f:
         programs = json.load(f)
-    
+
     for program, criteria in programs.items():
         cortex_product.nested_process_search(Tag(program), criteria, {})
-    
+
     assert len(cortex_product._queries) == 4
 
     assert len(cortex_product._queries[Tag('field_translation')]) == 12

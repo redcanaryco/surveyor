@@ -1,27 +1,44 @@
 {
-    "Nmap": {
-        "process_name": ["nmap.exe", "nmap"]
-    },
-    "Zenmap": {
-        "process_name": ["zenmap.exe"]
-    },
-    "Advanced IP Scanner": {
-        "process_name": ["advanced_ip_scanner.exe"]
-    },
-    "Ipscan24": {
-        "process_name": ["ipscan24.exe"]
-    },
-    "Ipscan": {
-        "process_name": ["ipscan.exe"]
-    },
-    "Scanner": {
-        "process_name": ["scanner.exe"]
-    },
-    "Netscan": {
-        "process_name": ["netscan.exe"]
-    },
-    "SuperScan": {
-        "process_name": ["superscan4.exe",
-                         "superscan4.1.exe"]
-    }
+  "Advanced IP Scanner": {
+    "process_name": [
+      "advanced_ip_scanner.exe"
+    ]
+  },
+  "Ipscan": {
+    "process_name": [
+      "ipscan.exe"
+    ]
+  },
+  "Ipscan24": {
+    "process_name": [
+      "ipscan24.exe"
+    ]
+  },
+  "Netscan": {
+    "process_name": [
+      "netscan.exe"
+    ]
+  },
+  "Nmap": {
+    "process_name": [
+      "nmap.exe",
+      "nmap"
+    ]
+  },
+  "Scanner": {
+    "process_name": [
+      "scanner.exe"
+    ]
+  },
+  "SuperScan": {
+    "process_name": [
+      "superscan4.exe",
+      "superscan4.1.exe"
+    ]
+  },
+  "Zenmap": {
+    "process_name": [
+      "zenmap.exe"
+    ]
+  }
 }

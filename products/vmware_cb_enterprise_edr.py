@@ -42,7 +42,7 @@ class CbEnterpriseEdr(Product):
     token: Optional[str] = None
     org_key: Optional[str] = None
     _device_group: Optional[list[str]] = None
-    _device_policy: Optional[list[str]] = None  
+    _device_policy: Optional[list[str]] = None
     _conn: CBCloudAPI  # CB Cloud API
     _limit: int = -1
     _raw: bool = False
@@ -56,7 +56,7 @@ class CbEnterpriseEdr(Product):
         self._device_policy = kwargs['device_policy'] if 'device_group' in kwargs else None
         self._limit = int(kwargs['limit']) if 'limit' in kwargs else self._limit
         self._raw = kwargs['raw'] if 'raw' in kwargs else self._raw
-        
+
         super().__init__(self.product, **kwargs)
 
     def _authenticate(self) -> None:
@@ -124,25 +124,25 @@ class CbEnterpriseEdr(Product):
             # noinspection PyUnresolvedReferences
             for proc in process.where(full_query):
                 deets = proc.get_details()
-                
+
                 hostname = deets['device_name'] if 'device_name' in deets else 'None'
                 user = deets['process_username'][0] if 'process_username' in deets else 'None'
                 proc_name = deets['process_name'] if 'process_name' in deets else 'None'
                 cmdline = deets['process_cmdline'][0] if 'process_cmdline' in deets else 'None'
                 ts = deets['device_timestamp'] if 'device_timestamp' in deets else 'None'
                 proc_guid = deets['process_guid'] if 'process_guid' in deets else 'None'
-                
+
                 result = Result(hostname, user, proc_name, cmdline, (ts, proc_guid,))
-                
+
                 # Raw Feature (Inactive)
                 '''
-                if self._raw: 
+                if self._raw:
                     raw_results.append(deets)
                 else:
                     results.add(result)
                 '''
                 results.add(result)
-                    
+
                 if self._limit > 0 and len(results)+1 > self._limit:
                     break
 
@@ -151,19 +151,19 @@ class CbEnterpriseEdr(Product):
             self.log.exception(e)
         except KeyboardInterrupt:
             self._echo("Caught CTRL-C. Returning what we have . . .")
-        
+
         # Raw Feature (Inactive)
-        ''' 
+        '''
         if self._raw:
             return raw_results
         else:
             return results
         '''
         return results
-    
-    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:        
+
+    def process_search(self, tag: Tag, base_query: dict, query: str) -> None:
         results = self.perform_query(tag, base_query, query)
-        
+
         self._add_results(list(results), tag)
 
     def nested_process_search(self, tag: Tag, criteria: dict, base_query: dict) -> None:

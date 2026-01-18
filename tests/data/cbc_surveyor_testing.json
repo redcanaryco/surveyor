@@ -1,23 +1,51 @@
 {
-  "field_translation":{
-    "process_name":["notepad.exe"],
-    "ipaddr":["127.0.0.1"],
-    "cmdline":["MiniDump"],
-    "digsig_publisher":["Microsoft"],
-    "domain":["raw.githubusercontent.com"],
-    "internal_name":["powershell"],
-    "md5":["asdfasdfasdfasdf"],
-    "sha256":["zxcvzxcvzxcv"],
-    "regmod": ["HKLM"],
-    "ipport": ["80"]
+  "field_translation": {
+    "cmdline": [
+      "MiniDump"
+    ],
+    "digsig_publisher": [
+      "Microsoft"
+    ],
+    "domain": [
+      "raw.githubusercontent.com"
+    ],
+    "internal_name": [
+      "powershell"
+    ],
+    "ipaddr": [
+      "127.0.0.1"
+    ],
+    "ipport": [
+      "80"
+    ],
+    "md5": [
+      "asdfasdfasdfasdf"
+    ],
+    "process_name": [
+      "notepad.exe"
+    ],
+    "regmod": [
+      "HKLM"
+    ],
+    "sha256": [
+      "zxcvzxcvzxcv"
+    ]
   },
-  "multiple_values":{
-    "process_name":["svchost.exe", "cmd.exe"]
+  "multiple_query": {
+    "query": [
+      "process_cmdline:-enc",
+      "modload_name:malware.dll"
+    ]
   },
-  "single_query":{
-    "query":["process_name:rundll.exe"]
+  "multiple_values": {
+    "process_name": [
+      "svchost.exe",
+      "cmd.exe"
+    ]
   },
-  "multiple_query":{
-    "query":["process_cmdline:-enc", "modload_name:malware.dll"]
+  "single_query": {
+    "query": [
+      "process_name:rundll.exe"
+    ]
   }
 }

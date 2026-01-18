@@ -141,7 +141,7 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
 
     for program, criteria in programs.items():
         s1_product.nested_process_search(Tag(program), criteria, {})
-    
+
     assert len(s1_product._queries) == 4
 
     assert len(s1_product._queries[Tag('field_translation')]) == 16
@@ -166,14 +166,14 @@ def test_nested_process_search_dv(s1_product : SentinelOne):
 
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
-    edate = s1_product._queries[Tag('multiple_values')][0].end_date    
+    edate = s1_product._queries[Tag('multiple_values')][0].end_date
     assert Query(sdate, edate, 'ProcessName', 'in contains anycase', '("svchost.exe", "cmd.exe")', None) in s1_product._queries[Tag('multiple_values')]
-    
+
     assert len(s1_product._queries[Tag('single_query')]) == 1
     sdate = s1_product._queries[Tag('single_query')][0].start_date
-    edate = s1_product._queries[Tag('single_query')][0].end_date    
+    edate = s1_product._queries[Tag('single_query')][0].end_date
     assert Query(sdate, edate, 'query', 'raw', 'FileName containscis "rundll.exe"', None) in s1_product._queries[Tag('single_query')]
-    
+
     assert len(s1_product._queries[Tag('multiple_query')]) == 1
     sdate = s1_product._queries[Tag('multiple_query')][0].start_date
     edate = s1_product._queries[Tag('multiple_query')][0].end_date
@@ -204,7 +204,7 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
 
     for program, criteria in programs.items():
         s1_product.nested_process_search(Tag(program), criteria, {})
-    
+
     assert len(s1_product._queries) == 4
 
     assert len(s1_product._queries[Tag('field_translation')]) == 21
@@ -234,14 +234,14 @@ def test_nested_process_search_pq(s1_product : SentinelOne):
 
     assert len(s1_product._queries[Tag('multiple_values')]) == 1
     sdate = s1_product._queries[Tag('multiple_values')][0].start_date
-    edate = s1_product._queries[Tag('multiple_values')][0].end_date    
+    edate = s1_product._queries[Tag('multiple_values')][0].end_date
     assert Query(sdate, edate, 'src.process.name', 'contains', '("svchost.exe", "cmd.exe")', None) in s1_product._queries[Tag('multiple_values')]
-    
+
     assert len(s1_product._queries[Tag('single_query')]) == 1
     sdate = s1_product._queries[Tag('single_query')][0].start_date
-    edate = s1_product._queries[Tag('single_query')][0].end_date    
+    edate = s1_product._queries[Tag('single_query')][0].end_date
     assert Query(sdate, edate, None, None, None, 'FileName containscis "rundll.exe"') in s1_product._queries[Tag('single_query')]
-    
+
     assert len(s1_product._queries[Tag('multiple_query')]) == 1
     sdate = s1_product._queries[Tag('multiple_query')][0].start_date
     edate = s1_product._queries[Tag('multiple_query')][0].end_date
@@ -358,15 +358,15 @@ def test_process_queries_dv(s1_product : SentinelOne, mocker):
     s1_product._process_queries()
 
     mocked_run_query.assert_has_calls([
-        call('ProcessName containscis powershell.exe OR ProcessName containscis cmd.exe OR ProcessName ' + 
-             'containscis rundll32.exe OR ProcessName containscis wsl.exe OR ProcessName containscis regsvr32.exe ' + 
-             'OR ProcessName containscis svchost.exe OR ProcessName containscis notepad.exe OR ProcessName containscis ' + 
-             'explorer.exe OR ProcessName containscis firefox.exe OR ProcessName containscis chrome.exe', 
+        call('ProcessName containscis powershell.exe OR ProcessName containscis cmd.exe OR ProcessName ' +
+             'containscis rundll32.exe OR ProcessName containscis wsl.exe OR ProcessName containscis regsvr32.exe ' +
+             'OR ProcessName containscis svchost.exe OR ProcessName containscis notepad.exe OR ProcessName containscis ' +
+             'explorer.exe OR ProcessName containscis firefox.exe OR ProcessName containscis chrome.exe',
              ANY, ANY, Tag('valueA', data=None), ANY, True),
         call('ProcessName containscis iexplore.exe', ANY, ANY, Tag('valueA', data=None), ANY, True),
-        call('DNS containscis google.com OR DNS containscis microsoft.com OR DNS containscis amazon.com OR DNS containscis bing.com ' + 
-             'OR DNS containscis yahoo.com OR DNS containscis github.com OR DNS containscis virustotal.com OR DNS containscis facebook.com ' + 
-             'OR DNS containscis twitter.com OR DNS containscis spotify.com', 
+        call('DNS containscis google.com OR DNS containscis microsoft.com OR DNS containscis amazon.com OR DNS containscis bing.com ' +
+             'OR DNS containscis yahoo.com OR DNS containscis github.com OR DNS containscis virustotal.com OR DNS containscis facebook.com ' +
+             'OR DNS containscis twitter.com OR DNS containscis spotify.com',
              ANY, ANY, Tag('valueB', data=None), ANY, True),
         call('DNS containscis apple.com', ANY, ANY, Tag('valueB', data=None), ANY, True)
     ])
@@ -409,16 +409,16 @@ def test_process_queries_pq(s1_product : SentinelOne, mocker):
     s1_product._process_queries()
 
     mocked_run_query.assert_has_calls([
-        call('src.process.name contains powershell.exe OR src.process.name contains cmd.exe OR src.process.name contains ' + 
-             'rundll32.exe OR src.process.name contains wsl.exe OR src.process.name contains regsvr32.exe ' + 
-             'OR src.process.name contains svchost.exe OR src.process.name contains notepad.exe OR src.process.name contains ' + 
-             'explorer.exe OR src.process.name contains firefox.exe OR src.process.name contains chrome.exe ' + 
+        call('src.process.name contains powershell.exe OR src.process.name contains cmd.exe OR src.process.name contains ' +
+             'rundll32.exe OR src.process.name contains wsl.exe OR src.process.name contains regsvr32.exe ' +
+             'OR src.process.name contains svchost.exe OR src.process.name contains notepad.exe OR src.process.name contains ' +
+             'explorer.exe OR src.process.name contains firefox.exe OR src.process.name contains chrome.exe ' +
              '| group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
              'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
              'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
              'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
-             'dst.ip.address, event.dns.request, event.type', 
+             'dst.ip.address, event.dns.request, event.type',
              ANY, ANY, Tag('valueA', data=None), ANY, False),
         call('src.process.name contains iexplore.exe | group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
@@ -426,15 +426,15 @@ def test_process_queries_pq(s1_product : SentinelOne, mocker):
              'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
              'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
              'dst.ip.address, event.dns.request, event.type',  ANY, ANY, Tag('valueA', data=None), ANY, False),
-        call('event.dns.request contains google.com OR event.dns.request contains microsoft.com OR event.dns.request contains amazon.com OR event.dns.request contains bing.com ' + 
-             'OR event.dns.request contains yahoo.com OR event.dns.request contains github.com OR event.dns.request contains virustotal.com OR event.dns.request contains facebook.com ' + 
-             'OR event.dns.request contains twitter.com OR event.dns.request contains spotify.com ' + 
+        call('event.dns.request contains google.com OR event.dns.request contains microsoft.com OR event.dns.request contains amazon.com OR event.dns.request contains bing.com ' +
+             'OR event.dns.request contains yahoo.com OR event.dns.request contains github.com OR event.dns.request contains virustotal.com OR event.dns.request contains facebook.com ' +
+             'OR event.dns.request contains twitter.com OR event.dns.request contains spotify.com ' +
              '| group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
              'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
              'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
              'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
-             'dst.ip.address, event.dns.request, event.type', 
+             'dst.ip.address, event.dns.request, event.type',
              ANY, ANY, Tag('valueB', data=None), ANY, False),
         call('event.dns.request contains apple.com | group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
@@ -461,13 +461,13 @@ def test_process_queries_pq_single_site_id(s1_product : SentinelOne, mocker):
     s1_product._process_queries()
 
     mocked_run_query.assert_has_calls([
-        call('(src.process.name contains powershell.exe) AND (site.id = 12345) ' + 
+        call('(src.process.name contains powershell.exe) AND (site.id = 12345) ' +
              '| group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
              'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
              'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
              'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
-             'dst.ip.address, event.dns.request, event.type', 
+             'dst.ip.address, event.dns.request, event.type',
              ANY, ANY, Tag('valueA', data=None), ANY, False)
     ])
 
@@ -488,12 +488,12 @@ def test_process_queries_pq_multiple_site_ids(s1_product : SentinelOne, mocker):
     s1_product._process_queries()
 
     mocked_run_query.assert_has_calls([
-        call('(src.process.name contains powershell.exe) AND (site.id = 12345 OR site.id = 67890) ' + 
+        call('(src.process.name contains powershell.exe) AND (site.id = 12345 OR site.id = 67890) ' +
              '| group count() by endpoint.name, src.process.user, ' +
              'src.process.image.path, src.process.cmdline, event.time, ' +
              'site.id, site.name, src.process.storyline.id, src.process.displayname, ' +
              'src.process.parent.image.path, tgt.process.displayname, tgt.process.image.path, ' +
              'tgt.file.path, tgt.file.sha1, tgt.file.sha256, url.address, src.ip.address, ' +
-             'dst.ip.address, event.dns.request, event.type', 
+             'dst.ip.address, event.dns.request, event.type',
              ANY, ANY, Tag('valueA', data=None), ANY, False)
     ])
