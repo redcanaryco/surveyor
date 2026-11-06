@@ -191,6 +191,12 @@
         "digsig_publisher": ["NinjaRMM, LLC"],
         "domain": ["resources.ninjarmm.com"]
     },
+    "Nizlo": {
+        "process_name": ["Nizlo.Agent.exe",
+                        "Nizlo.Agent.Updater.exe",
+                        "Nizlo.RemoteBridge.exe"],
+        "domain": ["app.nizlo.com"]
+    },
     "FleetDeck.io": {
         "process_name": ["fleetdeck_agent.exe",
                         "fleetdeck_agent_svc.exe",
